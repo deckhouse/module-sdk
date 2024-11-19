@@ -26,7 +26,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/deckhouse/module-sdk/pkg/set"
+	"github.com/deckhouse/module-sdk/pkg/utils/set"
 )
 
 const (

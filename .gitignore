@@ -60,4 +60,5 @@ __pycache__/
 # Helm lib
 deckhouse_lib_helm-*.tgz
 
-somehook/
+somemodule/
+tmp/
