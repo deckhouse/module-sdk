@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	lazynode "github.com/deckhouse/module-sdk/pkg/utils/lazy-node"
 	"github.com/pkg/errors"
+
+	lazynode "github.com/deckhouse/module-sdk/pkg/utils/lazy-node"
 )
 
 const (
@@ -29,6 +30,107 @@ var (
 
 // Patch is an ordered collection of Operations.
 type Patch []Operation
+
+// Apply mutates a JSON document according to the patch, and returns the new
+// document.
+func (p Patch) Apply(doc []byte) ([]byte, error) {
+	return p.ApplyIndent(doc, "")
+}
+
+func (p Patch) ApplyContainer(pd container) (container, error) {
+	if pd == nil {
+		return nil, nil
+	}
+
+	var err error
+
+	for _, op := range p {
+		switch op.Kind() {
+		case "add":
+			err = p.add(&pd, op)
+		case "remove":
+			err = p.remove(&pd, op)
+		case "replace":
+			err = p.replace(&pd, op)
+		case "move":
+			err = p.move(&pd, op)
+		case "test":
+			err = p.test(&pd, op)
+		case "copy":
+			err = p.copy(&pd, op)
+		default:
+			err = fmt.Errorf("unexpected kind: %s", op.Kind())
+		}
+
+		if err != nil {
+			return pd, err
+		}
+	}
+
+	return pd, nil
+}
+
+// JSONEqual indicates if 2 JSON documents have the same structural equality.
+func JSONEqual(a, b []byte) bool {
+	ra := make(json.RawMessage, len(a))
+	copy(ra, a)
+	la := lazynode.NewLazyNode(&ra)
+
+	rb := make(json.RawMessage, len(b))
+	copy(rb, b)
+	lb := lazynode.NewLazyNode(&rb)
+
+	return la.Equal(lb)
+}
+
+// ApplyIndent mutates a JSON document according to the patch, and returns the new
+// document indented.
+func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
+	if len(doc) == 0 {
+		return doc, nil
+	}
+
+	var pd container
+	if doc[0] == '[' {
+		pd = &lazynode.PartialArray{}
+	} else {
+		pd = &lazynode.PartialDoc{}
+	}
+
+	err := json.Unmarshal(doc, pd)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, op := range p {
+		switch op.Kind() {
+		case "add":
+			err = p.add(&pd, op)
+		case "remove":
+			err = p.remove(&pd, op)
+		case "replace":
+			err = p.replace(&pd, op)
+		case "move":
+			err = p.move(&pd, op)
+		case "test":
+			err = p.test(&pd, op)
+		case "copy":
+			err = p.copy(&pd, op)
+		default:
+			err = fmt.Errorf("unexpected kind: %s", op.Kind())
+		}
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if indent != "" {
+		return json.MarshalIndent(pd, "", indent)
+	}
+
+	return json.Marshal(pd)
+}
 
 func (p Patch) add(doc *container, op Operation) error {
 	path, err := op.Path()
@@ -252,107 +354,6 @@ func (p Patch) copy(doc *container, op Operation) error {
 	}
 
 	return nil
-}
-
-// Apply mutates a JSON document according to the patch, and returns the new
-// document.
-func (p Patch) Apply(doc []byte) ([]byte, error) {
-	return p.ApplyIndent(doc, "")
-}
-
-func (p Patch) ApplyContainer(pd container) (container, error) {
-	if pd == nil {
-		return nil, nil
-	}
-
-	var err error
-
-	for _, op := range p {
-		switch op.Kind() {
-		case "add":
-			err = p.add(&pd, op)
-		case "remove":
-			err = p.remove(&pd, op)
-		case "replace":
-			err = p.replace(&pd, op)
-		case "move":
-			err = p.move(&pd, op)
-		case "test":
-			err = p.test(&pd, op)
-		case "copy":
-			err = p.copy(&pd, op)
-		default:
-			err = fmt.Errorf("unexpected kind: %s", op.Kind())
-		}
-
-		if err != nil {
-			return pd, err
-		}
-	}
-
-	return pd, nil
-}
-
-// JSONEqual indicates if 2 JSON documents have the same structural equality.
-func JSONEqual(a, b []byte) bool {
-	ra := make(json.RawMessage, len(a))
-	copy(ra, a)
-	la := lazynode.NewLazyNode(&ra)
-
-	rb := make(json.RawMessage, len(b))
-	copy(rb, b)
-	lb := lazynode.NewLazyNode(&rb)
-
-	return la.Equal(lb)
-}
-
-// ApplyIndent mutates a JSON document according to the patch, and returns the new
-// document indented.
-func (p Patch) ApplyIndent(doc []byte, indent string) ([]byte, error) {
-	if len(doc) == 0 {
-		return doc, nil
-	}
-
-	var pd container
-	if doc[0] == '[' {
-		pd = &lazynode.PartialArray{}
-	} else {
-		pd = &lazynode.PartialDoc{}
-	}
-
-	err := json.Unmarshal(doc, pd)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, op := range p {
-		switch op.Kind() {
-		case "add":
-			err = p.add(&pd, op)
-		case "remove":
-			err = p.remove(&pd, op)
-		case "replace":
-			err = p.replace(&pd, op)
-		case "move":
-			err = p.move(&pd, op)
-		case "test":
-			err = p.test(&pd, op)
-		case "copy":
-			err = p.copy(&pd, op)
-		default:
-			err = fmt.Errorf("unexpected kind: %s", op.Kind())
-		}
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if indent != "" {
-		return json.MarshalIndent(pd, "", indent)
-	}
-
-	return json.Marshal(pd)
 }
 
 func findObject(pd *container, path string) (container, string) {

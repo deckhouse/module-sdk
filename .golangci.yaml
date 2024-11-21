@@ -21,11 +21,8 @@ linters-settings:
       - prefix(github.com/deckhouse/)
   goimports:
     local-prefixes: github.com/deckhouse/
-  # TODO: replace deprecated methods
-  # ignore deprecated 
-  # https://staticcheck.dev/docs/checks/#SA1019
   staticcheck:
-     checks: ["all","-SA1019"]
+     checks: ["all"]
   errcheck:
     # Is Depricateed, use exclude-functions: https://github.com/kisielk/errcheck#excluding-functions
     exclude-functions:

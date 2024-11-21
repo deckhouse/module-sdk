@@ -6,26 +6,25 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	gohook "github.com/deckhouse/module-sdk/pkg/hook"
-	gohookcfg "github.com/deckhouse/module-sdk/pkg/hook/config"
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 func TestRegister(t *testing.T) {
 	t.Run("Hook with OnStartup and Kubernetes bindings should panic", func(t *testing.T) {
-		hook := gohook.NewGoHook(
-			&gohookcfg.HookConfig{
+		hook := &pkg.Hook{
+			Config: &pkg.HookConfig{
 				OnStartup: 1,
-				Kubernetes: []gohookcfg.KubernetesConfig{
+				Kubernetes: []pkg.KubernetesConfig{
 					{
 						Name:       "test",
-						ApiVersion: "v1",
+						APIVersion: "v1",
 						Kind:       "Pod",
 						// FilterFunc: nil,
 					},
 				},
 			},
-			nil,
-		)
+			ReconcileFunc: nil,
+		}
 
 		defer func() {
 			r := recover()
@@ -36,12 +35,12 @@ func TestRegister(t *testing.T) {
 	})
 
 	t.Run("Hook with OnStartup should not panic", func(t *testing.T) {
-		hook := gohook.NewGoHook(
-			&gohookcfg.HookConfig{
+		hook := &pkg.Hook{
+			Config: &pkg.HookConfig{
 				OnStartup: 1,
 			},
-			nil,
-		)
+			ReconcileFunc: nil,
+		}
 
 		defer func() {
 			r := recover()
@@ -51,19 +50,19 @@ func TestRegister(t *testing.T) {
 	})
 
 	t.Run("Hook with Kubernetes binding should not panic", func(t *testing.T) {
-		hook := gohook.NewGoHook(
-			&gohookcfg.HookConfig{
-				Kubernetes: []gohookcfg.KubernetesConfig{
+		hook := &pkg.Hook{
+			Config: &pkg.HookConfig{
+				Kubernetes: []pkg.KubernetesConfig{
 					{
 						Name:       "test",
-						ApiVersion: "v1",
+						APIVersion: "v1",
 						Kind:       "Pod",
 						// FilterFunc: nil,
 					},
 				},
 			},
-			nil,
-		)
+			ReconcileFunc: nil,
+		}
 
 		defer func() {
 			r := recover()

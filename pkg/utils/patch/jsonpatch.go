@@ -7,8 +7,9 @@ package patch
 import (
 	"encoding/json"
 
-	lazynode "github.com/deckhouse/module-sdk/pkg/utils/lazy-node"
 	"github.com/pkg/errors"
+
+	lazynode "github.com/deckhouse/module-sdk/pkg/utils/lazy-node"
 )
 
 // Operation is a single JSON-Patch step, such as a single 'add' operation.
@@ -71,9 +72,9 @@ func (o Operation) value() *lazynode.LazyNode {
 }
 
 // ValueInterface decodes the operation value into an interface.
-func (o Operation) ValueInterface() (interface{}, error) {
+func (o Operation) ValueInterface() (any, error) {
 	if obj, ok := o["value"]; ok && obj != nil {
-		var v interface{}
+		var v any
 
 		err := json.Unmarshal(*obj, &v)
 		if err != nil {
