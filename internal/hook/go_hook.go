@@ -142,5 +142,5 @@ type HookResult struct {
 	Patches map[utils.ValuesPatchType]pkg.PatchableValuesCollector
 
 	ObjectPatcherOperations pkg.PatchCollector
-	Metrics                 pkg.MetricCollector
+	Metrics                 pkg.MetricsCollector
 }

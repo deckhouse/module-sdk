@@ -25,9 +25,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
 
-	"github.com/deckhouse/module-sdk/internal/dependency/cr"
-	"github.com/deckhouse/module-sdk/internal/dependency/http"
-	"github.com/deckhouse/module-sdk/internal/dependency/k8s"
+	"github.com/deckhouse/module-sdk/pkg/dependency/cr"
+	"github.com/deckhouse/module-sdk/pkg/dependency/http"
+	"github.com/deckhouse/module-sdk/pkg/dependency/k8s"
 )
 
 // Container with external dependencies

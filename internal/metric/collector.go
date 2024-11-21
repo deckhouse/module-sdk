@@ -12,7 +12,7 @@ import (
 	metric "github.com/deckhouse/module-sdk/pkg/metric/operation"
 )
 
-var _ service.MetricCollector = (*Collector)(nil)
+var _ service.MetricsCollector = (*Collector)(nil)
 
 type Collector struct {
 	defaultGroup string
@@ -25,12 +25,12 @@ func NewCollector() *Collector {
 }
 
 // Inc increments specified Counter metric
-func (mc *Collector) Inc(name string, labels map[string]string, opts ...pkg.MetricOption) {
+func (mc *Collector) Inc(name string, labels map[string]string, opts ...pkg.MetricsOption) {
 	mc.Add(name, 1, labels, opts...)
 }
 
 // Add adds custom value for Counter metric
-func (mc *Collector) Add(name string, value float64, labels map[string]string, options ...pkg.MetricOption) {
+func (mc *Collector) Add(name string, value float64, labels map[string]string, options ...pkg.MetricsOption) {
 	m := metric.Operation{
 		Name:   name,
 		Group:  mc.defaultGroup,
@@ -47,7 +47,7 @@ func (mc *Collector) Add(name string, value float64, labels map[string]string, o
 }
 
 // Set specifies custom value for Gauge metric
-func (mc *Collector) Set(name string, value float64, labels map[string]string, options ...pkg.MetricOption) {
+func (mc *Collector) Set(name string, value float64, labels map[string]string, options ...pkg.MetricsOption) {
 	m := metric.Operation{
 		Name:   name,
 		Group:  mc.defaultGroup,
