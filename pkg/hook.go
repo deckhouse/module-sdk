@@ -17,10 +17,10 @@ type ReconcileFunc func(input *HookInput) error
 type HookInput struct {
 	Snapshots Snapshots
 
-	Values          PatchableValuesCollector
-	ConfigValues    PatchableValuesCollector
-	PatchCollector  PatchCollector
-	MetricCollector MetricsCollector
+	Values           PatchableValuesCollector
+	ConfigValues     PatchableValuesCollector
+	PatchCollector   PatchCollector
+	MetricsCollector MetricsCollector
 
 	Logger Logger
 }
