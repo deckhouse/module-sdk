@@ -6,7 +6,6 @@ import (
 	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/internal/controller"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
-	_ "github.com/deckhouse/module-sdk/registered-hooks"
 )
 
 // Целевая картина
