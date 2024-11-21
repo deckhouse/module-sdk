@@ -20,9 +20,7 @@ type GoHook struct {
 
 // NewGoHook creates a new go hook
 func NewGoHook(config *pkg.HookConfig, f pkg.ReconcileFunc) *GoHook {
-	logger := log.NewLogger(log.Options{
-		Level: log.LogLevelFromStr(config.LogLevelRaw).Level(),
-	})
+	logger := log.NewLogger(log.Options{})
 
 	return &GoHook{
 		config:        config,
