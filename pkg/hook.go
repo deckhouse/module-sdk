@@ -42,9 +42,11 @@ type HookConfig struct {
 	OnBeforeHelm      int
 	OnAfterHelm       int
 	OnAfterDeleteHelm int
-	Settings          *HookConfigSettings
 
-	LogLevelRaw string
+	AllowFailure bool
+	Queue        string
+
+	Settings *HookConfigSettings
 }
 
 type HookConfigSettings struct {
