@@ -7,9 +7,9 @@ import (
 
 	pointer "k8s.io/utils/ptr"
 
-	metric "github.com/deckhouse/module-sdk/internal/metric/operation"
 	"github.com/deckhouse/module-sdk/pkg"
 	service "github.com/deckhouse/module-sdk/pkg"
+	metric "github.com/deckhouse/module-sdk/pkg/metric/operation"
 )
 
 var _ service.MetricCollector = (*Collector)(nil)
