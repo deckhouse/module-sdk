@@ -19,10 +19,9 @@ package external_auth
 import (
 	"strings"
 
-	"github.com/flant/addon-operator/pkg/module_manager/go_hook"
-	"github.com/flant/addon-operator/sdk"
-
 	"github.com/deckhouse/deckhouse/go_lib/set"
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
 type Settings struct {
@@ -40,18 +39,18 @@ type ExternalAuth struct {
 	UseBearerTokens *bool  `json:"useBearerTokens,omitempty"`
 }
 
-func (e *ExternalAuth) AuthURLWithClusterDomain(input *go_hook.HookInput) string {
+func (e *ExternalAuth) AuthURLWithClusterDomain(input *pkg.HookInput) string {
 	clusterDomain := input.Values.Get("global.discovery.clusterDomain").String()
 	return strings.ReplaceAll(e.AuthURL, "%CLUSTER_DOMAIN%", clusterDomain)
 }
 
 func RegisterHook(settings Settings) bool {
-	return sdk.RegisterFunc(&go_hook.HookConfig{
-		OnBeforeHelm: &go_hook.OrderedConfig{Order: 9},
+	return registry.RegisterFunc(&pkg.HookConfig{
+		OnBeforeHelm: &pkg.OrderedConfig{Order: 9},
 	}, wrapSetExternalAuthValues(settings))
 }
 
-func setExternalAuthValues(input *go_hook.HookInput, settings Settings) error {
+func setExternalAuthValues(input *pkg.HookInput, settings Settings) error {
 	configAuth, isExternalAuthInConfig := input.ConfigValues.GetOk(settings.ExternalAuthPath)
 
 	if !set.NewFromValues(input.Values, "global.enabledModules").Has("user-authn") {
@@ -80,8 +79,8 @@ func setExternalAuthValues(input *go_hook.HookInput, settings Settings) error {
 	return nil
 }
 
-func wrapSetExternalAuthValues(settings Settings) func(input *go_hook.HookInput) error {
-	return func(input *go_hook.HookInput) error {
+func wrapSetExternalAuthValues(settings Settings) func(input *pkg.HookInput) error {
+	return func(input *pkg.HookInput) error {
 		return setExternalAuthValues(input, settings)
 	}
 }

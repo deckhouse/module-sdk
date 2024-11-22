@@ -20,11 +20,12 @@ import (
 	"encoding/json"
 	"sort"
 
+	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/flant/addon-operator/pkg/module_manager/go_hook"
 )
 
 // NewFromSnapshot expects snapshot to contain only strings, otherwise it panics
-func NewFromSnapshot(snapshot []go_hook.FilterResult) Set {
+func NewFromSnapshot(snapshot []pkg.FilterResult) Set {
 	s := Set{}
 	for _, v := range snapshot {
 		if v == nil {

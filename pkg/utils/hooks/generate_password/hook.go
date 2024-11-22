@@ -22,12 +22,13 @@ import (
 
 	"github.com/flant/addon-operator/pkg/module_manager/go_hook"
 	addonutils "github.com/flant/addon-operator/pkg/utils"
-	"github.com/flant/addon-operator/sdk"
-	"github.com/flant/shell-operator/pkg/kube_events_manager/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/deckhouse/deckhouse/go_lib/pwgen"
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/registry"
+	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
 const (
@@ -60,18 +61,18 @@ type HookSettings struct {
 // if ExternalAuth is used - secret will be deleted, you can change this behavior by `keepPasswordOnExternalAuth` flag
 func RegisterHook(settings HookSettings) bool {
 	hook := NewBasicAuthPlainHook(settings)
-	return sdk.RegisterFunc(&go_hook.HookConfig{
+	return registry.RegisterFunc(&pkg.HookConfig{
 		Queue: fmt.Sprintf("/modules/%s/generate_password", hook.ValuesKey),
-		Kubernetes: []go_hook.KubernetesConfig{
+		Kubernetes: []pkg.KubernetesConfig{
 			{
 				Name:       secretBindingName,
-				ApiVersion: "v1",
+				APIVersion: "v1",
 				Kind:       "Secret",
-				NameSelector: &types.NameSelector{
+				NameSelector: &pkg.NameSelector{
 					MatchNames: []string{hook.Secret.Name},
 				},
-				NamespaceSelector: &types.NamespaceSelector{
-					NameSelector: &types.NameSelector{
+				NamespaceSelector: &pkg.NamespaceSelector{
+					NameSelector: &pkg.NameSelector{
 						MatchNames: []string{hook.Secret.Namespace},
 					},
 				},
@@ -80,7 +81,7 @@ func RegisterHook(settings HookSettings) bool {
 				FilterFunc:                   hook.Filter,
 			},
 		},
-		OnBeforeHelm: &go_hook.OrderedConfig{Order: float64(defaultBeforeHelmOrder)},
+		OnBeforeHelm: &pkg.OrderedConfig{Order: float64(defaultBeforeHelmOrder)},
 	}, hook.Handle)
 }
 
@@ -98,9 +99,9 @@ type Secret struct {
 // Filter extracts password from the Secret. Password can be stored as a raw string or as
 // a basic auth plain format (user:{PLAIN}password). Custom FilterFunc is called for custom
 // password extraction.
-func (h *Hook) Filter(obj *unstructured.Unstructured) (go_hook.FilterResult, error) {
+func (h *Hook) Filter(obj *unstructured.Unstructured) (pkg.FilterResult, error) {
 	secret := &v1.Secret{}
-	err := sdk.FromUnstructured(obj, secret)
+	err := utils.FromUnstructured(obj, secret)
 	if err != nil {
 		return nil, fmt.Errorf("cannot convert secret to struct: %v", err)
 	}
@@ -112,7 +113,7 @@ func (h *Hook) Filter(obj *unstructured.Unstructured) (go_hook.FilterResult, err
 // puts it to internal values.
 // It generates new password if there is no password in the configuration
 // and no Secret found.
-func (h *Hook) Handle(input *go_hook.HookInput) error {
+func (h *Hook) Handle(input *pkg.HookInput) error {
 	externalAuthKey := h.ExternalAuthKey()
 	passwordInternalKey := h.PasswordInternalKey()
 
@@ -153,7 +154,7 @@ func (h *Hook) PasswordInternalKey() string {
 
 // restoreGeneratedPasswordFromSnapshot extracts password from the plain basic auth string:
 // username:{PLAIN}password
-func (h *Hook) restoreGeneratedPasswordFromSnapshot(snapshot []go_hook.FilterResult) (string, error) {
+func (h *Hook) restoreGeneratedPasswordFromSnapshot(snapshot []pkg.FilterResult) (string, error) {
 	if len(snapshot) != 1 {
 		return "", fmt.Errorf("secret/%s not found", h.Secret.Name)
 	}

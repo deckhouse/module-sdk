@@ -17,6 +17,7 @@ limitations under the License.
 package dependency
 
 import (
+	stdhttp "net/http"
 	"os"
 	"sync"
 	"time"
@@ -25,27 +26,14 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
 
+	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/dependency/cr"
 	"github.com/deckhouse/module-sdk/pkg/dependency/http"
 	"github.com/deckhouse/module-sdk/pkg/dependency/k8s"
 )
 
-// Container with external dependencies
-type Container interface {
-	GetHTTPClient(options ...http.Option) http.Client
-
-	GetK8sClient(options ...k8s.Option) (k8s.Client, error)
-	MustGetK8sClient(options ...k8s.Option) k8s.Client
-	GetClientConfig() (*rest.Config, error)
-
-	MustGetRegistryClient(repo string, options ...cr.Option) cr.Client
-	GetRegistryClient(repo string, options ...cr.Option) (cr.Client, error)
-
-	GetClock() clockwork.Clock
-}
-
 var (
-	defaultDC    Container
+	defaultDC    pkg.DependencyContainer
 	TestTimeZone = time.UTC
 )
 
@@ -54,21 +42,21 @@ func init() {
 }
 
 // NewDependencyContainer creates new Dependency container with external clients
-func NewDependencyContainer() Container {
+func NewDependencyContainer() pkg.DependencyContainer {
 	return &dependencyContainer{}
 }
 
 type dependencyContainer struct {
-	k8sClient k8s.Client
+	k8sClient *k8s.Client
 
 	httpmu     sync.RWMutex
-	httpClient http.Client
+	httpClient *stdhttp.Client
 
 	crmu     sync.RWMutex
-	crClient cr.Client
+	crClient *cr.Client
 }
 
-func (dc *dependencyContainer) GetHTTPClient(options ...http.Option) http.Client {
+func (dc *dependencyContainer) GetHTTPClient(options ...pkg.HTTPOption) pkg.HTTPClient {
 	dc.httpmu.RLock()
 	if dc.httpClient != nil {
 		defer dc.httpmu.RUnlock()
@@ -79,7 +67,7 @@ func (dc *dependencyContainer) GetHTTPClient(options ...http.Option) http.Client
 	dc.httpmu.Lock()
 	defer dc.httpmu.Unlock()
 
-	var opts []http.Option
+	var opts []pkg.HTTPOption
 	opts = append(opts, options...)
 
 	contentCA, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
@@ -92,7 +80,7 @@ func (dc *dependencyContainer) GetHTTPClient(options ...http.Option) http.Client
 	return dc.httpClient
 }
 
-func (dc *dependencyContainer) GetK8sClient(options ...k8s.Option) (k8s.Client, error) {
+func (dc *dependencyContainer) GetK8sClient(options ...pkg.KubernetesOption) (pkg.KubernetesClient, error) {
 	if dc.k8sClient == nil {
 		kc, err := k8s.NewClient(options...)
 		if err != nil {
@@ -105,7 +93,7 @@ func (dc *dependencyContainer) GetK8sClient(options ...k8s.Option) (k8s.Client, 
 	return dc.k8sClient, nil
 }
 
-func (dc *dependencyContainer) MustGetK8sClient(options ...k8s.Option) k8s.Client {
+func (dc *dependencyContainer) MustGetK8sClient(options ...pkg.KubernetesOption) pkg.KubernetesClient {
 	client, err := dc.GetK8sClient(options...)
 	if err != nil {
 		panic(err)
@@ -114,7 +102,7 @@ func (dc *dependencyContainer) MustGetK8sClient(options ...k8s.Option) k8s.Clien
 	return client
 }
 
-func (dc *dependencyContainer) GetRegistryClient(repo string, options ...cr.Option) (cr.Client, error) {
+func (dc *dependencyContainer) GetRegistryClient(repo string, options ...pkg.RegistryOption) (pkg.RegistryClient, error) {
 	dc.crmu.RLock()
 	if dc.crClient != nil {
 		defer dc.crmu.RUnlock()
@@ -134,7 +122,7 @@ func (dc *dependencyContainer) GetRegistryClient(repo string, options ...cr.Opti
 	return dc.crClient, nil
 }
 
-func (dc *dependencyContainer) MustGetRegistryClient(repo string, options ...cr.Option) cr.Client {
+func (dc *dependencyContainer) MustGetRegistryClient(repo string, options ...pkg.RegistryOption) pkg.RegistryClient {
 	client, err := dc.GetRegistryClient(repo, options...)
 	if err != nil {
 		panic(err)

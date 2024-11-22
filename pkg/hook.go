@@ -4,6 +4,7 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Hook struct {
@@ -22,6 +23,8 @@ type HookInput struct {
 	PatchCollector   PatchCollector
 	MetricsCollector MetricsCollector
 
+	DC DependencyContainer
+
 	Logger Logger
 }
 
@@ -38,15 +41,19 @@ type HookConfig struct {
 	// OnStartup runs hook on module/global startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
-	OnStartup         int
-	OnBeforeHelm      int
-	OnAfterHelm       int
-	OnAfterDeleteHelm int
+	OnStartup         *OrderedConfig
+	OnBeforeHelm      *OrderedConfig
+	OnAfterHelm       *OrderedConfig
+	OnAfterDeleteHelm *OrderedConfig
 
 	AllowFailure bool
 	Queue        string
 
 	Settings *HookConfigSettings
+}
+
+type OrderedConfig struct {
+	Order uint
 }
 
 type HookConfigSettings struct {
@@ -88,7 +95,13 @@ type KubernetesConfig struct {
 	ExecuteHookOnSynchronization *bool
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
 	WaitForSynchronization *bool
+
+	FilterFunc FilterFunc
 }
+
+type FilterResult any
+
+type FilterFunc func(*unstructured.Unstructured) (FilterResult, error)
 
 type NameSelector struct {
 	MatchNames []string

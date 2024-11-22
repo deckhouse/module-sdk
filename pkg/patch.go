@@ -14,13 +14,30 @@ type PatchCollector interface {
 	CreateIfNotExists(data *unstructured.Unstructured)
 	CreateOrUpdate(data *unstructured.Unstructured)
 
-	Delete(kind string, namespace string, name string, apiVersion string, subresource string)
-	DeleteInBackground(kind string, namespace string, name string, apiVersion string, subresource string)
-	DeleteNonCascading(kind string, namespace string, name string, apiVersion string, subresource string)
+	Delete(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
+	DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
+	DeleteNonCascading(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
 
-	JQPatch(kind string, apiVersion string, name string, namespace string, filter string, subresource string)
-	MergePatch(kind string, apiVersion string, name string, namespace string, patch any, subresource string, ignoreMissingObjects bool)
-	JSONPatch(kind string, apiVersion string, name string, namespace string, patch []any, subresource string, ignoreMissingObjects bool)
+	JQPatch(filter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+	MergePatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+	JSONPatch(patch []any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+}
+
+type PatchCollectorDeleteOption interface {
+	Apply(optsApplier PatchCollectorDeleteOptionApplier)
+}
+
+type PatchCollectorDeleteOptionApplier interface {
+	WithSubresource(subresource string)
+}
+
+type PatchCollectorPatchOption interface {
+	Apply(optsApplier PatchCollectorPatchOptionApplier)
+}
+
+type PatchCollectorPatchOptionApplier interface {
+	WithSubresource(subresource string)
+	WithIgnoreMissingObjects(ignore bool)
 }
 
 type PatchableValuesCollector interface {

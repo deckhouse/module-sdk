@@ -5,8 +5,8 @@ import (
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
-	"github.com/deckhouse/module-sdk/internal/kubernetes"
 	metric "github.com/deckhouse/module-sdk/internal/metric"
+	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
@@ -53,6 +53,7 @@ type HookRequest interface {
 	GetValues() (map[string]any, error)
 	GetConfigValues() (map[string]any, error)
 	GetBindingContexts() ([]bindingcontext.BindingContext, error)
+	GetDependencyContainer() pkg.DependencyContainer
 }
 
 func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
@@ -86,7 +87,7 @@ func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
 		h.logger.Warn("get binding context", slog.String("error", err.Error()))
 	}
 
-	formattedSnapshots := make(kubernetes.Snapshots, len(bContext))
+	formattedSnapshots := make(objectpatch.Snapshots, len(bContext))
 	for _, bc := range bContext {
 		for snapBindingName, snaps := range bc.Snapshots {
 			formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], snaps...)
@@ -94,15 +95,16 @@ func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
 	}
 
 	metricsCollector := metric.NewCollector()
-	objectPatchCollector := kubernetes.NewObjectPatchCollector()
+	objectPatchCollector := objectpatch.NewObjectPatchCollector()
 
 	err = h.Run(&pkg.HookInput{
-		Snapshots:       formattedSnapshots,
-		Values:          patchableValues,
-		ConfigValues:    patchableConfigValues,
-		PatchCollector:  objectPatchCollector,
-		MetricCollector: metricsCollector,
-		Logger:          h.logger.With("output", "gohook"),
+		Snapshots:        formattedSnapshots,
+		Values:           patchableValues,
+		ConfigValues:     patchableConfigValues,
+		PatchCollector:   objectPatchCollector,
+		MetricsCollector: metricsCollector,
+		DC:               req.GetDependencyContainer(),
+		Logger:           h.logger.With("output", "gohook"),
 	})
 	if err != nil {
 		return nil, err

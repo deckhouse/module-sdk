@@ -31,6 +31,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -45,13 +46,7 @@ const (
 	defaultTimeout = 90 * time.Second
 )
 
-type Client interface {
-	Image(ctx context.Context, tag string) (v1.Image, error)
-	Digest(ctx context.Context, tag string) (string, error)
-	ListTags(ctx context.Context) ([]string, error)
-}
-
-type client struct {
+type Client struct {
 	registryURL string
 	authConfig  authn.AuthConfig
 	options     *registryOptions
@@ -59,25 +54,27 @@ type client struct {
 
 // NewClient creates container registry client using `repo` as prefix for tags passed to methods. If insecure flag is set to true, then no cert validation is performed.
 // Repo example: "cr.example.com/ns/app"
-func NewClient(repo string, options ...Option) (Client, error) {
+func NewClient(repo string, options ...pkg.RegistryOption) (*Client, error) {
 	timeout := defaultTimeout
 	// make possible to rewrite timeout in runtime
 	if t := os.Getenv("REGISTRY_TIMEOUT"); t != "" {
 		var err error
+
 		timeout, err = time.ParseDuration(t)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	opts := &registryOptions{
 		timeout: timeout,
 	}
 
 	for _, opt := range options {
-		opt(opts)
+		opt.Apply(opts)
 	}
 
-	r := &client{
+	r := &Client{
 		registryURL: repo,
 		options:     opts,
 	}
@@ -87,13 +84,14 @@ func NewClient(repo string, options ...Option) (Client, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		r.authConfig = authConfig
 	}
 
 	return r, nil
 }
 
-func (r *client) Image(ctx context.Context, tag string) (v1.Image, error) {
+func (r *Client) Image(ctx context.Context, tag string) (v1.Image, error) {
 	imageURL := r.registryURL + ":" + tag
 
 	var nameOpts []name.Option
@@ -107,10 +105,12 @@ func (r *client) Image(ctx context.Context, tag string) (v1.Image, error) {
 	}
 
 	imageOptions := make([]remote.Option, 0)
+
 	imageOptions = append(imageOptions, remote.WithUserAgent(r.options.userAgent))
 	if !r.options.withoutAuth {
 		imageOptions = append(imageOptions, remote.WithAuth(authn.FromConfig(r.authConfig)))
 	}
+
 	if r.options.ca != "" {
 		imageOptions = append(imageOptions, remote.WithTransport(GetHTTPTransport(r.options.ca)))
 	}
@@ -135,16 +135,19 @@ func (r *client) Image(ctx context.Context, tag string) (v1.Image, error) {
 	)
 }
 
-func (r *client) ListTags(ctx context.Context) ([]string, error) {
+func (r *Client) ListTags(ctx context.Context) ([]string, error) {
 	var nameOpts []name.Option
+
 	if r.options.useHTTP {
 		nameOpts = append(nameOpts, name.Insecure)
 	}
 
 	imageOptions := make([]remote.Option, 0)
+
 	if !r.options.withoutAuth {
 		imageOptions = append(imageOptions, remote.WithAuth(authn.FromConfig(r.authConfig)))
 	}
+
 	if r.options.ca != "" {
 		imageOptions = append(imageOptions, remote.WithTransport(GetHTTPTransport(r.options.ca)))
 	}
@@ -170,7 +173,7 @@ func (r *client) ListTags(ctx context.Context) ([]string, error) {
 	return remote.List(repo, imageOptions...)
 }
 
-func (r *client) Digest(ctx context.Context, tag string) (string, error) {
+func (r *Client) Digest(ctx context.Context, tag string) (string, error) {
 	image, err := r.Image(ctx, tag)
 	if err != nil {
 		return "", err
@@ -195,6 +198,7 @@ func readAuthConfig(repo, dockerCfgBase64 string) (authn.AuthConfig, error) {
 		// if base64 decoding failed, try to use input as it is
 		dockerCfg = []byte(dockerCfgBase64)
 	}
+
 	auths := gjson.Get(string(dockerCfg), "auths").Map()
 	authConfig := authn.AuthConfig{}
 
@@ -210,6 +214,7 @@ func readAuthConfig(repo, dockerCfgBase64 string) (authn.AuthConfig, error) {
 			if err != nil {
 				return authn.AuthConfig{}, err
 			}
+
 			return authConfig, nil
 		}
 	}
@@ -221,6 +226,7 @@ func GetHTTPTransport(ca string) (transport http.RoundTripper) {
 	if ca == "" {
 		return http.DefaultTransport
 	}
+
 	caPool, err := x509.SystemCertPool()
 	if err != nil {
 		panic(fmt.Errorf("cannot get system cert pool: %v", err))
@@ -243,63 +249,13 @@ func GetHTTPTransport(ca string) (transport http.RoundTripper) {
 	}
 }
 
-type registryOptions struct {
-	ca          string
-	useHTTP     bool
-	withoutAuth bool
-	dockerCfg   string
-	userAgent   string
-	timeout     time.Duration
-}
-
-type Option func(options *registryOptions)
-
-// WithCA use custom CA certificate
-func WithCA(ca string) Option {
-	return func(options *registryOptions) {
-		options.ca = ca
-	}
-}
-
-// WithInsecureSchema use http schema instead of https
-func WithInsecureSchema(insecure bool) Option {
-	return func(options *registryOptions) {
-		options.useHTTP = insecure
-	}
-}
-
-// WithAuth use docker config base64 as authConfig
-// if dockerCfg is empty - will use client without auth
-func WithAuth(dockerCfg string) Option {
-	return func(options *registryOptions) {
-		options.dockerCfg = dockerCfg
-		if dockerCfg == "" {
-			options.withoutAuth = true
-		}
-	}
-}
-
-// WithUserAgent adds ua string to the User-Agent header
-func WithUserAgent(ua string) Option {
-	return func(options *registryOptions) {
-		options.userAgent = ua
-	}
-}
-
-// WithTimeout limit and request to a registry with a timeout
-// default timeout is 30 seconds
-func WithTimeout(timeout time.Duration) Option {
-	return func(options *registryOptions) {
-		options.timeout = timeout
-	}
-}
-
 // parse parses url without scheme://
 // if we pass url without scheme ve've got url back with two leading slashes
 func parse(rawURL string) (*url.URL, error) {
 	if strings.HasPrefix(rawURL, "http://") || strings.HasPrefix(rawURL, "https://") {
 		return url.ParseRequestURI(rawURL)
 	}
+
 	return url.Parse("//" + rawURL)
 }
 
@@ -314,6 +270,7 @@ func Extract(image v1.Image) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting the image's layers: %w", err)
 	}
+
 	if len(imageLayers) != 1 {
 		return nil, fmt.Errorf("unexpected number of layers: %w", err)
 	}

@@ -26,20 +26,17 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
-// Client interface
-type Client interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
-func NewClient(options ...Option) Client {
+func NewClient(options ...pkg.HTTPOption) *http.Client {
 	opts := &httpOptions{
 		timeout: 10 * time.Second,
 	}
 
 	for _, opt := range options {
-		opt(opts)
+		opt.Apply(opts)
 	}
 
 	dialer := &net.Dialer{
@@ -79,41 +76,6 @@ func NewClient(options ...Option) Client {
 	return &http.Client{
 		Timeout:   opts.timeout,
 		Transport: tr,
-	}
-}
-
-type httpOptions struct {
-	timeout         time.Duration
-	insecure        bool
-	additionalTLSCA [][]byte
-	tlsServerName   string
-}
-
-type Option func(options *httpOptions)
-
-// WithTimeout set custom timeout for http request. Default: 10 seconds
-func WithTimeout(t time.Duration) Option {
-	return func(options *httpOptions) {
-		options.timeout = t
-	}
-}
-
-// WithInsecureSkipVerify skip tls certificate validation
-func WithInsecureSkipVerify() Option {
-	return func(options *httpOptions) {
-		options.insecure = true
-	}
-}
-
-func WithAdditionalCACerts(certs [][]byte) Option {
-	return func(options *httpOptions) {
-		options.additionalTLSCA = append(options.additionalTLSCA, certs...)
-	}
-}
-
-func WithTLSServerName(name string) Option {
-	return func(options *httpOptions) {
-		options.tlsServerName = name
 	}
 }
 

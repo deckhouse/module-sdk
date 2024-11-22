@@ -25,8 +25,6 @@ import (
 	"strings"
 
 	addonoperator "github.com/flant/addon-operator/pkg/addon-operator"
-	"github.com/flant/addon-operator/pkg/module_manager/go_hook"
-	"github.com/flant/addon-operator/sdk"
 	"github.com/hashicorp/go-multierror"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +34,9 @@ import (
 
 	"github.com/deckhouse/deckhouse/go_lib/dependency"
 	"github.com/deckhouse/deckhouse/go_lib/dependency/k8s"
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/registry"
+	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
 var crdGVR = schema.GroupVersionResource{
@@ -49,13 +50,13 @@ var defaultLabels = map[string]string{
 }
 
 func RegisterEnsureCRDsHook(crdsGlob string) bool {
-	return sdk.RegisterFunc(&go_hook.HookConfig{
-		OnStartup: &go_hook.OrderedConfig{Order: 5},
+	return registry.RegisterFunc(&pkg.HookConfig{
+		OnStartup: &pkg.OrderedConfig{Order: 5},
 	}, dependency.WithExternalDependencies(EnsureCRDsHandler(crdsGlob)))
 }
 
-func EnsureCRDsHandler(crdsGlob string) func(input *go_hook.HookInput, dc dependency.Container) error {
-	return func(input *go_hook.HookInput, dc dependency.Container) error {
+func EnsureCRDsHandler(crdsGlob string) func(input *pkg.HookInput, dc dependency.Container) error {
+	return func(input *pkg.HookInput, dc dependency.Container) error {
 		result := EnsureCRDs(crdsGlob, dc)
 
 		if result.ErrorOrNil() != nil {
@@ -143,7 +144,7 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *v1.CustomRe
 		existCRD, err := cp.getCRDFromCluster(ctx, crd.GetName())
 		if err != nil {
 			if apierrors.IsNotFound(err) {
-				ucrd, err := sdk.ToUnstructured(crd)
+				ucrd, err := utils.ToUnstructured(crd)
 				if err != nil {
 					return err
 				}
@@ -170,7 +171,7 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *v1.CustomRe
 		}
 		existCRD.ObjectMeta.Labels["heritage"] = "deckhouse"
 
-		ucrd, err := sdk.ToUnstructured(existCRD)
+		ucrd, err := utils.ToUnstructured(existCRD)
 		if err != nil {
 			return err
 		}
@@ -188,7 +189,7 @@ func (cp *CRDsInstaller) getCRDFromCluster(ctx context.Context, crdName string) 
 		return nil, err
 	}
 
-	err = sdk.FromUnstructured(o, &crd)
+	err = utils.FromUnstructured(o, &crd)
 	if err != nil {
 		return nil, err
 	}

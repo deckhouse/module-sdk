@@ -1,22 +1,19 @@
-package kubernetes
+package objectpatch
 
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
+
+	pkgobjectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 )
 
 type Snapshots map[string][]byte
 
-var (
-	ErrSnapshotIsNotFound = errors.New("snapshot is not found")
-)
-
 func (s Snapshots) EnrichStructByKey(key string, v any) error {
 	snap, ok := s[key]
 	if !ok {
-		return ErrSnapshotIsNotFound
+		return pkgobjectpatch.ErrSnapshotIsNotFound
 	}
 
 	buf := bytes.NewBuffer(snap)

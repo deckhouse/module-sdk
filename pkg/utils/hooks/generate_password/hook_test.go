@@ -19,7 +19,7 @@ package generate_password
 import (
 	"testing"
 
-	"github.com/flant/addon-operator/pkg/module_manager/go_hook"
+	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,13 +32,13 @@ func TestRestoreGeneratedPassword(t *testing.T) {
 
 	tests := []struct {
 		name       string
-		snapshot   []go_hook.FilterResult
+		snapshot   []pkg.FilterResult
 		expectPass string
 		expectErr  bool
 	}{
 		{
 			"generated password",
-			[]go_hook.FilterResult{map[string][]byte{
+			[]pkg.FilterResult{map[string][]byte{
 				defaultBasicAuthPlainField: []byte("admin:{PLAIN}" + genPass),
 			}},
 			genPass,
@@ -46,7 +46,7 @@ func TestRestoreGeneratedPassword(t *testing.T) {
 		},
 		{
 			"custom password",
-			[]go_hook.FilterResult{map[string][]byte{
+			[]pkg.FilterResult{map[string][]byte{
 				defaultBasicAuthPlainField: []byte("admin:{PLAIN}pass"),
 			}},
 			"pass",
@@ -54,7 +54,7 @@ func TestRestoreGeneratedPassword(t *testing.T) {
 		},
 		{
 			"no PLAIN marker",
-			[]go_hook.FilterResult{map[string][]byte{
+			[]pkg.FilterResult{map[string][]byte{
 				defaultBasicAuthPlainField: []byte("admin:pass"),
 			}},
 			"",
@@ -62,19 +62,19 @@ func TestRestoreGeneratedPassword(t *testing.T) {
 		},
 		{
 			"empty snapshot",
-			[]go_hook.FilterResult{},
+			[]pkg.FilterResult{},
 			"",
 			expectError,
 		},
 		{
 			"empty data",
-			[]go_hook.FilterResult{map[string][]byte{}},
+			[]pkg.FilterResult{map[string][]byte{}},
 			"",
 			expectError,
 		},
 		{
 			"multiple fields",
-			[]go_hook.FilterResult{map[string][]byte{"one": []byte(""), "two": []byte("")}},
+			[]pkg.FilterResult{map[string][]byte{"one": []byte(""), "two": []byte("")}},
 			"",
 			expectError,
 		},

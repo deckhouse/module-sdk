@@ -19,6 +19,28 @@ package k8s
 import (
 	"fmt"
 
+	"github.com/deckhouse/module-sdk/pkg"
+	admissionv1 "k8s.io/api/admission/v1"
+	admissionregv1 "k8s.io/api/admissionregistration/v1"
+	apidiscoveryv2 "k8s.io/api/apidiscovery/v2"
+	appsv1 "k8s.io/api/apps/v1"
+	authenticationv1 "k8s.io/api/authentication/v1"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
+	autoscalingv2 "k8s.io/api/autoscaling/v2"
+	batchv1 "k8s.io/api/batch/v1"
+	certificatesv1 "k8s.io/api/certificates/v1"
+	coordinationv1 "k8s.io/api/coordination/v1"
+	corev1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
+	eventsv1 "k8s.io/api/events/v1"
+	flowcontrolv1 "k8s.io/api/flowcontrol/v1"
+	networkingv1 "k8s.io/api/networking/v1"
+	nodev1 "k8s.io/api/node/v1"
+	policyv1 "k8s.io/api/policy/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	schedulingv1 "k8s.io/api/scheduling/v1"
+	storagev1 "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/dynamic"
@@ -26,35 +48,55 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type Client interface {
-	client.Client
-	Dynamic() dynamic.Interface
-}
+var _ pkg.KubernetesClient = (*Client)(nil)
 
-type K8sClient struct {
+type Client struct {
 	client.Client
 	dynamicClient dynamic.Interface
 }
 
-type clientOptions struct {
-	addSchemes []func(s *runtime.Scheme) error
+var defaultBuilders = []runtime.SchemeBuilder{
+	admissionv1.SchemeBuilder,
+	admissionregv1.SchemeBuilder,
+	apidiscoveryv2.SchemeBuilder,
+	appsv1.SchemeBuilder,
+	authenticationv1.SchemeBuilder,
+	authorizationv1.SchemeBuilder,
+	autoscalingv1.SchemeBuilder,
+	autoscalingv2.SchemeBuilder,
+	batchv1.SchemeBuilder,
+	certificatesv1.SchemeBuilder,
+	coordinationv1.SchemeBuilder,
+	corev1.SchemeBuilder,
+	discoveryv1.SchemeBuilder,
+	eventsv1.SchemeBuilder,
+	flowcontrolv1.SchemeBuilder,
+	networkingv1.SchemeBuilder,
+	nodev1.SchemeBuilder,
+	policyv1.SchemeBuilder,
+	rbacv1.SchemeBuilder,
+	schedulingv1.SchemeBuilder,
+	storagev1.SchemeBuilder,
 }
 
-type Option func(cfg *clientOptions)
-
-func NewClient(opts ...Option) (*K8sClient, error) {
+func NewClient(opts ...pkg.KubernetesOption) (*Client, error) {
 	scheme := runtime.NewScheme()
 
 	cfg := &clientOptions{}
 	for _, opt := range opts {
-		opt(cfg)
+		opt.Apply(cfg)
 	}
 
-	for _, schemeFn := range cfg.addSchemes {
-		utilruntime.Must(schemeFn(scheme))
+	for _, builder := range defaultBuilders {
+		utilruntime.Must(builder.AddToScheme(scheme))
+	}
+
+	for _, builder := range cfg.schemeBuilders {
+		utilruntime.Must(builder.AddToScheme(scheme))
 	}
 
 	restConfig := ctrl.GetConfigOrDie()
+
 	cOpts := client.Options{
 		Scheme: scheme,
 	}
@@ -69,18 +111,12 @@ func NewClient(opts ...Option) (*K8sClient, error) {
 		panic(err.Error())
 	}
 
-	return &K8sClient{
+	return &Client{
 		Client:        kClient,
 		dynamicClient: d,
 	}, nil
 }
 
-func (k K8sClient) Dynamic() dynamic.Interface {
+func (k Client) Dynamic() dynamic.Interface {
 	return k.dynamicClient
-}
-
-func WithAddToScheme(fn func(s *runtime.Scheme) error) Option {
-	return func(cfg *clientOptions) {
-		cfg.addSchemes = append(cfg.addSchemes, fn)
-	}
 }

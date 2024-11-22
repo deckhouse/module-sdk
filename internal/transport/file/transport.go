@@ -11,6 +11,7 @@ import (
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	"github.com/deckhouse/module-sdk/internal/hook"
+	"github.com/deckhouse/module-sdk/pkg"
 	service "github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
@@ -44,10 +45,12 @@ type Transport struct {
 	ValuesJSONPath       string
 	ConfigValuesJSONPath string
 
+	dc pkg.DependencyContainer
+
 	logger *log.Logger
 }
 
-func NewTransport(cfg Config, hookName string, logger *log.Logger) *Transport {
+func NewTransport(cfg Config, hookName string, dc pkg.DependencyContainer, logger *log.Logger) *Transport {
 	return &Transport{
 		hookName: hookName,
 
@@ -60,6 +63,8 @@ func NewTransport(cfg Config, hookName string, logger *log.Logger) *Transport {
 		KubernetesPath:       cfg.KubernetesPath,
 		ValuesJSONPath:       cfg.ValuesJSONPath,
 		ConfigValuesJSONPath: cfg.ConfigValuesJSONPath,
+
+		dc: dc,
 
 		logger: logger,
 	}
@@ -74,6 +79,8 @@ func (t *Transport) NewRequest() *Request {
 		ValuesPath:         t.ValuesPath,
 		ConfigValuesPath:   t.ConfigValuesPath,
 
+		dc: t.dc,
+
 		logger: t.logger,
 	}
 }
@@ -85,6 +92,8 @@ type Request struct {
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
+
+	dc pkg.DependencyContainer
 
 	logger *log.Logger
 }
@@ -120,6 +129,10 @@ func (r *Request) GetBindingContexts() ([]bindingcontext.BindingContext, error) 
 	}
 
 	return contexts, nil
+}
+
+func (r *Request) GetDependencyContainer() pkg.DependencyContainer {
+	return r.dc
 }
 
 func (r *Request) loadValuesFromFile(valuesFilePath string) (map[string]any, error) {

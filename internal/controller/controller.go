@@ -11,11 +11,13 @@ import (
 	"github.com/deckhouse/module-sdk/internal/registry"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/dependency"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
 )
 
 type HookController struct {
 	registry *registry.HookRegistry
+	dc       pkg.DependencyContainer
 
 	fConfig file.Config
 
@@ -35,6 +37,7 @@ func NewHookController(fConfig file.Config, logger *log.Logger) *HookController 
 
 	return &HookController{
 		registry: reg,
+		dc:       dependency.NewDependencyContainer(),
 		fConfig:  fConfig,
 		logger:   logger,
 	}
@@ -62,7 +65,7 @@ func (c *HookController) RunHook(idx int) error {
 
 	hook := hooks[idx]
 
-	transport := file.NewTransport(c.fConfig, hook.GetName(), c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(transport.NewRequest())
 	if err != nil {

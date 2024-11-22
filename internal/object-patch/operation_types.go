@@ -1,4 +1,4 @@
-package kubernetes
+package objectpatch
 
 type CreateOperation string
 
