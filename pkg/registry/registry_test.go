@@ -13,7 +13,7 @@ func TestRegister(t *testing.T) {
 	t.Run("Hook with OnStartup and Kubernetes bindings should panic", func(t *testing.T) {
 		hook := &pkg.Hook{
 			Config: &pkg.HookConfig{
-				OnStartup: 1,
+				OnStartup: &pkg.OrderedConfig{Order: 1},
 				Kubernetes: []pkg.KubernetesConfig{
 					{
 						Name:       "test",
@@ -37,7 +37,7 @@ func TestRegister(t *testing.T) {
 	t.Run("Hook with OnStartup should not panic", func(t *testing.T) {
 		hook := &pkg.Hook{
 			Config: &pkg.HookConfig{
-				OnStartup: 1,
+				OnStartup: &pkg.OrderedConfig{Order: 1},
 			},
 			ReconcileFunc: nil,
 		}

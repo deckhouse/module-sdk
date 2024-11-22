@@ -47,7 +47,7 @@ func (h *HookRegistry) Hooks() []*pkg.Hook {
 
 func (h *HookRegistry) Add(hook *pkg.Hook) {
 	config := hook.Config
-	if config.OnStartup != 0 && len(config.Kubernetes) > 0 {
+	if config.OnStartup != nil && len(config.Kubernetes) > 0 {
 		panic(bindingsPanicMsg)
 	}
 
