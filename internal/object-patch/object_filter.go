@@ -8,11 +8,10 @@ import (
 	pkgobjectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 )
 
-// array of json objects
+// inside json.RawMessage is array of json objects
 type Snapshots map[string]json.RawMessage
 
-// TODO: rename UnmarshalToStruct
-func (s Snapshots) EnrichStructByKey(key string, v any) error {
+func (s Snapshots) UnmarshalToStruct(key string, v any) error {
 	snap, ok := s[key]
 	if !ok {
 		return pkgobjectpatch.ErrSnapshotIsNotFound
