@@ -22,7 +22,6 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
-	apidiscoveryv2 "k8s.io/api/apidiscovery/v2"
 	appsv1 "k8s.io/api/apps/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -58,7 +57,6 @@ type Client struct {
 var defaultBuilders = []runtime.SchemeBuilder{
 	admissionv1.SchemeBuilder,
 	admissionregv1.SchemeBuilder,
-	apidiscoveryv2.SchemeBuilder,
 	appsv1.SchemeBuilder,
 	authenticationv1.SchemeBuilder,
 	authorizationv1.SchemeBuilder,

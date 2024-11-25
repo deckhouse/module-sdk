@@ -2,19 +2,13 @@ module github.com/deckhouse/module-sdk
 
 go 1.22.8
 
-// Remove 'in body' from errors, fix for Go 1.16 (https://github.com/go-openapi/validate/pull/138).
-replace github.com/go-openapi/validate => github.com/flant/go-openapi-validate v0.19.12-flant.1
-
-// swag v0.22 breaks schemas_test.go:TestMapMergeAnchor, seems it doesn't support anchoring. Have to figure out that.
-replace github.com/go-openapi/swag => github.com/go-openapi/swag v0.21.1
-
 require (
-	github.com/Masterminds/semver/v3 v3.3.0
+	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/caarlos0/env/v11 v11.2.2
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
-	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241118093913-a62e0c1e66f7
+	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241106140903-258b93b3334e
 	github.com/flant/addon-operator v1.5.3
-	github.com/gojuno/minimock/v3 v3.4.2
+	github.com/gojuno/minimock/v3 v3.4.1
 	github.com/google/go-containerregistry v0.20.2
 	github.com/jonboulle/clockwork v0.2.2
 	github.com/onsi/gomega v1.35.1
@@ -23,12 +17,12 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/sylabs/oci-tools v0.16.0
 	github.com/tidwall/gjson v1.14.4
-	k8s.io/api v0.31.3
-	k8s.io/apiextensions-apiserver v0.31.2
-	k8s.io/apimachinery v0.31.3
-	k8s.io/client-go v0.31.2
+	k8s.io/api v0.29.8
+	k8s.io/apiextensions-apiserver v0.29.0
+	k8s.io/apimachinery v0.29.8
+	k8s.io/client-go v0.29.8
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
-	sigs.k8s.io/controller-runtime v0.19.1
+	sigs.k8s.io/controller-runtime v0.17.0
 	sigs.k8s.io/yaml v1.4.0
 )
 
@@ -45,12 +39,12 @@ require (
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
+	github.com/evanphx/json-patch v5.7.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/flant/kube-client v1.2.2 // indirect
 	github.com/flant/libjq-go v1.6.3-0.20201126171326-c46a40ff22ee // indirect
 	github.com/flant/shell-operator v1.5.1 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
-	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/go-chi/chi/v5 v5.1.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-openapi/analysis v0.19.10 // indirect
@@ -99,7 +93,6 @@ require (
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
-	github.com/x448/float16 v0.8.4 // indirect
 	go.mongodb.org/mongo-driver v1.5.4 // indirect
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/net v0.30.0 // indirect
@@ -112,12 +105,19 @@ require (
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
-	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gotest.tools/v3 v3.4.0 // indirect
+	k8s.io/component-base v0.29.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
+
+// Remove 'in body' from errors, fix for Go 1.16 (https://github.com/go-openapi/validate/pull/138).
+replace github.com/go-openapi/validate => github.com/flant/go-openapi-validate v0.19.12-flant.1
+
+// swag v0.22 breaks schemas_test.go:TestMapMergeAnchor, seems it doesn't support anchoring. Have to figure out that.
+replace github.com/go-openapi/swag => github.com/go-openapi/swag v0.21.1
