@@ -126,6 +126,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 			Kind:                         shcfg.Kind,
 			NameSelector:                 (*hook.NameSelector)(shcfg.NameSelector),
 			LabelSelector:                shcfg.LabelSelector,
+			ExecuteHookOnEvents:          shcfg.ExecuteHookOnEvents,
 			ExecuteHookOnSynchronization: shcfg.ExecuteHookOnSynchronization,
 			WaitForSynchronization:       shcfg.WaitForSynchronization,
 			KeepFullObjectsInMemory:      ptr.To(false),
@@ -155,8 +156,6 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 
 			newShCfg.FieldSelector = fs
 		}
-
-		// ExecuteHookOnEvents
 
 		newHookConfig.Kubernetes = append(newHookConfig.Kubernetes, newShCfg)
 	}

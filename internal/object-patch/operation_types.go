@@ -11,8 +11,11 @@ const (
 type DeleteOperation string
 
 const (
-	Delete             DeleteOperation = "Delete"
+	// DeletePropagationForeground
+	Delete DeleteOperation = "Delete"
+	// DeletePropagationBackground
 	DeleteInBackground DeleteOperation = "DeleteInBackground"
+	// DeletePropagationOrphan
 	DeleteNonCascading DeleteOperation = "DeleteNonCascading"
 )
 
