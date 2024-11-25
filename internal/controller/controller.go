@@ -81,7 +81,13 @@ func (c *HookController) RunHook(idx int) error {
 	return nil
 }
 
+var ErrNoHooksRegistered = errors.New("no hooks registered")
+
 func (c *HookController) WriteHookConfigsInFile() error {
+	if len(c.registry.Hooks()) == 0 {
+		return ErrNoHooksRegistered
+	}
+
 	const configsPath = "configs.json"
 
 	f, err := os.OpenFile(configsPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
@@ -92,10 +98,10 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return fmt.Errorf("open file: %w", err)
 	}
 
-	configs := make(map[string]*hook.HookConfig, 1)
+	configs := make([]*hook.HookConfig, 1)
 
 	for _, hook := range c.registry.Hooks() {
-		configs[hook.GetName()] = remapHookConfigToHookConfig(hook.GetConfig())
+		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
 	}
 
 	err = json.NewEncoder(f).Encode(configs)
