@@ -9,13 +9,13 @@ require (
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241106140903-258b93b3334e
 	github.com/flant/addon-operator v1.5.3
 	github.com/gojuno/minimock/v3 v3.4.1
-	github.com/google/go-containerregistry v0.20.2
+	github.com/google/go-containerregistry v0.17.0
 	github.com/jonboulle/clockwork v0.2.2
 	github.com/onsi/gomega v1.35.1
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.8.1
 	github.com/stretchr/testify v1.9.0
-	github.com/sylabs/oci-tools v0.16.0
+	github.com/sylabs/oci-tools v0.7.0
 	github.com/tidwall/gjson v1.14.4
 	k8s.io/api v0.29.8
 	k8s.io/apiextensions-apiserver v0.29.0
