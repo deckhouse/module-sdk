@@ -21,7 +21,6 @@ import (
 	"sort"
 
 	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/flant/addon-operator/pkg/module_manager/go_hook"
 )
 
 // NewFromSnapshot expects snapshot to contain only strings, otherwise it panics
@@ -33,15 +32,6 @@ func NewFromSnapshot(snapshot []pkg.FilterResult) Set {
 		}
 
 		s.Add(v.(string))
-	}
-	return s
-}
-
-// NewFromValues expects values array to contain only strings, otherwise it panics
-func NewFromValues(values *go_hook.PatchableValues, path string) Set {
-	s := Set{}
-	for _, m := range values.Get(path).Array() {
-		s.Add(m.String())
 	}
 	return s
 }
