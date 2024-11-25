@@ -91,7 +91,7 @@ type KubernetesConfig struct {
 	// FieldSelector used to subscribe on objects by matching specific fields (the list of fields is narrow, see shell-operator documentation).
 	FieldSelector *FieldSelector
 	// ExecuteHookOnEvents is true by default. Set to false if only snapshot update is needed.
-	ExecuteHookOnEvents []string
+	ExecuteHookOnEvents *bool
 	// ExecuteHookOnSynchronization is true by default. Set to false if only snapshot update is needed.
 	ExecuteHookOnSynchronization *bool
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
