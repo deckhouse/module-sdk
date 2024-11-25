@@ -5,5 +5,5 @@ import (
 )
 
 func main() {
-	setup.Start()
+	setup.Run()
 }

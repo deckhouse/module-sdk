@@ -13,6 +13,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/dependency"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
+	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
 
 type HookController struct {
@@ -108,8 +109,72 @@ func (c *HookController) WriteHookConfigsInFile() error {
 func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 	// TODO: complete remap
 	newHookConfig := &hook.HookConfig{
-		Metadata:      hook.GoHookMetadata(cfg.Metadata),
 		ConfigVersion: cfg.ConfigVersion,
+		Metadata:      hook.GoHookMetadata(cfg.Metadata),
+	}
+
+	for _, scfg := range cfg.Schedule {
+		newHookConfig.Schedule = append(newHookConfig.Schedule, hook.ScheduleConfig{
+			Name:    scfg.Name,
+			Crontab: scfg.Crontab,
+		})
+	}
+
+	for _, shcfg := range cfg.Kubernetes {
+		newShCfg := hook.KubernetesConfig{
+			APIVersion:                   shcfg.APIVersion,
+			Kind:                         shcfg.Kind,
+			NameSelector:                 (*hook.NameSelector)(shcfg.NameSelector),
+			LabelSelector:                shcfg.LabelSelector,
+			ExecuteHookOnSynchronization: shcfg.ExecuteHookOnSynchronization,
+			WaitForSynchronization:       shcfg.WaitForSynchronization,
+			KeepFullObjectsInMemory:      ptr.To(false),
+			JqFilter:                     shcfg.JqFilter,
+			AllowFailure:                 shcfg.AllowFailure,
+			ResynchronizationPeriod:      shcfg.ResynchronizationPeriod,
+			IncludeSnapshotsFrom:         shcfg.IncludeSnapshotsFrom,
+			Queue:                        shcfg.Queue,
+			Group:                        shcfg.Group,
+		}
+
+		if shcfg.NamespaceSelector != nil {
+			newShCfg.NamespaceSelector = &hook.NamespaceSelector{
+				NameSelector:  (*hook.NameSelector)(shcfg.NameSelector),
+				LabelSelector: shcfg.LabelSelector,
+			}
+		}
+
+		if shcfg.FieldSelector != nil {
+			fs := &hook.FieldSelector{
+				MatchExpressions: make([]hook.FieldSelectorRequirement, 0, len(shcfg.FieldSelector.MatchExpressions)),
+			}
+
+			for _, expr := range shcfg.FieldSelector.MatchExpressions {
+				fs.MatchExpressions = append(fs.MatchExpressions, hook.FieldSelectorRequirement(expr))
+			}
+
+			newShCfg.FieldSelector = fs
+		}
+
+		// ExecuteHookOnEvents
+
+		newHookConfig.Kubernetes = append(newHookConfig.Kubernetes, newShCfg)
+	}
+
+	if cfg.OnStartup != nil {
+		newHookConfig.OnStartup = ptr.To(cfg.OnStartup.Order)
+	}
+
+	if cfg.OnBeforeHelm != nil {
+		newHookConfig.OnBeforeHelm = ptr.To(cfg.OnBeforeHelm.Order)
+	}
+
+	if cfg.OnAfterHelm != nil {
+		newHookConfig.OnAfterHelm = ptr.To(cfg.OnAfterHelm.Order)
+	}
+
+	if cfg.OnAfterDeleteHelm != nil {
+		newHookConfig.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
 	}
 
 	return newHookConfig

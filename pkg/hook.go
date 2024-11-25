@@ -34,10 +34,11 @@ type GoHookMetadata struct {
 }
 
 type HookConfig struct {
-	Metadata      GoHookMetadata
 	ConfigVersion string
-	Schedule      []ScheduleConfig
-	Kubernetes    []KubernetesConfig
+
+	Metadata   GoHookMetadata
+	Schedule   []ScheduleConfig
+	Kubernetes []KubernetesConfig
 	// OnStartup runs hook on module/global startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
@@ -95,6 +96,17 @@ type KubernetesConfig struct {
 	ExecuteHookOnSynchronization *bool
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
 	WaitForSynchronization *bool
+
+	JqFilter string
+
+	AllowFailure            *bool
+	ResynchronizationPeriod string
+
+	IncludeSnapshotsFrom []string
+
+	Queue string
+	// Formed by hook name
+	Group string
 
 	FilterFunc FilterFunc
 }

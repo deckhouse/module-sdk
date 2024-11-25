@@ -1,14 +1,12 @@
 package setup
 
 import (
-	"io"
-
 	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/internal/controller"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 )
 
-func Start() {
+func Run() {
 	cfg := NewConfig()
 	err := cfg.Parse()
 	if err != nil {
@@ -16,8 +14,7 @@ func Start() {
 	}
 
 	logger := log.NewLogger(log.Options{
-		Level:  cfg.LogLevel.Level(),
-		Output: io.Discard,
+		Level: cfg.LogLevel.Level(),
 	})
 
 	fConfig := file.Config{
