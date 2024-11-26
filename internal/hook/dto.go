@@ -8,8 +8,6 @@ import (
 )
 
 type GoHookMetadata struct {
-	// batch hook ID
-	ID uint `yaml:"id" json:"id"`
 	// Name is a key in snapshots map.
 	Name string `yaml:"name" json:"name"`
 	// Name is path to hook folder.
