@@ -7,11 +7,11 @@ import (
 	"os"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/internal/hook"
 	"github.com/deckhouse/module-sdk/internal/registry"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/dependency"
+	"github.com/deckhouse/module-sdk/pkg/hook"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
