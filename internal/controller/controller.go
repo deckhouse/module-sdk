@@ -98,10 +98,15 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return fmt.Errorf("open file: %w", err)
 	}
 
-	configs := make([]*hook.HookConfig, 1)
+	configs := make(map[string]*hook.HookConfig, 1)
 
-	for _, hook := range c.registry.Hooks() {
-		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
+	for idx, hook := range c.registry.Hooks() {
+		cfg := remapHookConfigToHookConfig(hook.GetConfig())
+		cfg.Metadata.ID = uint(idx)
+
+		name := fmt.Sprintf("%s-%d", hook.GetName(), idx)
+
+		configs[name] = cfg
 	}
 
 	err = json.NewEncoder(f).Encode(configs)
@@ -116,7 +121,10 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 	// TODO: complete remap
 	newHookConfig := &hook.HookConfig{
 		ConfigVersion: cfg.ConfigVersion,
-		Metadata:      hook.GoHookMetadata(cfg.Metadata),
+		Metadata: hook.GoHookMetadata{
+			Name: cfg.Metadata.Name,
+			Path: cfg.Metadata.Path,
+		},
 	}
 
 	for _, scfg := range cfg.Schedule {

@@ -1,4 +1,4 @@
-package setup
+package app
 
 import (
 	"github.com/deckhouse/deckhouse/pkg/log"
