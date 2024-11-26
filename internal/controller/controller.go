@@ -98,7 +98,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return fmt.Errorf("open file: %w", err)
 	}
 
-	configs := make([]*hook.HookConfig, 1)
+	configs := make([]*hook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Hooks() {
 		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
