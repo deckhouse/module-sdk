@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/internal/registry"
@@ -88,7 +89,8 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return ErrNoHooksRegistered
 	}
 
-	const configsPath = "configs.json"
+	const configsFileName = "configs.json"
+	configsPath := filepath.Join(filepath.Dir(os.Args[0]), configsFileName)
 
 	f, err := os.OpenFile(configsPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	defer func() {
