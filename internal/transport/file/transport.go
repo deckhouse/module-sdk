@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"path/filepath"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
@@ -99,7 +98,7 @@ type Request struct {
 }
 
 func (r *Request) GetValues() (map[string]any, error) {
-	values, err := r.loadValuesFromFile(filepath.Join(r.hookName, r.ValuesPath))
+	values, err := r.loadValuesFromFile(r.ValuesPath)
 	if err != nil {
 		return nil, fmt.Errorf("load values from file: %w", err)
 	}
@@ -108,7 +107,7 @@ func (r *Request) GetValues() (map[string]any, error) {
 }
 
 func (r *Request) GetConfigValues() (map[string]any, error) {
-	values, err := r.loadValuesFromFile(filepath.Join(r.hookName, r.ConfigValuesPath))
+	values, err := r.loadValuesFromFile(r.ConfigValuesPath)
 	if err != nil {
 		return nil, fmt.Errorf("load values from file: %w", err)
 	}
@@ -118,7 +117,7 @@ func (r *Request) GetConfigValues() (map[string]any, error) {
 
 func (r *Request) GetBindingContexts() ([]bindingcontext.BindingContext, error) {
 	contexts := make([]bindingcontext.BindingContext, 0)
-	contextsContent, err := os.Open(filepath.Join(r.hookName, r.BindingContextPath))
+	contextsContent, err := os.Open(r.BindingContextPath)
 	if err != nil {
 		return nil, fmt.Errorf("open binding context file: %w", err)
 	}
