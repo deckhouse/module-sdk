@@ -122,7 +122,7 @@ func (r *Request) GetBindingContexts() ([]bindingcontext.BindingContext, error) 
 		return nil, fmt.Errorf("read file: %w", err)
 	}
 
-	r.logger.Info("get binding contexts", slog.String("content", string(content)))
+	r.logger.Info("get binding contexts", log.RawJSON("content", string(content)))
 
 	contextsContent, err := os.Open(r.BindingContextPath)
 	defer contextsContent.Close()
