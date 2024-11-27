@@ -1,6 +1,8 @@
 package bindingcontext
 
 import (
+	"encoding/json"
+
 	v1 "k8s.io/api/admission/v1"
 	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
@@ -45,7 +47,7 @@ type BindingContext struct {
 
 	Objects []map[string]any `json:"objects,omitempty"`
 
-	Snapshots map[string][]byte `json:"snapshots,omitempty"`
+	Snapshots map[string]json.RawMessage `json:"snapshots,omitempty"`
 
 	AdmissionReview  *v1.AdmissionReview      `json:"admissionReview,omitempty"`
 	ConversionReview *apixv1.ConversionReview `json:"conversionReview,omitempty"`
