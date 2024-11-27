@@ -66,6 +66,20 @@ func (c *CMD) hooksCmd() *cobra.Command {
 	})
 
 	hooksCmd.AddCommand(&cobra.Command{
+		Use:   "config",
+		Short: "Print hooks configs",
+		Long:  `Print list of hooks configs in json format`,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			err := c.controller.PrintHookConfigs()
+			if err != nil {
+				return fmt.Errorf("can not print configs: %w", err)
+			}
+
+			return nil
+		},
+	})
+
+	hooksCmd.AddCommand(&cobra.Command{
 		Use:   "dump",
 		Short: "Dump hooks configs",
 		Long:  `Dump list of hooks configs in config.json file`,

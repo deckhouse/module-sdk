@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -84,6 +85,28 @@ func (c *HookController) RunHook(idx int) error {
 
 var ErrNoHooksRegistered = errors.New("no hooks registered")
 
+func (c *HookController) PrintHookConfigs() error {
+	if len(c.registry.Hooks()) == 0 {
+		return ErrNoHooksRegistered
+	}
+
+	configs := make([]*hook.HookConfig, 0, 1)
+
+	for _, hook := range c.registry.Hooks() {
+		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	err := json.NewEncoder(buf).Encode(configs)
+	if err != nil {
+		return fmt.Errorf("json encode: %w", err)
+	}
+
+	fmt.Print(buf.String())
+
+	return nil
+}
+
 func (c *HookController) WriteHookConfigsInFile() error {
 	if len(c.registry.Hooks()) == 0 {
 		return ErrNoHooksRegistered
@@ -115,7 +138,6 @@ func (c *HookController) WriteHookConfigsInFile() error {
 }
 
 func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
-	// TODO: complete remap
 	newHookConfig := &hook.HookConfig{
 		ConfigVersion: cfg.ConfigVersion,
 		Metadata:      hook.GoHookMetadata(cfg.Metadata),
