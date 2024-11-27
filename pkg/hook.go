@@ -105,8 +105,6 @@ type KubernetesConfig struct {
 	IncludeSnapshotsFrom []string
 
 	Queue string
-	// Formed by hook name
-	Group string
 
 	FilterFunc FilterFunc
 }

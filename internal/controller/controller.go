@@ -154,6 +154,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 		newShCfg := hook.KubernetesConfig{
 			APIVersion:                   shcfg.APIVersion,
 			Kind:                         shcfg.Kind,
+			Name:                         shcfg.Name,
 			NameSelector:                 (*hook.NameSelector)(shcfg.NameSelector),
 			LabelSelector:                shcfg.LabelSelector,
 			ExecuteHookOnEvents:          shcfg.ExecuteHookOnEvents,
@@ -165,7 +166,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 			ResynchronizationPeriod:      shcfg.ResynchronizationPeriod,
 			IncludeSnapshotsFrom:         shcfg.IncludeSnapshotsFrom,
 			Queue:                        shcfg.Queue,
-			Group:                        shcfg.Group,
+			Group:                        cfg.Metadata.Name,
 		}
 
 		if shcfg.NamespaceSelector != nil {

@@ -73,6 +73,7 @@ type NamespaceSelector struct {
 }
 
 type KubernetesConfig struct {
+	Name string `json:"name"`
 	// APIVersion of objects. "v1" is used if not set.
 	APIVersion string `json:"apiVersion,omitempty"`
 	// Kind of objects.
