@@ -196,7 +196,6 @@ func (r *Response) Send(res *hook.HookResult) error {
 }
 
 func (r *Response) send(path string, outputer service.Outputer) error {
-	path = filepath.Join(r.hookName, path)
 	// dir := filepath.Dir(path)
 
 	// err := os.MkdirAll(dir, 0744)
