@@ -117,7 +117,15 @@ func (r *Request) GetConfigValues() (map[string]any, error) {
 
 func (r *Request) GetBindingContexts() ([]bindingcontext.BindingContext, error) {
 	contexts := make([]bindingcontext.BindingContext, 0)
+	content, err := os.ReadFile(r.BindingContextPath)
+	if err != nil {
+		return nil, fmt.Errorf("read file: %w", err)
+	}
+
+	r.logger.Info("get binding contexts", slog.String("content", string(content)))
+
 	contextsContent, err := os.Open(r.BindingContextPath)
+	defer contextsContent.Close()
 	if err != nil {
 		return nil, fmt.Errorf("open binding context file: %w", err)
 	}
