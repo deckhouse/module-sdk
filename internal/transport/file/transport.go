@@ -197,12 +197,12 @@ func (r *Response) Send(res *hook.HookResult) error {
 
 func (r *Response) send(path string, outputer service.Outputer) error {
 	path = filepath.Join(r.hookName, path)
-	dir := filepath.Dir(path)
+	// dir := filepath.Dir(path)
 
-	err := os.MkdirAll(dir, 0744)
-	if err != nil {
-		return fmt.Errorf("mkdir all: %w", err)
-	}
+	// err := os.MkdirAll(dir, 0744)
+	// if err != nil {
+	// 	return fmt.Errorf("mkdir all: %w", err)
+	// }
 
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	defer func() {
