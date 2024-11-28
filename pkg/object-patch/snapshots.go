@@ -22,10 +22,7 @@ func IgnoreSnapshotIsNotFound(err error) error {
 }
 
 func UnmarshalToStruct[T any](s pkg.Snapshots, key string) ([]T, error) {
-	snaps, err := s.GetObjectByKey(key)
-	if err != nil {
-		return nil, err
-	}
+	snaps := s.Get(key)
 
 	result := make([]T, 0, len(snaps))
 
