@@ -24,21 +24,22 @@ func Test_HookMetadata_from_runtime(t *testing.T) {
 	for _, h := range hookList {
 		hooks[h.Config.Metadata.Name] = h
 		fmt.Println(h.Config.Metadata.Name)
+		fmt.Println(h.Config.Metadata.Path)
 	}
 
 	hm, ok := hooks["001-hook-one/main"]
 	g.Expect(ok).To(BeTrue(), "hook-one/main.go should be registered")
-	g.Expect(hm.Config.Metadata.Path).To(Equal("001-hook-one/"))
+	g.Expect(hm.Config.Metadata.Path).To(Equal("simple_module/hooks/001-hook-one/"))
 
 	hm, ok = hooks["002-hook-two/main"]
 	g.Expect(ok).To(BeTrue(), "hook-two/main.go should be registered")
-	g.Expect(hm.Config.Metadata.Path).To(Equal("002-hook-two/"))
+	g.Expect(hm.Config.Metadata.Path).To(Equal("simple_module/hooks/002-hook-two/"))
 
 	hm, ok = hooks["first-hook"]
 	g.Expect(ok).To(BeTrue(), "first-hook.go should be registered")
-	g.Expect(hm.Config.Metadata.Path).To(Equal(""))
+	g.Expect(hm.Config.Metadata.Path).To(Equal("simple_module/hooks/"))
 
 	hm, ok = hooks["second-hook"]
 	g.Expect(ok).To(BeTrue(), "second-hook.go should be registered")
-	g.Expect(hm.Config.Metadata.Path).To(Equal(""))
+	g.Expect(hm.Config.Metadata.Path).To(Equal("simple_module/hooks/"))
 }

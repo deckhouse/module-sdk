@@ -104,8 +104,6 @@ type KubernetesConfig struct {
 
 	IncludeSnapshotsFrom []string
 
-	Queue string
-
 	FilterFunc FilterFunc
 }
 

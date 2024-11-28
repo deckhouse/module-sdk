@@ -165,7 +165,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 			AllowFailure:                 shcfg.AllowFailure,
 			ResynchronizationPeriod:      shcfg.ResynchronizationPeriod,
 			IncludeSnapshotsFrom:         shcfg.IncludeSnapshotsFrom,
-			Queue:                        shcfg.Queue,
+			Queue:                        cfg.Metadata.Path + cfg.Metadata.Name,
 			Group:                        cfg.Metadata.Name,
 		}
 

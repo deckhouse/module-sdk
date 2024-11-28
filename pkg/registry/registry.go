@@ -13,7 +13,7 @@ const bindingsPanicMsg = "OnStartup hook always has binding context without Kube
 
 // /path/.../somemodule/hooks/001_ensure_crd/a/b/c/main.go
 // $1 - Hook path for values (001_ensure_crd/a/b/c/main.go)
-var hookRe = regexp.MustCompile(`/hooks/(.*)$`)
+var hookRe = regexp.MustCompile(`([^/]*)/hooks/(.*)$`)
 
 var RegisterFunc = func(config *pkg.HookConfig, f pkg.ReconcileFunc) bool {
 	Registry().Add(&pkg.Hook{Config: config, ReconcileFunc: f})
@@ -66,12 +66,12 @@ func (h *HookRegistry) Add(hook *pkg.Hook) {
 
 		matches := hookRe.FindStringSubmatch(frame.File)
 		if matches != nil {
-			meta.Name = strings.TrimRight(matches[1], ".go")
+			meta.Name = strings.TrimRight(matches[2], ".go")
 
-			lastSlashIdx := strings.LastIndex(matches[1], "/")
+			lastSlashIdx := strings.LastIndex(matches[0], "/")
 			// trim with last slash
 
-			meta.Path = matches[1][:lastSlashIdx+1]
+			meta.Path = matches[0][:lastSlashIdx+1]
 		}
 
 		if !more {
