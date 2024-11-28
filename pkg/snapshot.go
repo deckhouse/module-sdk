@@ -1,5 +1,7 @@
 package pkg
 
+import "encoding/json"
+
 type Snapshots interface {
-	UnmarshalToStruct(key string, v any) error
+	GetObjectByKey(key string) ([]json.RawMessage, error)
 }

@@ -9,33 +9,37 @@ import (
 )
 
 // inside json.RawMessage is array of json objects
-type Snapshots map[string]json.RawMessage
+type Snapshots map[string][]json.RawMessage
 
-func (s Snapshots) UnmarshalToStruct(key string, v any) error {
-	snap, ok := s[key]
+func (s Snapshots) GetObjectByKey(key string) ([]json.RawMessage, error) {
+	snaps, ok := s[key]
 	if !ok {
-		return pkgobjectpatch.ErrSnapshotIsNotFound
+		return nil, pkgobjectpatch.ErrSnapshotIsNotFound
 	}
 
-	buf := bytes.NewBuffer(snap)
-	err := json.NewDecoder(buf).Decode(v)
-	if err != nil {
-		return fmt.Errorf("decode: %w", err)
-	}
-
-	return nil
+	return snaps, nil
 }
 
-type ObjectAndFilterResults map[string]*ObjectAndFilterResult
+func UnmarshalToStruct[T any](s Snapshots, key string) ([]T, error) {
+	snaps, ok := s[key]
+	if !ok {
+		return nil, pkgobjectpatch.ErrSnapshotIsNotFound
+	}
 
-// ByNamespaceAndName implements sort.Interface for []ObjectAndFilterResult
-// based on Namespace and Name of Object field.
-type ByNamespaceAndName []ObjectAndFilterResult
+	result := make([]T, 0, len(snaps))
 
-func (a ByNamespaceAndName) Len() int      { return len(a) }
-func (a ByNamespaceAndName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+	for _, snap := range snaps {
+		obj := new(T)
 
-type ObjectAndFilterResult struct {
-	Object       any `json:"object,omitempty"`
-	FilterResult any `json:"filterResult,omitempty"`
+		buf := bytes.NewBuffer(snap)
+
+		err := json.NewDecoder(buf).Decode(obj)
+		if err != nil {
+			return nil, fmt.Errorf("decode: %w", err)
+		}
+
+		result = append(result, *obj)
+	}
+
+	return result, nil
 }

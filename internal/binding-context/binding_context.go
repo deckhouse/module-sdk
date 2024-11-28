@@ -47,7 +47,7 @@ type BindingContext struct {
 
 	Objects []map[string]any `json:"objects,omitempty"`
 
-	Snapshots map[string]json.RawMessage `json:"snapshots,omitempty"`
+	Snapshots map[string]ObjectAndFilterResults `json:"snapshots,omitempty"`
 
 	AdmissionReview  *v1.AdmissionReview      `json:"admissionReview,omitempty"`
 	ConversionReview *apixv1.ConversionReview `json:"conversionReview,omitempty"`
@@ -62,6 +62,13 @@ type BindingContextMetadata struct {
 	IncludeSnapshots    []string    `json:"includeSnapshots,omitempty"`
 	IncludeAllSnapshots bool        `json:"includeAllSnapshots,omitempty"`
 	Group               string      `json:"group,omitempty"`
+}
+
+type ObjectAndFilterResults []ObjectAndFilterResult
+
+type ObjectAndFilterResult struct {
+	Object       json.RawMessage `json:"object,omitempty"`
+	FilterResult json.RawMessage `json:"filterResult,omitempty"`
 }
 
 func (bc BindingContext) IsSynchronization() bool {

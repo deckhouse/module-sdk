@@ -169,6 +169,10 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 			Group:                        cfg.Metadata.Name,
 		}
 
+		if shcfg.JqFilter == "" {
+			newShCfg.KeepFullObjectsInMemory = ptr.To(true)
+		}
+
 		if shcfg.NamespaceSelector != nil {
 			newShCfg.NamespaceSelector = &hook.NamespaceSelector{
 				NameSelector:  (*hook.NameSelector)(shcfg.NameSelector),

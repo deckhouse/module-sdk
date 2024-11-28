@@ -90,7 +90,19 @@ func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
 	formattedSnapshots := make(objectpatch.Snapshots, len(bContext))
 	for _, bc := range bContext {
 		for snapBindingName, snaps := range bc.Snapshots {
-			formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], snaps...)
+			for _, snap := range snaps {
+				if snap.Object != nil {
+					formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], snap.Object)
+
+					continue
+				}
+
+				if snap.FilterResult != nil {
+					formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], snap.FilterResult)
+
+					continue
+				}
+			}
 		}
 	}
 
