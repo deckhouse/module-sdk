@@ -1,7 +1,9 @@
 package pkg
 
-import "encoding/json"
-
 type Snapshots interface {
-	Get(key string) []json.RawMessage
+	Get(key string) []Snapshot
+}
+
+type Snapshot interface {
+	UnmarhalTo(v any) error
 }

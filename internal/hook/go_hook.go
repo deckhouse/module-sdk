@@ -92,13 +92,13 @@ func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
 		for snapBindingName, snaps := range bc.Snapshots {
 			for _, snap := range snaps {
 				if snap.Object != nil {
-					formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], snap.Object)
+					formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], objectpatch.Snapshot(snap.Object))
 
 					continue
 				}
 
 				if snap.FilterResult != nil {
-					formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], snap.FilterResult)
+					formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], objectpatch.Snapshot(snap.FilterResult))
 
 					continue
 				}
