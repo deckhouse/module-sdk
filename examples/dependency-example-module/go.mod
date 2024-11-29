@@ -1,4 +1,4 @@
-module my-module
+module dependency-example-module
 
 go 1.22.8
 

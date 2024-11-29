@@ -1,4 +1,4 @@
-# Module Hooks Example
+# Module Hooks Basic Example
 
 ### Run
 
@@ -30,5 +30,5 @@ CREATE_FILES=true LOG_LEVEL=INFO go run ./cmd/hooks hook run 0
 
 ### Build
 ```bash
-go build -o my-module-hooks ./cmd/hooks 
+go build -o basic-example-module-hooks ./cmd/hooks 
 ```

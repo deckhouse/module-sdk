@@ -5,13 +5,11 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
-var config = &pkg.HookConfig{
-	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
-}
+var _ = registry.RegisterFunc(config, handlerHook)
 
-var _ = registry.RegisterFunc(config, handlerCRD)
+var config = &pkg.HookConfig{}
 
-func handlerCRD(input *pkg.HookInput) error {
+func handlerHook(input *pkg.HookInput) error {
 	input.Logger.Info("hello from main hook in subfolder")
 
 	return nil

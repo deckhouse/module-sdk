@@ -1,18 +1,14 @@
 package hookinfolder
 
 import (
-	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/registry"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
-var _ = registry.RegisterFunc(config, handlerCRD)
+var _ = registry.RegisterFunc(config, handlerHook)
 
 type NodeInfo struct {
 	APIVersion string           `json:"apiVersion"`
@@ -50,7 +46,7 @@ var config = &pkg.HookConfig{
 	},
 }
 
-func handlerCRD(input *pkg.HookInput) error {
+func handlerHook(input *pkg.HookInput) error {
 	input.Logger.Info("hello from first root hook")
 
 	// getting info from snapshot
@@ -66,35 +62,6 @@ func handlerCRD(input *pkg.HookInput) error {
 		}
 
 		input.Logger.Info("unmarshal hook node", slog.Any("node", nodeInfo))
-	}
-
-	// using kubernetes client from dependency container
-	k8sClient := input.DC.MustGetK8sClient()
-
-	const (
-		podNamespace = "test-namespace"
-		podName      = "test-pod"
-	)
-
-	pod := new(corev1.Pod)
-	err := k8sClient.Get(context.TODO(), types.NamespacedName{Namespace: podNamespace, Name: podName}, pod)
-	if err != nil {
-		return fmt.Errorf("get pod: %w", err)
-	}
-
-	input.Logger.Info("pod", slog.String("name", pod.GetName()), slog.String("namespace", pod.GetNamespace()))
-
-	// using http client from dependency container
-	httpClient := input.DC.GetHTTPClient()
-
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, "http://127.0.0.1", nil)
-	if err != nil {
-		return fmt.Errorf("new request: %w", err)
-	}
-
-	_, err = httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("do request: %w", err)
 	}
 
 	return nil
