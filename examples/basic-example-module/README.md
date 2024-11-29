@@ -1,4 +1,7 @@
 # Module Hooks Basic Example
+In this example you can build your basic hook binary and check how it works.
+
+It can be usefull to understand how to register hooks in different layouts.
 
 ### Run
 

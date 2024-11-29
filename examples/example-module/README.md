@@ -1,4 +1,5 @@
 # Module Hooks Example
+In this example you can check basic hook functions.
 
 ### Run
 

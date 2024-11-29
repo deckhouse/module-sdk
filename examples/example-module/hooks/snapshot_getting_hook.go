@@ -61,7 +61,14 @@ func handlerHook(input *pkg.HookInput) error {
 			return fmt.Errorf("unmarshal to: %w", err)
 		}
 
-		input.Logger.Info("unmarshal hook node", slog.Any("node", nodeInfo))
+		input.Logger.Info(
+			"node found",
+			slog.String("APIVersion", nodeInfo.APIVersion),
+			slog.String("Kind", nodeInfo.Kind),
+			slog.String("Name", nodeInfo.Metadata.Name),
+			slog.String("ResourceVersion", nodeInfo.Metadata.ResourceVersion),
+			slog.String("UID", nodeInfo.Metadata.UID),
+		)
 	}
 
 	return nil
