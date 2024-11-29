@@ -27,3 +27,7 @@ func (snap Snapshot) UnmarhalTo(v any) error {
 
 	return nil
 }
+
+func (snap Snapshot) String() string {
+	return string(snap)
+}

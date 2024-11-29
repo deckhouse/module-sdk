@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+// TODO: make test after transport
+
 var _ hook.HookRequest = (*HookRequest)(nil)
 
 type HookRequest struct {
@@ -29,7 +31,7 @@ func (req *HookRequest) GetBindingContexts() ([]bindingcontext.BindingContext, e
 			Snapshots: map[string]bindingcontext.ObjectAndFilterResults{
 				"test_snap": {
 					{
-						Object:       nil,
+						Object:       []byte(`{}`),
 						FilterResult: nil,
 					},
 				},
@@ -95,8 +97,16 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 			fn := func(input *pkg.HookInput) error {
 				snapshots := input.Snapshots.Get("test_snap")
+				for _, snap := range snapshots {
+					str := new(string)
+					err := snap.UnmarhalTo(str)
+					assert.NoError(t, err)
+
+					fmt.Printf("%+v\n", snap.String())
+				}
 				return fmt.Errorf("sas %+v", snapshots)
 			}
+
 			h := hook.NewGoHook(cfg, fn)
 			_, err := h.Execute(tt.fields.setupHookRequest())
 			assert.NoError(t, err)

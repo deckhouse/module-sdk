@@ -18,7 +18,6 @@ package set
 
 import (
 	"encoding/json"
-	"fmt"
 	"sort"
 
 	"github.com/deckhouse/module-sdk/pkg"
@@ -32,13 +31,7 @@ func NewFromSnapshot(snapshots []pkg.Snapshot) (*Set, error) {
 			continue
 		}
 
-		str := ""
-		err := snap.UnmarhalTo(&str)
-		if err != nil {
-			return nil, fmt.Errorf("unmarshal to: %w", err)
-		}
-
-		s.Add(str)
+		s.Add(snap.String())
 	}
 
 	return s, nil
