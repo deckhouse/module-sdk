@@ -1,4 +1,5 @@
 # Module SDK
+SDK to easy compile your hooks as a binary and integrate with addon operator
 
 ### Using
 
