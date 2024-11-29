@@ -18,22 +18,30 @@ package set
 
 import (
 	"encoding/json"
+	"fmt"
 	"sort"
 
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
 // NewFromSnapshot expects snapshot to contain only strings, otherwise it panics
-func NewFromSnapshot(snapshot []pkg.FilterResult) Set {
-	s := Set{}
-	for _, v := range snapshot {
-		if v == nil {
+func NewFromSnapshot(snapshots []pkg.Snapshot) (*Set, error) {
+	s := &Set{}
+	for _, snap := range snapshots {
+		if snap == nil {
 			continue
 		}
 
-		s.Add(v.(string))
+		str := ""
+		err := snap.UnmarhalTo(&str)
+		if err != nil {
+			return nil, fmt.Errorf("unmarshal to: %w", err)
+		}
+
+		s.Add(str)
 	}
-	return s
+
+	return s, nil
 }
 
 func New(xs ...string) Set {
