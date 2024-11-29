@@ -8,7 +8,7 @@ import (
 	"github.com/deckhouse/deckhouse/pkg/log"
 )
 
-type HookConfig struct {
+type hookConfig struct {
 	BindingContextPath string `env:"BINDING_CONTEXT_PATH" envDefault:"in/binding_context.json"`
 	ValuesPath         string `env:"VALUES_PATH" envDefault:"in/values_path.json"`
 	ConfigValuesPath   string `env:"CONFIG_VALUES_PATH" envDefault:"in/config_values_path.json"`
@@ -20,26 +20,28 @@ type HookConfig struct {
 	KubernetesPath       string `env:"KUBERNETES_PATCH_PATH" envDefault:"out/kubernetes.json"`
 	ValuesJSONPath       string `env:"VALUES_JSON_PATCH_PATH" envDefault:"out/values.json"`
 	ConfigValuesJSONPath string `env:"CONFIG_VALUES_JSON_PATCH_PATH" envDefault:"out/config_values.json"`
+
+	CreateFilesByYourself bool `env:"CREATE_FILES" envDefault:"false"`
 }
 
-func newHookConfig() *HookConfig {
-	return &HookConfig{}
+func newHookConfig() *hookConfig {
+	return &hookConfig{}
 }
 
-type Config struct {
-	HookConfig *HookConfig
+type config struct {
+	HookConfig *hookConfig
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
 }
 
-func NewConfig() *Config {
-	return &Config{
+func newConfig() *config {
+	return &config{
 		HookConfig: newHookConfig(),
 	}
 }
 
-func (cfg *Config) Parse() error {
+func (cfg *config) Parse() error {
 	opts := env.Options{
 		Prefix: "",
 	}

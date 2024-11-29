@@ -7,7 +7,7 @@ import (
 )
 
 func Run() {
-	cfg := NewConfig()
+	cfg := newConfig()
 	err := cfg.Parse()
 	if err != nil {
 		panic(err)
@@ -28,11 +28,13 @@ func Run() {
 		KubernetesPath:       cfg.HookConfig.KubernetesPath,
 		ValuesJSONPath:       cfg.HookConfig.ValuesJSONPath,
 		ConfigValuesJSONPath: cfg.HookConfig.ConfigValuesJSONPath,
+
+		CreateFilesByYourself: cfg.HookConfig.CreateFilesByYourself,
 	}
 
 	controller := controller.NewHookController(fConfig, logger.Named("hook-controller"))
 
-	c := NewCMD(controller)
+	c := newCMD(controller)
 
 	c.Execute()
 }

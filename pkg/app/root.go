@@ -11,19 +11,19 @@ import (
 	"github.com/deckhouse/module-sdk/internal/controller"
 )
 
-func NewCMD(controller *controller.HookController) *CMD {
-	return &CMD{
+func newCMD(controller *controller.HookController) *cmd {
+	return &cmd{
 		controller: controller,
 	}
 }
 
-type CMD struct {
+type cmd struct {
 	controller *controller.HookController
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func (c *CMD) Execute() {
+func (c *cmd) Execute() {
 	rootCmd := c.rootCmd()
 	rootCmd.AddCommand(c.hooksCmd())
 
@@ -34,7 +34,7 @@ func (c *CMD) Execute() {
 }
 
 // rootCmd represents the base command when called without any subcommands
-func (c *CMD) rootCmd() *cobra.Command {
+func (c *cmd) rootCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   filepath.Base(os.Args[0]),
 		Short: "Binary with module hooks inside",
@@ -43,7 +43,7 @@ precompiled hooks to use with corresponding module.`,
 	}
 }
 
-func (c *CMD) hooksCmd() *cobra.Command {
+func (c *cmd) hooksCmd() *cobra.Command {
 	hooksCmd := &cobra.Command{
 		Use:   "hook",
 		Short: "Working with hooks",

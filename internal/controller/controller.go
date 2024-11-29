@@ -112,10 +112,18 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return ErrNoHooksRegistered
 	}
 
-	const configsFileName = "configs.json"
-	configsPath := filepath.Join(filepath.Dir(os.Args[0]), configsFileName)
+	var configsFileName = c.fConfig.HookConfigPath
 
-	f, err := os.OpenFile(configsPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+	if c.fConfig.CreateFilesByYourself {
+		dir := filepath.Dir(configsFileName)
+
+		err := os.MkdirAll(dir, 0744)
+		if err != nil {
+			return fmt.Errorf("mkdir all: %w", err)
+		}
+	}
+
+	f, err := os.OpenFile(configsFileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	defer func() {
 		_ = f.Close()
 	}()
@@ -139,7 +147,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 
 func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 	newHookConfig := &hook.HookConfig{
-		ConfigVersion: cfg.ConfigVersion,
+		ConfigVersion: "v1",
 		Metadata:      hook.GoHookMetadata(cfg.Metadata),
 	}
 

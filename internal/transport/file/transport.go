@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
@@ -27,6 +28,8 @@ type Config struct {
 	KubernetesPath       string
 	ValuesJSONPath       string
 	ConfigValuesJSONPath string
+
+	CreateFilesByYourself bool
 }
 
 type Transport struct {
@@ -46,6 +49,8 @@ type Transport struct {
 
 	dc pkg.DependencyContainer
 
+	CreateFilesByYourself bool
+
 	logger *log.Logger
 }
 
@@ -64,6 +69,8 @@ func NewTransport(cfg Config, hookName string, dc pkg.DependencyContainer, logge
 		ConfigValuesJSONPath: cfg.ConfigValuesJSONPath,
 
 		dc: dc,
+
+		CreateFilesByYourself: cfg.CreateFilesByYourself,
 
 		logger: logger,
 	}
@@ -169,6 +176,8 @@ func (t *Transport) NewResponse() *Response {
 		ValuesJSONPath:       t.ValuesJSONPath,
 		ConfigValuesJSONPath: t.ConfigValuesJSONPath,
 
+		CreateFilesByYourself: t.CreateFilesByYourself,
+
 		logger: t.logger,
 	}
 }
@@ -180,6 +189,8 @@ type Response struct {
 	KubernetesPath       string
 	ValuesJSONPath       string
 	ConfigValuesJSONPath string
+
+	CreateFilesByYourself bool
 
 	logger *log.Logger
 }
@@ -203,12 +214,14 @@ func (r *Response) Send(res *hook.HookResult) error {
 }
 
 func (r *Response) send(path string, outputer service.Outputer) error {
-	// dir := filepath.Dir(path)
+	if r.CreateFilesByYourself {
+		dir := filepath.Dir(path)
 
-	// err := os.MkdirAll(dir, 0744)
-	// if err != nil {
-	// 	return fmt.Errorf("mkdir all: %w", err)
-	// }
+		err := os.MkdirAll(dir, 0744)
+		if err != nil {
+			return fmt.Errorf("mkdir all: %w", err)
+		}
+	}
 
 	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	defer func() {

@@ -87,7 +87,7 @@ type KubernetesConfig struct {
 	// FieldSelector used to subscribe on objects by matching specific fields (the list of fields is narrow, see shell-operator documentation).
 	FieldSelector *FieldSelector `json:"fieldSelector,omitempty"`
 	// ExecuteHookOnEvents is true by default. Set to false if only snapshot update is needed.
-	// *bool --> ExecuteHookOnEvents: [All events] || либо пустой массив либо ничего
+	// *bool --> ExecuteHookOnEvents: [All events] || empty slice || nil
 	ExecuteHookOnEvents *bool `json:"executeHookOnEvent,omitempty"`
 	// ExecuteHookOnSynchronization is true by default. Set to false if only snapshot update is needed.
 	// true || false
@@ -95,9 +95,10 @@ type KubernetesConfig struct {
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
 	// true || false
 	WaitForSynchronization *bool `json:"waitForSynchronization,omitempty"`
-	// false
+	// false by default
+	// if JQ filter is empty - KeepFullObjectsInMemory always true
 	KeepFullObjectsInMemory *bool `json:"keepFullObjectsInMemory,omitempty"`
-
+	// JQ filter to filter results from kubernetes objects
 	JqFilter string `json:"jqFilter,omitempty"`
 
 	AllowFailure            *bool  `json:"allowFailure,omitempty"`

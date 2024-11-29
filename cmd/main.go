@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/deckhouse/module-sdk/pkg/setup"
+	"github.com/deckhouse/module-sdk/pkg/app"
 )
 
 func main() {
-	setup.Run()
+	app.Run()
 }

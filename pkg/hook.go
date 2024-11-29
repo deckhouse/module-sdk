@@ -4,7 +4,6 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 type Hook struct {
@@ -29,13 +28,13 @@ type HookInput struct {
 }
 
 type GoHookMetadata struct {
+	// Hook name
 	Name string
+	// Hook path
 	Path string
 }
 
 type HookConfig struct {
-	ConfigVersion string
-
 	Metadata   GoHookMetadata
 	Schedule   []ScheduleConfig
 	Kubernetes []KubernetesConfig
@@ -60,19 +59,12 @@ type OrderedConfig struct {
 type HookConfigSettings struct {
 	ExecutionMinInterval time.Duration
 	ExecutionBurst       int
-	// EnableSchedulesOnStartup
-	// set to true, if you need to run 'Schedule' hooks without waiting addon-operator readiness
-	EnableSchedulesOnStartup *bool
 }
 
 type ScheduleConfig struct {
 	Name string
 	// Crontab is a schedule config in crontab format. (5 or 6 fields)
 	Crontab string
-	// Group                string
-	// Queue                string
-	// AllowFailure         *bool
-	// IncludeSnapshotsFrom []string
 }
 
 type KubernetesConfig struct {
@@ -96,20 +88,15 @@ type KubernetesConfig struct {
 	ExecuteHookOnSynchronization *bool
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
 	WaitForSynchronization *bool
-
+	// JQ filter to filter results from kubernetes objects
 	JqFilter string
+	// Allow to fail hook
+	AllowFailure *bool
 
-	AllowFailure            *bool
 	ResynchronizationPeriod string
-
+	// Include snapshots from this keys in snapshot map
 	IncludeSnapshotsFrom []string
-
-	FilterFunc FilterFunc
 }
-
-type FilterResult any
-
-type FilterFunc func(*unstructured.Unstructured) (FilterResult, error)
 
 type NameSelector struct {
 	MatchNames []string
