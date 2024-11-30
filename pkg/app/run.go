@@ -17,7 +17,7 @@ func Run() {
 		Level: cfg.LogLevel.Level(),
 	})
 
-	fConfig := file.Config{
+	fConfig := &file.Config{
 		BindingContextPath: cfg.HookConfig.BindingContextPath,
 		ValuesPath:         cfg.HookConfig.ValuesPath,
 		ConfigValuesPath:   cfg.HookConfig.ConfigValuesPath,

@@ -22,7 +22,7 @@ type HookController struct {
 	registry *registry.HookRegistry
 	dc       pkg.DependencyContainer
 
-	fConfig file.Config
+	fConfig *file.Config
 
 	logger *log.Logger
 }
@@ -34,7 +34,7 @@ type HookSender interface {
 	SendConfigValues() error
 }
 
-func NewHookController(fConfig file.Config, logger *log.Logger) *HookController {
+func NewHookController(fConfig *file.Config, logger *log.Logger) *HookController {
 	reg := registry.NewHookRegistry(logger)
 	reg.Add(outerRegistry.Registry().Hooks()...)
 

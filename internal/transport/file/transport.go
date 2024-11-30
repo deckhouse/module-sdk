@@ -18,7 +18,6 @@ import (
 
 type Config struct {
 	// input
-	HookConfigPath     string
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
@@ -29,6 +28,8 @@ type Config struct {
 	ValuesJSONPath       string
 	ConfigValuesJSONPath string
 
+	HookConfigPath string
+
 	CreateFilesByYourself bool
 }
 
@@ -36,7 +37,6 @@ type Transport struct {
 	hookName string
 
 	// input
-	HookConfigPath     string
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
@@ -54,11 +54,14 @@ type Transport struct {
 	logger *log.Logger
 }
 
-func NewTransport(cfg Config, hookName string, dc pkg.DependencyContainer, logger *log.Logger) *Transport {
+func NewTransport(cfg *Config, hookName string, dc pkg.DependencyContainer, logger *log.Logger) *Transport {
+	if cfg == nil {
+		panic("transport config is nil")
+	}
+
 	return &Transport{
 		hookName: hookName,
 
-		HookConfigPath:     cfg.HookConfigPath,
 		BindingContextPath: cfg.BindingContextPath,
 		ValuesPath:         cfg.ValuesPath,
 		ConfigValuesPath:   cfg.ConfigValuesPath,
@@ -80,7 +83,6 @@ func (t *Transport) NewRequest() *Request {
 	return &Request{
 		hookName: t.hookName,
 
-		HookConfigPath:     t.HookConfigPath,
 		BindingContextPath: t.BindingContextPath,
 		ValuesPath:         t.ValuesPath,
 		ConfigValuesPath:   t.ConfigValuesPath,
@@ -94,7 +96,6 @@ func (t *Transport) NewRequest() *Request {
 type Request struct {
 	hookName string
 
-	HookConfigPath     string
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
@@ -123,23 +124,37 @@ func (r *Request) GetConfigValues() (map[string]any, error) {
 }
 
 func (r *Request) GetBindingContexts() ([]bindingcontext.BindingContext, error) {
-	contexts := make([]bindingcontext.BindingContext, 0)
-	content, err := os.ReadFile(r.BindingContextPath)
-	if err != nil {
-		return nil, fmt.Errorf("read file: %w", err)
-	}
-
-	r.logger.Debug("get binding contexts", log.RawJSON("content", string(content)))
-
 	contextsContent, err := os.Open(r.BindingContextPath)
-	defer contextsContent.Close()
+	defer func() {
+		err := contextsContent.Close()
+		if err != nil {
+			r.logger.Error("binding contexts file close", slog.String("error", err.Error()))
+		}
+	}()
 	if err != nil {
 		return nil, fmt.Errorf("open binding context file: %w", err)
 	}
 
+	contexts := make([]bindingcontext.BindingContext, 0)
+
 	err = json.NewDecoder(contextsContent).Decode(&contexts)
 	if err != nil {
 		return nil, fmt.Errorf("decode binding context: %w", err)
+	}
+
+	for cidx, context := range contexts {
+		for sidx, snap := range context.Snapshots {
+			for ridx, res := range snap {
+				// if we have empty object or filter result for some reason
+				if string(res.Object) == `{}` || string(res.Object) == `"{}"` {
+					contexts[cidx].Snapshots[sidx][ridx].Object = nil
+				}
+
+				if string(res.FilterResult) == `{}` || string(res.FilterResult) == `"{}"` {
+					contexts[cidx].Snapshots[sidx][ridx].FilterResult = nil
+				}
+			}
+		}
 	}
 
 	return contexts, nil
