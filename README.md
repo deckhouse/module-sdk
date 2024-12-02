@@ -19,3 +19,55 @@ See [examples](https://github.com/deckhouse/module-sdk/tree/main/examples)
 | HOOK_CONFIG_PATH |  | out/hook_config.json | Path to dump hook configurations in file |
 | CREATE_FILES |  | false | Allow hook to create files by himself (by default, waiting for addon operator to create) |
 | LOG_LEVEL |  | FATAL | Log level (suppressed by default) |
+
+### Available transports
+
+#### Files in
+
+Example config values file
+```json
+{
+    "global":{
+        "modules":{
+            "publicDomainTemplate":"%s.com"
+            }
+    },
+    "some-module":{}
+}
+```
+
+Example binding contexts file
+```json
+[
+	{
+	"binding": "node_roles",
+	"groupName": "policy",
+	"snapshots": {
+		"node_roles": [
+		{
+			"object": {
+				"apiVersion": "v1",
+				"metadata": {
+					"name": "test-object"
+				}
+			}
+		},
+		{
+			"filterResult": {
+				"apiVersion": "v1",
+				"metadata": {
+					"name": "test-filter-result"
+				}
+			}
+		}
+		]
+	},
+	"type": "Group"
+	}
+]
+```
+
+#### Files out
+
+Correspond with struct tags of entities with WriteOutput(w io.Writer) error method
+
