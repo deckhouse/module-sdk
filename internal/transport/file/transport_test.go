@@ -112,6 +112,7 @@ func Test_RequestGetValues(t *testing.T) {
 			},
 			wants: wants{
 				configValues: nil,
+				err:          `load values from file:`,
 			},
 		},
 		{
@@ -162,11 +163,9 @@ func Test_RequestGetValues(t *testing.T) {
 				_ = os.Remove(f.Name)
 			}
 
-			if err != nil {
+			if tt.wants.err != "" {
 				assert.Contains(t, err.Error(), tt.wants.err)
-			}
-
-			if err == nil {
+			} else {
 				assert.NoError(t, err)
 			}
 
@@ -313,11 +312,9 @@ func Test_RequestGetConfigValues(t *testing.T) {
 				_ = os.Remove(f.Name)
 			}
 
-			if err != nil {
+			if tt.wants.err != "" {
 				assert.Contains(t, err.Error(), tt.wants.err)
-			}
-
-			if err == nil {
+			} else {
 				assert.NoError(t, err)
 			}
 
@@ -594,11 +591,9 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 				_ = os.Remove(f.Name)
 			}
 
-			if err != nil {
+			if tt.wants.err != "" {
 				assert.Contains(t, err.Error(), tt.wants.err)
-			}
-
-			if err == nil {
+			} else {
 				assert.NoError(t, err)
 			}
 

@@ -2,7 +2,7 @@ package hook_test
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
@@ -11,8 +11,6 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/stretchr/testify/assert"
 )
-
-// TODO: make test after transport
 
 func Test_Go_Hook_Execute(t *testing.T) {
 	t.Parallel()
@@ -25,13 +23,15 @@ func Test_Go_Hook_Execute(t *testing.T) {
 	}
 
 	type fields struct {
-		setupHookRequest func(t *testing.T) hook.HookRequest
+		setupHookRequest       func(t *testing.T) hook.HookRequest
+		setupHookReconcileFunc func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error
 	}
 
 	type args struct {
 	}
 
 	type wants struct {
+		err string
 	}
 
 	tests := []struct {
@@ -42,7 +42,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 	}{
 		{
 			meta: meta{
-				name:    "logger default options is level info and add source false",
+				name:    "binding contexts contains snapshot with objects",
 				enabled: true,
 			},
 			fields: fields{
@@ -55,17 +55,212 @@ func Test_Go_Hook_Execute(t *testing.T) {
 					cvals := hr.GetConfigValuesMock.Expect()
 					cvals.Return(map[string]any{}, nil)
 
+					bcs := []bindingcontext.BindingContext{
+						{
+							Snapshots: map[string]bindingcontext.ObjectAndFilterResults{
+								"some_data": {
+									{
+										Object: []byte(`{"name":"stub"}`),
+									},
+									{
+										Object: []byte(`{"name_2":"stub_2"}`),
+									},
+								},
+							},
+						},
+					}
 					bctxs := hr.GetBindingContextsMock.Expect()
-					bctxs.Return([]bindingcontext.BindingContext{}, nil)
+					bctxs.Return(bcs, nil)
 
 					dc := hr.GetDependencyContainerMock.Expect()
 					dc.Return(nil)
 
 					return hr
 				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						data := input.Snapshots.Get("some_data")
+						assert.Equal(t, 2, len(data))
+						assert.Equal(t, `{"name":"stub"}`, data[0].String())
+						assert.Equal(t, `{"name_2":"stub_2"}`, data[1].String())
+
+						return nil
+					}
+				},
 			},
 			args:  args{},
 			wants: wants{},
+		},
+		{
+			meta: meta{
+				name:    "binding contexts contains snapshot with filter results",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(map[string]any{}, nil)
+
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(map[string]any{}, nil)
+
+					bcs := []bindingcontext.BindingContext{
+						{
+							Snapshots: map[string]bindingcontext.ObjectAndFilterResults{
+								"some_data": {
+									{
+										FilterResult: []byte(`{"name":"stub"}`),
+									},
+									{
+										FilterResult: []byte(`{"name_2":"stub_2"}`),
+									},
+								},
+							},
+						},
+					}
+					bctxs := hr.GetBindingContextsMock.Expect()
+					bctxs.Return(bcs, nil)
+
+					dc := hr.GetDependencyContainerMock.Expect()
+					dc.Return(nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						data := input.Snapshots.Get("some_data")
+						assert.Equal(t, 2, len(data))
+						assert.Equal(t, `{"name":"stub"}`, data[0].String())
+						assert.Equal(t, `{"name_2":"stub_2"}`, data[1].String())
+
+						return nil
+					}
+				},
+			},
+			args:  args{},
+			wants: wants{},
+		},
+		{
+			meta: meta{
+				name:    "binding contexts contains snapshot with object and filter result",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(map[string]any{}, nil)
+
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(map[string]any{}, nil)
+
+					bcs := []bindingcontext.BindingContext{
+						{
+							Snapshots: map[string]bindingcontext.ObjectAndFilterResults{
+								"some_data": {
+									{
+										Object:       []byte(`{"name":"wrong_answer"}`),
+										FilterResult: []byte(`{"name":"correct_answer"}`),
+									},
+									{
+										FilterResult: []byte(`{"name_2":"stub_2"}`),
+									},
+								},
+							},
+						},
+					}
+					bctxs := hr.GetBindingContextsMock.Expect()
+					bctxs.Return(bcs, nil)
+
+					dc := hr.GetDependencyContainerMock.Expect()
+					dc.Return(nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						data := input.Snapshots.Get("some_data")
+						assert.Equal(t, 2, len(data))
+						assert.Equal(t, `{"name":"correct_answer"}`, data[0].String())
+						assert.Equal(t, `{"name_2":"stub_2"}`, data[1].String())
+
+						return nil
+					}
+				},
+			},
+			args:  args{},
+			wants: wants{},
+		},
+		{
+			meta: meta{
+				name:    "get values error",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(nil, errors.New("error"))
+
+					// cvals := hr.GetConfigValuesMock.Expect()
+					// cvals.Return(nil, nil)
+
+					// bctxs := hr.GetBindingContextsMock.Expect()
+					// bctxs.Return(nil, nil)
+
+					// dc := hr.GetDependencyContainerMock.Expect()
+					// dc.Return(nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						return nil
+					}
+				},
+			},
+			args: args{},
+			wants: wants{
+				err: "get values: error",
+			},
+		},
+		{
+			meta: meta{
+				name:    "get config values error",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(nil, errors.New("error"))
+
+					// cvals := hr.GetConfigValuesMock.Expect()
+					// cvals.Return(nil, nil)
+
+					// bctxs := hr.GetBindingContextsMock.Expect()
+					// bctxs.Return(nil, nil)
+
+					// dc := hr.GetDependencyContainerMock.Expect()
+					// dc.Return(nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						return nil
+					}
+				},
+			},
+			args: args{},
+			wants: wants{
+				err: "get config values: error",
+			},
 		},
 	}
 
@@ -79,23 +274,15 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 			cfg := &pkg.HookConfig{}
 
-			fn := func(_ context.Context, input *pkg.HookInput) error {
-				snapshots := input.Snapshots.Get("test_snap")
-				for _, snap := range snapshots {
-					str := new(string)
-					err := snap.UnmarhalTo(str)
-					assert.NoError(t, err)
-
-					fmt.Printf("%+v\n", snap.String())
-				}
-
-				return fmt.Errorf("sas %+v", snapshots)
-			}
-
-			h := hook.NewGoHook(cfg, fn).SetLogger(log.NewNop())
+			h := hook.NewGoHook(cfg, tt.fields.setupHookReconcileFunc(t)).SetLogger(log.NewNop())
 
 			_, err := h.Execute(context.Background(), tt.fields.setupHookRequest(t))
-			assert.NoError(t, err)
+			if tt.wants.err != "" {
+				assert.Contains(t, err.Error(), tt.wants.err)
+			} else {
+				assert.NoError(t, err)
+			}
+
 		})
 	}
 }

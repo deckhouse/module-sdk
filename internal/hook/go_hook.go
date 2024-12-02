@@ -2,6 +2,7 @@ package hook
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
@@ -66,25 +67,25 @@ func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, err
 	rawValues, err := req.GetValues()
 	if err != nil {
 		h.logger.Error("get values", slog.String("error", err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("get values: %w", err)
 	}
 
 	patchableValues, err := NewPatchableValues(rawValues)
 	if err != nil {
 		h.logger.Error("new patchable values", slog.String("error", err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("get patchable values: %w", err)
 	}
 
 	rawConfigValues, err := req.GetConfigValues()
 	if err != nil {
 		h.logger.Error("get config values", slog.String("error", err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("get config values: %w", err)
 	}
 
 	patchableConfigValues, err := NewPatchableValues(rawConfigValues)
 	if err != nil {
 		h.logger.Error("new patchable config values", slog.String("error", err.Error()))
-		return nil, err
+		return nil, fmt.Errorf("get patchable config values: %w", err)
 	}
 
 	bContext, err := req.GetBindingContexts()
@@ -124,7 +125,7 @@ func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, err
 		Logger:           h.logger.With("output", "gohook"),
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("hook reconcile func: %w", err)
 	}
 
 	return &HookResult{
@@ -140,20 +141,6 @@ func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, err
 // Run start ReconcileFunc
 func (h *GoHook) Run(ctx context.Context, input *pkg.HookInput) error {
 	return h.reconcileFunc(ctx, input)
-}
-
-// Bool returns a pointer to a bool.
-func Bool(b bool) *bool {
-	return &b
-}
-
-// BoolDeref dereferences the bool ptr and returns it if not nil, or else
-// returns def.
-func BoolDeref(ptr *bool, def bool) bool {
-	if ptr != nil {
-		return *ptr
-	}
-	return def
 }
 
 // HookResult returns result of a hook execution

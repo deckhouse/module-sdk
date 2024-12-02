@@ -95,8 +95,6 @@ type KubernetesConfig struct {
 	AllowFailure *bool
 
 	ResynchronizationPeriod string
-	// Include snapshots from this keys in snapshot map
-	IncludeSnapshotsFrom []string
 }
 
 type NameSelector struct {
