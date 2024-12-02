@@ -206,15 +206,6 @@ func Test_Go_Hook_Execute(t *testing.T) {
 					vals := hr.GetValuesMock.Expect()
 					vals.Return(nil, errors.New("error"))
 
-					// cvals := hr.GetConfigValuesMock.Expect()
-					// cvals.Return(nil, nil)
-
-					// bctxs := hr.GetBindingContextsMock.Expect()
-					// bctxs.Return(nil, nil)
-
-					// dc := hr.GetDependencyContainerMock.Expect()
-					// dc.Return(nil)
-
 					return hr
 				},
 				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
@@ -230,6 +221,33 @@ func Test_Go_Hook_Execute(t *testing.T) {
 		},
 		{
 			meta: meta{
+				name:    "get patchable values error",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(map[string]any{
+						"func-to-crush-marshal": func() {},
+					}, nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						return nil
+					}
+				},
+			},
+			args: args{},
+			wants: wants{
+				err: `get patchable values: json: unsupported type: func()`,
+			},
+		},
+		{
+			meta: meta{
 				name:    "get config values error",
 				enabled: true,
 			},
@@ -238,16 +256,10 @@ func Test_Go_Hook_Execute(t *testing.T) {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
-					vals.Return(nil, errors.New("error"))
+					vals.Return(nil, nil)
 
-					// cvals := hr.GetConfigValuesMock.Expect()
-					// cvals.Return(nil, nil)
-
-					// bctxs := hr.GetBindingContextsMock.Expect()
-					// bctxs.Return(nil, nil)
-
-					// dc := hr.GetDependencyContainerMock.Expect()
-					// dc.Return(nil)
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(nil, errors.New("error"))
 
 					return hr
 				},
@@ -260,6 +272,104 @@ func Test_Go_Hook_Execute(t *testing.T) {
 			args: args{},
 			wants: wants{
 				err: "get config values: error",
+			},
+		},
+		{
+			meta: meta{
+				name:    "get patchable config values error",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(nil, nil)
+
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(map[string]any{
+						"func-to-crush-marshal": func() {},
+					}, nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						return nil
+					}
+				},
+			},
+			args: args{},
+			wants: wants{
+				err: "get patchable config values: json: unsupported type: func()",
+			},
+		},
+		{
+			meta: meta{
+				name:    "get binding context do not stop flow",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(nil, nil)
+
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(nil, nil)
+
+					bctxs := hr.GetBindingContextsMock.Expect()
+					bctxs.Return(nil, errors.New("error"))
+
+					dc := hr.GetDependencyContainerMock.Expect()
+					dc.Return(nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						return nil
+					}
+				},
+			},
+			args: args{},
+			wants: wants{
+				err: "",
+			},
+		},
+		{
+			meta: meta{
+				name:    "hook reconcile func returns error",
+				enabled: true,
+			},
+			fields: fields{
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(nil, nil)
+
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(nil, nil)
+
+					bctxs := hr.GetBindingContextsMock.Expect()
+					bctxs.Return(nil, nil)
+
+					dc := hr.GetDependencyContainerMock.Expect()
+					dc.Return(nil)
+
+					return hr
+				},
+				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, input *pkg.HookInput) error {
+						return errors.New("error")
+					}
+				},
+			},
+			args: args{},
+			wants: wants{
+				err: "hook reconcile func: error",
 			},
 		},
 	}
