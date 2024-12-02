@@ -262,6 +262,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 			},
 			wants: wants{
 				configValues: nil,
+				err:          `load values from file:`,
 			},
 		},
 		{
