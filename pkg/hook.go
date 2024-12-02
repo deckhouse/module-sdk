@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -12,7 +13,7 @@ type Hook struct {
 }
 
 // ReconcileFunc function which holds the main logic of the hook
-type ReconcileFunc func(input *HookInput) error
+type ReconcileFunc func(ctx context.Context, input *HookInput) error
 
 type HookInput struct {
 	Snapshots Snapshots

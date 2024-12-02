@@ -15,7 +15,7 @@ var _ = registry.RegisterFunc(configKubernetesClient, handlerKubernetesClient)
 
 var configKubernetesClient = &pkg.HookConfig{}
 
-func handlerKubernetesClient(input *pkg.HookInput) error {
+func handlerKubernetesClient(ctx context.Context, input *pkg.HookInput) error {
 	k8sClient := input.DC.MustGetK8sClient()
 
 	const (
@@ -24,7 +24,7 @@ func handlerKubernetesClient(input *pkg.HookInput) error {
 	)
 
 	pod := new(corev1.Pod)
-	err := k8sClient.Get(context.TODO(), types.NamespacedName{Namespace: podNamespace, Name: podName}, pod)
+	err := k8sClient.Get(ctx, types.NamespacedName{Namespace: podNamespace, Name: podName}, pod)
 	if err != nil {
 		return fmt.Errorf("get pod: %w", err)
 	}

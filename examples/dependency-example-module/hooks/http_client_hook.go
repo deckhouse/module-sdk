@@ -13,10 +13,10 @@ var configHTTPCLient = &pkg.HookConfig{}
 
 var _ = registry.RegisterFunc(configHTTPCLient, handlerHTTPClient)
 
-func handlerHTTPClient(input *pkg.HookInput) error {
+func handlerHTTPClient(ctx context.Context, input *pkg.HookInput) error {
 	httpClient := input.DC.GetHTTPClient()
 
-	req, err := http.NewRequestWithContext(context.TODO(), http.MethodGet, "http://127.0.0.1", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1", nil)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
 	}

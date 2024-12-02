@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -59,7 +60,7 @@ func (c *HookController) ListHooksMeta() []pkg.GoHookMetadata {
 
 var ErrHookIndexIsNotExists = errors.New("hook index is not exists")
 
-func (c *HookController) RunHook(idx int) error {
+func (c *HookController) RunHook(ctx context.Context, idx int) error {
 	hooks := c.registry.Hooks()
 
 	if len(hooks) <= idx {
@@ -70,7 +71,7 @@ func (c *HookController) RunHook(idx int) error {
 
 	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
 
-	hookRes, err := hook.Execute(transport.NewRequest())
+	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
 		return fmt.Errorf("execute: %w", err)
 	}

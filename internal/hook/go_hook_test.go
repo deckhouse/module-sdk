@@ -1,6 +1,7 @@
 package hook_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -11,6 +12,33 @@ import (
 )
 
 // TODO: make test after transport
+
+// bindingContextObjectWithBothParameters = `
+// [
+//   {
+// 	"binding": "node_roles",
+// 	"groupName": "policy",
+// 	"snapshots": {
+// 	  "node_roles": [
+// 		{
+// 	  		"object": {
+// 				"apiVersion": "v1",
+// 				"metadata": {
+// 					"name": "if-you-see-this-its-a-bug"
+// 				}
+// 			},
+// 	  		"filterResult": {
+// 				"apiVersion": "v1",
+// 				"metadata": {
+// 					"name": "correct-result"
+// 				}
+// 			}
+// 	  	}
+// 	  ]
+// 	},
+// 	"type": "Group"
+//   }
+// ]`
 
 var _ hook.HookRequest = (*HookRequest)(nil)
 
@@ -95,7 +123,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 			cfg := &pkg.HookConfig{}
 
-			fn := func(input *pkg.HookInput) error {
+			fn := func(_ context.Context, input *pkg.HookInput) error {
 				snapshots := input.Snapshots.Get("test_snap")
 				for _, snap := range snapshots {
 					str := new(string)
@@ -108,7 +136,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 			}
 
 			h := hook.NewGoHook(cfg, fn)
-			_, err := h.Execute(tt.fields.setupHookRequest())
+			_, err := h.Execute(context.Background(), tt.fields.setupHookRequest())
 			assert.NoError(t, err)
 		})
 	}

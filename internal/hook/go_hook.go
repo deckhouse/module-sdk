@@ -1,6 +1,7 @@
 package hook
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
@@ -56,7 +57,7 @@ type HookRequest interface {
 	GetDependencyContainer() pkg.DependencyContainer
 }
 
-func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
+func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, error) {
 	// Values are patched in-place, so an error can occur.
 	rawValues, err := req.GetValues()
 	if err != nil {
@@ -109,7 +110,7 @@ func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
 	metricsCollector := metric.NewCollector()
 	objectPatchCollector := objectpatch.NewObjectPatchCollector()
 
-	err = h.Run(&pkg.HookInput{
+	err = h.Run(ctx, &pkg.HookInput{
 		Snapshots:        formattedSnapshots,
 		Values:           patchableValues,
 		ConfigValues:     patchableConfigValues,
@@ -133,8 +134,8 @@ func (h *GoHook) Execute(req HookRequest) (*HookResult, error) {
 }
 
 // Run start ReconcileFunc
-func (h *GoHook) Run(input *pkg.HookInput) error {
-	return h.reconcileFunc(input)
+func (h *GoHook) Run(ctx context.Context, input *pkg.HookInput) error {
+	return h.reconcileFunc(ctx, input)
 }
 
 // Bool returns a pointer to a bool.

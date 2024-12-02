@@ -12,19 +12,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const (
+	valuesFilePath          = "values.json"
+	configValuesFilePath    = "config_values.json"
+	bindingContextsFilePath = "binding_contexts.json"
+)
+
 type File struct {
 	Name    string
 	Content string
 }
 
-func Test_Request(t *testing.T) {
+func Test_Request_GetBindingContexts(t *testing.T) {
 	t.Parallel()
 
 	const (
-		valuesFilePath          = "values.json"
-		configValuesFilePath    = "config_values.json"
-		bindingContextsFilePath = "binding_contexts.json"
-
+		bindingContextObject = `
+[
+	{
+	"binding": "node_roles",
+	"groupName": "policy",
+	"snapshots": {
+		"node_roles": [
+		{
+			"object": {
+				"apiVersion": "v1",
+				"metadata": {
+					"name": "test-object"
+				}
+			}
+		},
+		{
+			"filterResult": {
+				"apiVersion": "v1",
+				"metadata": {
+					"name": "test-filter-result"
+				}
+			}
+		}
+		]
+	},
+	"type": "Group"
+	}
+]`
 		bindingContextEmptySnapshotsObjects = `
 [
   {
@@ -89,6 +119,57 @@ func Test_Request(t *testing.T) {
 	}{
 		{
 			meta: meta{
+				name:    "successfull get binding context",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]File{
+					valuesFilePath: {
+						Name:    generateFileNameWithTs(valuesFilePath),
+						Content: "",
+					},
+					configValuesFilePath: {
+						Name:    generateFileNameWithTs(configValuesFilePath),
+						Content: "",
+					},
+					bindingContextsFilePath: {
+						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Content: bindingContextObject,
+					},
+				},
+			},
+			wants: wants{
+				bcs: []bindingcontext.BindingContext{
+					{
+						Binding: "node_roles",
+						Type:    "Group",
+						Snapshots: map[string]bindingcontext.ObjectAndFilterResults{
+							"node_roles": {
+								{
+									Object: []byte(`{
+				"apiVersion": "v1",
+				"metadata": {
+					"name": "test-object"
+				}
+			}`),
+								},
+								{
+									FilterResult: []byte(`{
+				"apiVersion": "v1",
+				"metadata": {
+					"name": "test-filter-result"
+				}
+			}`),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			meta: meta{
 				name:    "empty binding contexts snapshot objects",
 				enabled: true,
 			},
@@ -96,15 +177,15 @@ func Test_Request(t *testing.T) {
 			args: args{
 				filesContent: map[string]File{
 					valuesFilePath: {
-						Name:    fmt.Sprintf("%d-%s", time.Now().UnixNano(), valuesFilePath),
+						Name:    generateFileNameWithTs(valuesFilePath),
 						Content: "",
 					},
 					configValuesFilePath: {
-						Name:    fmt.Sprintf("%d-%s", time.Now().UnixNano(), configValuesFilePath),
+						Name:    generateFileNameWithTs(configValuesFilePath),
 						Content: "",
 					},
 					bindingContextsFilePath: {
-						Name:    fmt.Sprintf("%d-%s", time.Now().UnixNano(), bindingContextsFilePath),
+						Name:    generateFileNameWithTs(bindingContextsFilePath),
 						Content: bindingContextEmptySnapshotsObjects,
 					},
 				},
@@ -132,15 +213,15 @@ func Test_Request(t *testing.T) {
 			args: args{
 				filesContent: map[string]File{
 					valuesFilePath: {
-						Name:    fmt.Sprintf("%d-%s", time.Now().UnixNano(), valuesFilePath),
+						Name:    generateFileNameWithTs(valuesFilePath),
 						Content: "",
 					},
 					configValuesFilePath: {
-						Name:    fmt.Sprintf("%d-%s", time.Now().UnixNano(), configValuesFilePath),
+						Name:    generateFileNameWithTs(configValuesFilePath),
 						Content: "",
 					},
 					bindingContextsFilePath: {
-						Name:    fmt.Sprintf("%d-%s", time.Now().UnixNano(), bindingContextsFilePath),
+						Name:    generateFileNameWithTs(bindingContextsFilePath),
 						Content: bindingContextEmptyObjectAndFilterResult,
 					},
 				},
@@ -195,4 +276,8 @@ func Test_Request(t *testing.T) {
 			}
 		})
 	}
+}
+
+func generateFileNameWithTs(defaultPath string) string {
+	return fmt.Sprintf("%d-%s", time.Now().UnixNano(), defaultPath)
 }

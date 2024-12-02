@@ -13,9 +13,8 @@ var configRegistryCLient = &pkg.HookConfig{}
 
 var _ = registry.RegisterFunc(configRegistryCLient, handlerRegistryClient)
 
-func handlerRegistryClient(input *pkg.HookInput) error {
+func handlerRegistryClient(ctx context.Context, input *pkg.HookInput) error {
 	registryClient := input.DC.MustGetRegistryClient("registry.address.com/")
-	ctx := context.TODO()
 
 	tags, err := registryClient.ListTags(ctx)
 	if err != nil {

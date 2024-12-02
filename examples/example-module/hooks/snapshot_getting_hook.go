@@ -1,6 +1,7 @@
 package hookinfolder
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 
@@ -46,7 +47,7 @@ var config = &pkg.HookConfig{
 	},
 }
 
-func handlerHook(input *pkg.HookInput) error {
+func handlerHook(_ context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from first root hook")
 
 	// getting info from snapshot

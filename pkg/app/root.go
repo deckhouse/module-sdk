@@ -100,14 +100,16 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Short: "Running hook",
 		Long:  `Run hook from binary registry`,
 		Args:  cobra.ExactArgs(1),
-		RunE: func(_ *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+
 			idxRaw := args[0]
 			idx, err := strconv.Atoi(idxRaw)
 			if err != nil {
 				return fmt.Errorf("argument '%s' is not integer", idxRaw)
 			}
 
-			err = c.controller.RunHook(idx)
+			err = c.controller.RunHook(ctx, idx)
 			if err != nil {
 				return fmt.Errorf("run hook error: %w", err)
 			}
