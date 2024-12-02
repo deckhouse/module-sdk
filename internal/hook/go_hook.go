@@ -42,12 +42,16 @@ func (h *GoHook) GetConfig() *pkg.HookConfig {
 	return h.config
 }
 
-func (h *GoHook) SetMetadata(m *pkg.GoHookMetadata) {
+func (h *GoHook) SetMetadata(m *pkg.GoHookMetadata) *GoHook {
 	h.config.Metadata = *m
+
+	return h
 }
 
-func (h *GoHook) SetLogger(logger *log.Logger) {
+func (h *GoHook) SetLogger(logger *log.Logger) *GoHook {
 	h.logger = logger
+
+	return h
 }
 
 type HookRequest interface {

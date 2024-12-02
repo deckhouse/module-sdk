@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	"github.com/deckhouse/module-sdk/internal/hook"
 	"github.com/deckhouse/module-sdk/pkg"
@@ -12,65 +13,6 @@ import (
 )
 
 // TODO: make test after transport
-
-// bindingContextObjectWithBothParameters = `
-// [
-//   {
-// 	"binding": "node_roles",
-// 	"groupName": "policy",
-// 	"snapshots": {
-// 	  "node_roles": [
-// 		{
-// 	  		"object": {
-// 				"apiVersion": "v1",
-// 				"metadata": {
-// 					"name": "if-you-see-this-its-a-bug"
-// 				}
-// 			},
-// 	  		"filterResult": {
-// 				"apiVersion": "v1",
-// 				"metadata": {
-// 					"name": "correct-result"
-// 				}
-// 			}
-// 	  	}
-// 	  ]
-// 	},
-// 	"type": "Group"
-//   }
-// ]`
-
-var _ hook.HookRequest = (*HookRequest)(nil)
-
-type HookRequest struct {
-}
-
-func (req *HookRequest) GetValues() (map[string]any, error) {
-	return make(map[string]any, 1), nil
-}
-
-func (req *HookRequest) GetConfigValues() (map[string]any, error) {
-	return make(map[string]any, 1), nil
-}
-
-func (req *HookRequest) GetBindingContexts() ([]bindingcontext.BindingContext, error) {
-	return []bindingcontext.BindingContext{
-		{
-			Snapshots: map[string]bindingcontext.ObjectAndFilterResults{
-				"test_snap": {
-					{
-						Object:       []byte(`{}`),
-						FilterResult: nil,
-					},
-				},
-			},
-		},
-	}, nil
-}
-
-func (req *HookRequest) GetDependencyContainer() pkg.DependencyContainer {
-	return nil
-}
 
 func Test_Go_Hook_Execute(t *testing.T) {
 	t.Parallel()
@@ -83,7 +25,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 	}
 
 	type fields struct {
-		setupHookRequest func() hook.HookRequest
+		setupHookRequest func(t *testing.T) hook.HookRequest
 	}
 
 	type args struct {
@@ -104,8 +46,22 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func() hook.HookRequest {
-					return &HookRequest{}
+				setupHookRequest: func(t *testing.T) hook.HookRequest {
+					hr := NewHookRequestMock(t)
+
+					vals := hr.GetValuesMock.Expect()
+					vals.Return(map[string]any{}, nil)
+
+					cvals := hr.GetConfigValuesMock.Expect()
+					cvals.Return(map[string]any{}, nil)
+
+					bctxs := hr.GetBindingContextsMock.Expect()
+					bctxs.Return([]bindingcontext.BindingContext{}, nil)
+
+					dc := hr.GetDependencyContainerMock.Expect()
+					dc.Return(nil)
+
+					return hr
 				},
 			},
 			args:  args{},
@@ -132,11 +88,13 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					fmt.Printf("%+v\n", snap.String())
 				}
+
 				return fmt.Errorf("sas %+v", snapshots)
 			}
 
-			h := hook.NewGoHook(cfg, fn)
-			_, err := h.Execute(context.Background(), tt.fields.setupHookRequest())
+			h := hook.NewGoHook(cfg, fn).SetLogger(log.NewNop())
+
+			_, err := h.Execute(context.Background(), tt.fields.setupHookRequest(t))
 			assert.NoError(t, err)
 		})
 	}

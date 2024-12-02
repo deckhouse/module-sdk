@@ -12,7 +12,6 @@ import (
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	"github.com/deckhouse/module-sdk/internal/hook"
 	"github.com/deckhouse/module-sdk/pkg"
-	service "github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
@@ -211,7 +210,7 @@ type Response struct {
 }
 
 func (r *Response) Send(res *hook.HookResult) error {
-	collectors := map[string]service.Outputer{
+	collectors := map[string]pkg.Outputer{
 		r.MetricsPath:          res.Metrics,
 		r.KubernetesPath:       res.ObjectPatcherOperations,
 		r.ValuesJSONPath:       res.Patches[utils.MemoryValuesPatch],
@@ -228,7 +227,7 @@ func (r *Response) Send(res *hook.HookResult) error {
 	return nil
 }
 
-func (r *Response) send(path string, outputer service.Outputer) error {
+func (r *Response) send(path string, outputer pkg.Outputer) error {
 	if r.CreateFilesByYourself {
 		dir := filepath.Dir(path)
 

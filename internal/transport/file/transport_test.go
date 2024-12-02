@@ -2,13 +2,14 @@ package file_test
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
-	"github.com/deckhouse/module-sdk/internal/transport/file"
+	fileTransport "github.com/deckhouse/module-sdk/internal/transport/file"
+	uuid "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,9 +19,311 @@ const (
 	bindingContextsFilePath = "binding_contexts.json"
 )
 
-type File struct {
+type file struct {
 	Name    string
 	Content string
+}
+
+func Test_RequestGetValues(t *testing.T) {
+	t.Parallel()
+
+	const (
+		values  = `{"some-module":{},"global":{"modules":{"publicDomainTemplate":"%s.com"}}}`
+		badJson = `{{{{{`
+	)
+
+	type meta struct {
+		name    string
+		enabled bool
+	}
+
+	type fields struct {
+	}
+
+	type args struct {
+		filesContent     map[string]file
+		filesPermissions fs.FileMode
+	}
+
+	type wants struct {
+		configValues map[string]any
+		err          string
+	}
+
+	tests := []struct {
+		meta   meta
+		fields fields
+		args   args
+		wants  wants
+	}{
+		{
+			meta: meta{
+				name:    "successfull get values",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					valuesFilePath: {
+						Name:    generateFileNameWithTs(valuesFilePath),
+						Content: values,
+					},
+				},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				configValues: map[string]interface{}{
+					"global": map[string]interface{}{
+						"modules": map[string]interface{}{
+							"publicDomainTemplate": "%s.com"},
+					},
+					"some-module": map[string]interface{}{},
+				},
+			},
+		},
+		{
+			meta: meta{
+				name:    "no file",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent:     map[string]file{},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				configValues: nil,
+			},
+		},
+		{
+			meta: meta{
+				name:    "can not open file",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					valuesFilePath: {
+						Name:    generateFileNameWithTs(valuesFilePath),
+						Content: values,
+					},
+				},
+				filesPermissions: 0000,
+			},
+			wants: wants{
+				configValues: nil,
+			},
+		},
+		{
+			meta: meta{
+				name:    "bad json",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					valuesFilePath: {
+						Name:    generateFileNameWithTs(valuesFilePath),
+						Content: badJson,
+					},
+				},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				configValues: nil,
+				err:          "load values from file: bad values data: error converting YAML to JSON: yaml: line 1: did not find expected node content\n{{{{{",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		if !tt.meta.enabled {
+			continue
+		}
+
+		t.Run(tt.meta.name, func(t *testing.T) {
+			t.Parallel()
+
+			// create files with info
+			for _, f := range tt.args.filesContent {
+				err := os.WriteFile(f.Name, []byte(f.Content), tt.args.filesPermissions)
+				assert.NoError(t, err)
+			}
+
+			tcfg := &fileTransport.Config{
+				ValuesPath: tt.args.filesContent[valuesFilePath].Name,
+			}
+
+			tr := fileTransport.NewTransport(tcfg, "hook-name", nil, log.NewNop())
+			req := tr.NewRequest()
+			bcs, err := req.GetValues()
+			// cleanup
+			for _, f := range tt.args.filesContent {
+				_ = os.Remove(f.Name)
+			}
+
+			if err != nil {
+				assert.Contains(t, err.Error(), tt.wants.err)
+			}
+
+			if err == nil {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.wants.configValues, bcs)
+		})
+	}
+}
+
+func Test_RequestGetConfigValues(t *testing.T) {
+	t.Parallel()
+
+	const (
+		configValues = `{"global":{"modules":{"publicDomainTemplate":"%s.com"}},"some-module":{}}`
+		badJson      = `{{{{{`
+	)
+
+	type meta struct {
+		name    string
+		enabled bool
+	}
+
+	type fields struct {
+	}
+
+	type args struct {
+		filesContent     map[string]file
+		filesPermissions fs.FileMode
+	}
+
+	type wants struct {
+		configValues map[string]any
+		err          string
+	}
+
+	tests := []struct {
+		meta   meta
+		fields fields
+		args   args
+		wants  wants
+	}{
+		{
+			meta: meta{
+				name:    "successfull get config values",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					configValuesFilePath: {
+						Name:    generateFileNameWithTs(configValuesFilePath),
+						Content: configValues,
+					},
+				},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				configValues: map[string]interface{}{
+					"global": map[string]interface{}{
+						"modules": map[string]interface{}{
+							"publicDomainTemplate": "%s.com"},
+					},
+					"some-module": map[string]interface{}{},
+				},
+			},
+		},
+		{
+			meta: meta{
+				name:    "no file",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent:     map[string]file{},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				configValues: nil,
+			},
+		},
+		{
+			meta: meta{
+				name:    "can not open file",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					configValuesFilePath: {
+						Name:    generateFileNameWithTs(configValuesFilePath),
+						Content: configValues,
+					},
+				},
+				filesPermissions: 0000,
+			},
+			wants: wants{
+				configValues: nil,
+			},
+		},
+		{
+			meta: meta{
+				name:    "bad json",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					configValuesFilePath: {
+						Name:    generateFileNameWithTs(configValuesFilePath),
+						Content: badJson,
+					},
+				},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				configValues: nil,
+				err:          "load values from file: bad values data: error converting YAML to JSON: yaml: line 1: did not find expected node content\n{{{{{",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		if !tt.meta.enabled {
+			continue
+		}
+
+		t.Run(tt.meta.name, func(t *testing.T) {
+			t.Parallel()
+
+			// create files with info
+			for _, f := range tt.args.filesContent {
+				err := os.WriteFile(f.Name, []byte(f.Content), tt.args.filesPermissions)
+				assert.NoError(t, err)
+			}
+
+			tcfg := &fileTransport.Config{
+				ConfigValuesPath: tt.args.filesContent[configValuesFilePath].Name,
+			}
+
+			tr := fileTransport.NewTransport(tcfg, "hook-name", nil, log.NewNop())
+			req := tr.NewRequest()
+			bcs, err := req.GetConfigValues()
+			// cleanup
+			for _, f := range tt.args.filesContent {
+				_ = os.Remove(f.Name)
+			}
+
+			if err != nil {
+				assert.Contains(t, err.Error(), tt.wants.err)
+			}
+
+			if err == nil {
+				assert.NoError(t, err)
+			}
+
+			assert.Equal(t, tt.wants.configValues, bcs)
+		})
+	}
 }
 
 func Test_Request_GetBindingContexts(t *testing.T) {
@@ -55,6 +358,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 	"type": "Group"
 	}
 ]`
+		bindingContextBadJson               = `{{{{`
 		bindingContextEmptySnapshotsObjects = `
 [
   {
@@ -104,11 +408,13 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 	}
 
 	type args struct {
-		filesContent map[string]File
+		filesContent     map[string]file
+		filesPermissions fs.FileMode
 	}
 
 	type wants struct {
 		bcs []bindingcontext.BindingContext
+		err string
 	}
 
 	tests := []struct {
@@ -124,20 +430,13 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			},
 			fields: fields{},
 			args: args{
-				filesContent: map[string]File{
-					valuesFilePath: {
-						Name:    generateFileNameWithTs(valuesFilePath),
-						Content: "",
-					},
-					configValuesFilePath: {
-						Name:    generateFileNameWithTs(configValuesFilePath),
-						Content: "",
-					},
+				filesContent: map[string]file{
 					bindingContextsFilePath: {
 						Name:    generateFileNameWithTs(bindingContextsFilePath),
 						Content: bindingContextObject,
 					},
 				},
+				filesPermissions: 0777,
 			},
 			wants: wants{
 				bcs: []bindingcontext.BindingContext{
@@ -175,20 +474,13 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			},
 			fields: fields{},
 			args: args{
-				filesContent: map[string]File{
-					valuesFilePath: {
-						Name:    generateFileNameWithTs(valuesFilePath),
-						Content: "",
-					},
-					configValuesFilePath: {
-						Name:    generateFileNameWithTs(configValuesFilePath),
-						Content: "",
-					},
+				filesContent: map[string]file{
 					bindingContextsFilePath: {
 						Name:    generateFileNameWithTs(bindingContextsFilePath),
 						Content: bindingContextEmptySnapshotsObjects,
 					},
 				},
+				filesPermissions: 0777,
 			},
 			wants: wants{
 				bcs: []bindingcontext.BindingContext{
@@ -211,20 +503,13 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			},
 			fields: fields{},
 			args: args{
-				filesContent: map[string]File{
-					valuesFilePath: {
-						Name:    generateFileNameWithTs(valuesFilePath),
-						Content: "",
-					},
-					configValuesFilePath: {
-						Name:    generateFileNameWithTs(configValuesFilePath),
-						Content: "",
-					},
+				filesContent: map[string]file{
 					bindingContextsFilePath: {
 						Name:    generateFileNameWithTs(bindingContextsFilePath),
 						Content: bindingContextEmptyObjectAndFilterResult,
 					},
 				},
+				filesPermissions: 0777,
 			},
 			wants: wants{
 				bcs: []bindingcontext.BindingContext{
@@ -240,6 +525,45 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 					},
 				},
 			},
+		}, {
+			meta: meta{
+				name:    "bad json",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					bindingContextsFilePath: {
+						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Content: bindingContextBadJson,
+					},
+				},
+				filesPermissions: 0777,
+			},
+			wants: wants{
+				bcs: nil,
+				err: "decode binding context: invalid character '{' looking for beginning of object key string",
+			},
+		},
+		{
+			meta: meta{
+				name:    "file read error",
+				enabled: true,
+			},
+			fields: fields{},
+			args: args{
+				filesContent: map[string]file{
+					bindingContextsFilePath: {
+						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Content: bindingContextObject,
+					},
+				},
+				filesPermissions: 0000,
+			},
+			wants: wants{
+				bcs: nil,
+				err: "open binding context file:",
+			},
 		},
 	}
 
@@ -252,32 +576,37 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			t.Parallel()
 
 			// create files with info
-			for _, file := range tt.args.filesContent {
-				err := os.WriteFile(file.Name, []byte(file.Content), 0777)
+			for _, f := range tt.args.filesContent {
+				err := os.WriteFile(f.Name, []byte(f.Content), tt.args.filesPermissions)
 				assert.NoError(t, err)
 			}
 
-			tcfg := &file.Config{
-				ValuesPath:         tt.args.filesContent[valuesFilePath].Name,
-				ConfigValuesPath:   tt.args.filesContent[configValuesFilePath].Name,
+			tcfg := &fileTransport.Config{
 				BindingContextPath: tt.args.filesContent[bindingContextsFilePath].Name,
 			}
 
-			tr := file.NewTransport(tcfg, "hook-name", nil, log.NewNop())
+			tr := fileTransport.NewTransport(tcfg, "hook-name", nil, log.NewNop())
 			req := tr.NewRequest()
 			bcs, err := req.GetBindingContexts()
-			assert.NoError(t, err)
-			assert.Equal(t, tt.wants.bcs, bcs)
 
 			// cleanup
-			for _, file := range tt.args.filesContent {
-				err := os.Remove(file.Name)
+			for _, f := range tt.args.filesContent {
+				_ = os.Remove(f.Name)
+			}
+
+			if err != nil {
+				assert.Contains(t, err.Error(), tt.wants.err)
+			}
+
+			if err == nil {
 				assert.NoError(t, err)
 			}
+
+			assert.Equal(t, tt.wants.bcs, bcs)
 		})
 	}
 }
 
 func generateFileNameWithTs(defaultPath string) string {
-	return fmt.Sprintf("%d-%s", time.Now().UnixNano(), defaultPath)
+	return fmt.Sprintf("%s-%s", uuid.New().String(), defaultPath)
 }

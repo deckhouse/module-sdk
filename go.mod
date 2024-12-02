@@ -9,6 +9,7 @@ require (
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241106140903-258b93b3334e
 	github.com/gojuno/minimock/v3 v3.4.1
 	github.com/google/go-containerregistry v0.17.0
+	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.2.2
 	github.com/onsi/gomega v1.35.1
 	github.com/pkg/errors v0.9.1
@@ -47,7 +48,6 @@ require (
 	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
