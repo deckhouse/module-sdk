@@ -90,6 +90,7 @@ type KubernetesConfig struct {
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
 	WaitForSynchronization *bool
 	// JQ filter to filter results from kubernetes objects
+	// TODO: need helper to easy check jqfilter (for testing purpose)
 	JqFilter string
 	// Allow to fail hook
 	AllowFailure *bool

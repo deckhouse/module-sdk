@@ -10,9 +10,9 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
-var _ = registry.RegisterFunc(configAlt, handlerHookAlt)
+var _ = registry.RegisterFunc(configSnapshotsAlt, handlerHookSnapshotsAlt)
 
-var configAlt = &pkg.HookConfig{
+var configSnapshotsAlt = &pkg.HookConfig{
 	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
 	Kubernetes: []pkg.KubernetesConfig{
 		{
@@ -24,7 +24,7 @@ var configAlt = &pkg.HookConfig{
 	},
 }
 
-func handlerHookAlt(_ context.Context, input *pkg.HookInput) error {
+func handlerHookSnapshotsAlt(_ context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from first root hook")
 
 	// getting info from snapshot

@@ -9,7 +9,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
-var _ = registry.RegisterFunc(config, handlerHook)
+var _ = registry.RegisterFunc(configSnapshots, handlerHookSnapshots)
 
 type NodeInfo struct {
 	APIVersion string           `json:"apiVersion"`
@@ -35,7 +35,7 @@ const applyNodeJQFilter = `{
 
 const nodeInfoSnapshotName = "node_info"
 
-var config = &pkg.HookConfig{
+var configSnapshots = &pkg.HookConfig{
 	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
 	Kubernetes: []pkg.KubernetesConfig{
 		{
@@ -47,7 +47,7 @@ var config = &pkg.HookConfig{
 	},
 }
 
-func handlerHook(_ context.Context, input *pkg.HookInput) error {
+func handlerHookSnapshots(_ context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from first root hook")
 
 	// getting info from snapshot
