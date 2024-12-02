@@ -2,9 +2,6 @@ package bindingcontext
 
 import (
 	"encoding/json"
-
-	v1 "k8s.io/api/admission/v1"
-	apixv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 )
 
 type BindingType string
@@ -38,21 +35,20 @@ const (
 // from shell operator
 type BindingContext struct {
 	BindingContextMetadata `json:"metadata"`
-
 	// name of a binding or a group or kubeEventType if binding has no 'name' field
 	Binding string `json:"binding,omitempty"`
 	// additional fields for 'kubernetes' binding
-	Type       KubeEventType  `json:"type,omitempty"`
-	WatchEvent WatchEventType `json:"watchEvent,omitempty"`
-
-	Objects []map[string]any `json:"objects,omitempty"`
+	Type KubeEventType `json:"type,omitempty"`
 
 	Snapshots map[string]ObjectAndFilterResults `json:"snapshots,omitempty"`
 
-	AdmissionReview  *v1.AdmissionReview      `json:"admissionReview,omitempty"`
-	ConversionReview *apixv1.ConversionReview `json:"conversionReview,omitempty"`
-	FromVersion      string                   `json:"fromVersion,omitempty"`
-	ToVersion        string                   `json:"toVersion,omitempty"`
+	// For “Event”-type binding context on Kubernetes event
+	// WatchEvent WatchEventType `json:"watchEvent,omitempty"`
+	// Object any `json:"object,omitempty"`
+	// FilterResult any `json:"filterResult,omitempty"`
+
+	// For “Synchronization”-type binding context
+	// Objects []map[string]any `json:"objects,omitempty"`
 }
 
 type BindingContextMetadata struct {
@@ -73,22 +69,4 @@ type ObjectAndFilterResult struct {
 
 func (bc BindingContext) IsSynchronization() bool {
 	return bc.Binding == "kubernetes" && bc.Type == TypeSynchronization
-}
-
-// from code-modules
-type oldBindingContext struct {
-	// Type of binding context: [Event, Synchronization, Group, Schedule]
-	Type KubeEventType `json:"type,omitempty"`
-	// Binding is a related binding name.
-	Binding string `json:"binding,omitempty"`
-	// Snapshots contain all objects for all bindings.
-	Snapshots map[string][]byte `json:"snapshots,omitempty"`
-
-	// For “Event”-type binding context on Kubernetes event
-	WatchEvent   WatchEventType `json:"watchEvent,omitempty"`
-	Object       any            `json:"object,omitempty"`
-	FilterResult any            `json:"filterResult,omitempty"`
-
-	// For “Synchronization”-type binding context
-	Objects []map[string]any `json:"objects,omitempty"`
 }

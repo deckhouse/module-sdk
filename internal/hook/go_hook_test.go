@@ -15,8 +15,6 @@ import (
 func Test_Go_Hook_Execute(t *testing.T) {
 	t.Parallel()
 
-	const ()
-
 	type meta struct {
 		name    string
 		enabled bool
