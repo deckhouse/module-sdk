@@ -89,7 +89,7 @@ Correspond with struct tags of entities with WriteOutput(w io.Writer) error meth
 
 
 ### One file example
-This file must be in 'hooks/' folder to build binary
+This file must be in 'hooks/' folder to build binary (see examples for correct layout)
 
 ```go
 package main
