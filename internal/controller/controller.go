@@ -174,7 +174,6 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 			AllowFailure:                 shcfg.AllowFailure,
 			ResynchronizationPeriod:      shcfg.ResynchronizationPeriod,
 			Queue:                        cfg.Queue,
-			Group:                        cfg.Metadata.Name,
 		}
 
 		if shcfg.JqFilter == "" {

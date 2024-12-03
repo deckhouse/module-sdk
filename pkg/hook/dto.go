@@ -107,6 +107,4 @@ type KubernetesConfig struct {
 	IncludeSnapshotsFrom []string `json:"includeSnapshotsFrom,omitempty"`
 
 	Queue string `json:"queue,omitempty"`
-	// Named like hook (get from upper)
-	Group string `json:"group,omitempty"`
 }
