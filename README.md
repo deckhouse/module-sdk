@@ -95,51 +95,51 @@ This file must be in 'hooks/' folder to build binary (see examples for correct l
 package main
 
 import (
-	"context"
-	"log/slog"
+  "context"
+  "log/slog"
 
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/pkg/app"
-	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
-	"github.com/deckhouse/module-sdk/pkg/registry"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+  "github.com/deckhouse/module-sdk/pkg"
+  "github.com/deckhouse/module-sdk/pkg/app"
+  objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
+  "github.com/deckhouse/module-sdk/pkg/registry"
+  v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = registry.RegisterFunc(config, handlerHook)
 
 var config = &pkg.HookConfig{
-	Kubernetes: []pkg.KubernetesConfig{
-		{
-			Name:       "apiservers",
-			APIVersion: "v1",
-			Kind:       "Pod",
-			NamespaceSelector: &pkg.NamespaceSelector{
-				NameSelector: &pkg.NameSelector{
-					MatchNames: []string{"kube-system"},
-				},
-			},
-			LabelSelector: &v1.LabelSelector{
-				MatchLabels: map[string]string{"component": "kube-apiserver"},
-			},
-			JqFilter: ".metadata.name",
-		},
-	},
+  Kubernetes: []pkg.KubernetesConfig{
+    {
+      Name:       "apiservers",
+      APIVersion: "v1",
+      Kind:       "Pod",
+      NamespaceSelector: &pkg.NamespaceSelector{
+        NameSelector: &pkg.NameSelector{
+          MatchNames: []string{"kube-system"},
+        },
+      },
+      LabelSelector: &v1.LabelSelector{
+        MatchLabels: map[string]string{"component": "kube-apiserver"},
+      },
+      JqFilter: ".metadata.name",
+    },
+  },
 }
 
 func handlerHook(_ context.Context, input *pkg.HookInput) error {
-	podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, "apiservers")
-	if err != nil {
-		return err
-	}
+  podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, "apiservers")
+  if err != nil {
+    return err
+  }
 
-	input.Logger.Info("found apiserver pods", slog.Any("podNames", podNames))
+  input.Logger.Info("found apiserver pods", slog.Any("podNames", podNames))
 
-	input.Values.Set("test.internal.apiServers", podNames)
+  input.Values.Set("test.internal.apiServers", podNames)
 
-	return nil
+  return nil
 }
 
 func main() {
-	app.Run()
+  app.Run()
 }
 ```
