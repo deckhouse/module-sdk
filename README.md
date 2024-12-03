@@ -86,3 +86,60 @@ Correspond with struct tags of entities with WriteOutput(w io.Writer) error meth
 3) Hook reads all files and pass incoming data in HookInput
 4) Hook executes and write all resulting data from collectors contained in HookInput
 5) Addon operator reads info from temporary output files
+
+
+### One file example
+This file must be in 'hooks/' folder to build binary
+
+```go
+package main
+
+import (
+	"context"
+	"log/slog"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/app"
+	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
+	"github.com/deckhouse/module-sdk/pkg/registry"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var _ = registry.RegisterFunc(config, handlerHook)
+
+var config = &pkg.HookConfig{
+	Kubernetes: []pkg.KubernetesConfig{
+		{
+			Name:       "apiservers",
+			APIVersion: "v1",
+			Kind:       "Pod",
+			NamespaceSelector: &pkg.NamespaceSelector{
+				NameSelector: &pkg.NameSelector{
+					MatchNames: []string{"kube-system"},
+				},
+			},
+			LabelSelector: &v1.LabelSelector{
+				MatchLabels: map[string]string{"component": "kube-apiserver"},
+			},
+			JqFilter: ".metadata.name",
+		},
+	},
+}
+
+func handlerHook(_ context.Context, input *pkg.HookInput) error {
+	podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, "apiservers")
+	if err != nil {
+		return err
+	}
+
+	input.Logger.Info("found apiserver pods", slog.Any("podNames", podNames))
+
+	input.Values.Set("test.internal.apiServers", podNames)
+
+	return nil
+}
+
+func main() {
+	app.Run()
+}
+```
