@@ -2,11 +2,7 @@ module basic-example-module
 
 go 1.22.8
 
-require (
-	github.com/deckhouse/module-sdk v0.0.0
-	k8s.io/apimachinery v0.29.8
-	sigs.k8s.io/yaml v1.4.0
-)
+require github.com/deckhouse/module-sdk v0.0.0
 
 require (
 	github.com/DataDog/gostackparse v0.7.0 // indirect
@@ -77,6 +73,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/api v0.29.8 // indirect
 	k8s.io/apiextensions-apiserver v0.29.0 // indirect
+	k8s.io/apimachinery v0.29.8 // indirect
 	k8s.io/client-go v0.29.8 // indirect
 	k8s.io/component-base v0.29.0 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
@@ -85,6 +82,7 @@ require (
 	sigs.k8s.io/controller-runtime v0.17.0 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
+	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
 replace github.com/deckhouse/module-sdk => ./../../
