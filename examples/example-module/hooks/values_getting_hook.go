@@ -8,6 +8,8 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
+// values and config values have indent interface
+
 var _ = registry.RegisterFunc(configValues, handlerHookValues)
 
 var configValues = &pkg.HookConfig{

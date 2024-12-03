@@ -181,10 +181,18 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 			newShCfg.KeepFullObjectsInMemory = ptr.To(true)
 		}
 
+		if shcfg.NameSelector != nil {
+			newShCfg.NameSelector = &hook.NameSelector{
+				MatchNames: shcfg.NameSelector.MatchNames,
+			}
+		}
+
 		if shcfg.NamespaceSelector != nil {
 			newShCfg.NamespaceSelector = &hook.NamespaceSelector{
-				NameSelector:  (*hook.NameSelector)(shcfg.NameSelector),
-				LabelSelector: shcfg.LabelSelector,
+				NameSelector: &hook.NameSelector{
+					MatchNames: shcfg.NamespaceSelector.NameSelector.MatchNames,
+				},
+				LabelSelector: shcfg.NamespaceSelector.LabelSelector,
 			}
 		}
 
