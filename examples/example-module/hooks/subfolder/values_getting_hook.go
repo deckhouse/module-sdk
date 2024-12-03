@@ -25,7 +25,7 @@ var configValues = &pkg.HookConfig{
 }
 
 func handlerHookValues(ctx context.Context, input *pkg.HookInput) error {
-	input.Logger.Info("hello from first root hook")
+	input.Logger.Info("hello from values hook")
 
 	valuesGetExamples(ctx, input)
 

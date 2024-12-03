@@ -25,7 +25,7 @@ var configSnapshotsAlt = &pkg.HookConfig{
 }
 
 func handlerHookSnapshotsAlt(_ context.Context, input *pkg.HookInput) error {
-	input.Logger.Info("hello from first root hook")
+	input.Logger.Info("hello from snapshot alt hook")
 
 	// getting info from snapshot
 	// no info about key not found, if you need it - check length
