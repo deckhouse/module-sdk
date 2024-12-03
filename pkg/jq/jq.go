@@ -28,7 +28,7 @@ type Query struct {
 	code    *gojq.Code
 }
 
-func NewJQ(query string) (*Query, error) {
+func NewQuery(query string) (*Query, error) {
 	parsedQuery, err := gojq.Parse(query)
 	if err != nil {
 		return nil, fmt.Errorf("parse: %w", err)
@@ -46,7 +46,7 @@ func NewJQ(query string) (*Query, error) {
 	}, nil
 }
 
-func (jq *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
+func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 	buf := bytes.NewBuffer([]byte{})
 	err := json.NewEncoder(buf).Encode(v)
 	if err != nil {
@@ -61,7 +61,7 @@ func (jq *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 
 	var errs error
 	result := make([]Result, 0, 1)
-	iter := jq.code.RunWithContext(ctx, input)
+	iter := q.code.RunWithContext(ctx, input)
 
 	for {
 		v, ok := iter.Next()
