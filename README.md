@@ -71,3 +71,18 @@ Example binding contexts file
 
 Correspond with struct tags of entities with WriteOutput(w io.Writer) error method
 
+### Work sequence
+
+#### Deckhouse register process
+1) To register your hooks, add them to import section in main package like in examples
+2) Compile your binary and deliver to "hooks" folder in Deckhouse
+3) Addon operator finds it automatically and register all your hooks in binary, corresponding with your HookConfigs
+4) When addon operator has a reason, it calls hook in your binary 
+5) After executing hook, addon operator process hook output
+
+#### Calling hook
+1) Addon operator create temporary files for input and output data (see ENV for examples)
+2) Addon operator execute hook with corresponding ID and ENV variables pointed to files
+3) Hook reads all files and pass incoming data in HookInput
+4) Hook executes and write all resulting data from collectors contained in HookInput
+5) Addon operator reads info from temporary output files
