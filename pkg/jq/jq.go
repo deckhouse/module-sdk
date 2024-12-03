@@ -84,7 +84,7 @@ func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 }
 
 func (q *Query) FilterStringObject(ctx context.Context, str string) ([]Result, error) {
-	buf := bytes.NewBuffer([]byte{})
+	buf := bytes.NewBuffer([]byte(str))
 
 	input := make(map[string]any, 1)
 	err := json.NewDecoder(buf).Decode(&input)
