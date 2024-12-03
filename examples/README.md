@@ -1,6 +1,6 @@
 # Examples
 
-[Module hook basic example](https://github.com/deckhouse/module-sdk/tree/main/examples/basic-example-module)
+[Module hook basic example](https://github.com/deckhouse/module-sdk/tree/main/examples/basic-example-module/hooks)
 
 [Module hook example](https://github.com/deckhouse/module-sdk/tree/main/examples/example-module)
 

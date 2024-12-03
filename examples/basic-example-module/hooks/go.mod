@@ -1,4 +1,4 @@
-module example-module
+module basic-example-module
 
 go 1.22.8
 
@@ -85,4 +85,4 @@ require (
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
-replace github.com/deckhouse/module-sdk => ./../../
+replace github.com/deckhouse/module-sdk => ./../../../

@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "example-module/hooks"
+	_ "example-module/subfolder"
 
 	"github.com/deckhouse/module-sdk/pkg/app"
 )
