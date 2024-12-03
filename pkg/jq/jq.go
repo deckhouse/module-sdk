@@ -83,6 +83,39 @@ func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 	return result, errs
 }
 
+func (q *Query) FilterStringObject(ctx context.Context, str string) ([]Result, error) {
+	buf := bytes.NewBuffer([]byte{})
+
+	input := make(map[string]any, 1)
+	err := json.NewDecoder(buf).Decode(&input)
+	if err != nil {
+		return nil, fmt.Errorf("decode object: %w", err)
+	}
+
+	var errs error
+	result := make([]Result, 0, 1)
+	iter := q.code.RunWithContext(ctx, input)
+
+	for {
+		v, ok := iter.Next()
+		if !ok {
+			break
+		}
+
+		if err, ok := v.(error); ok {
+			if err, ok := err.(*gojq.HaltError); ok && err.Value() == nil {
+				break
+			}
+
+			errs = errors.Join(errs, err)
+		}
+
+		result = append(result, Result{data: v})
+	}
+
+	return result, errs
+}
+
 func Validate(query string) error {
 	_, err := gojq.Parse(query)
 	if err != nil {
