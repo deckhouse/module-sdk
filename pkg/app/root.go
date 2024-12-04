@@ -26,6 +26,7 @@ type cmd struct {
 func (c *cmd) Execute() {
 	rootCmd := c.rootCmd()
 	rootCmd.AddCommand(c.hooksCmd())
+	rootCmd.CompletionOptions.DisableDefaultCmd = true
 
 	err := rootCmd.Execute()
 	if err != nil {
