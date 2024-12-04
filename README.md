@@ -59,11 +59,11 @@ func main() {
 }
 ```
 
-More examples you can find [here](https://github.com/deckhouse/module-sdk/tree/main/examples)
+More examples you can find [here](./examples)
 
 ## Testing
 
-If you want to test your JQ filter, you can use JQ helper like in example [here](https://github.com/deckhouse/module-sdk/blob/main/pkg/jq/jq_test.go)  [jq_test](./pkg/jq/jq_test.go)
+If you want to test your JQ filter, you can use JQ helper like in example [here](./pkg/jq/jq_test.go)
 
 ## For deckhouse developers
 
@@ -85,7 +85,7 @@ If you want to test your JQ filter, you can use JQ helper like in example [here]
 ### Work sequence
 
 #### Deckhouse register process
-1) To register your hooks, add them to import section in main package like in [examples](https://github.com/deckhouse/module-sdk/tree/main/examples)
+1) To register your hooks, add them to import section in main package like in [examples](./examples)
 2) Compile your binary and deliver to "hooks" folder in Deckhouse
 3) Addon operator finds it automatically and register all your hooks in binary, corresponding with your HookConfigs
 4) When addon operator has a reason, it calls hook in your binary 
