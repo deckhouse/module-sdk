@@ -3,7 +3,6 @@ module github.com/deckhouse/module-sdk
 go 1.22.8
 
 require (
-	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/caarlos0/env/v11 v11.2.2
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241106140903-258b93b3334e
 	github.com/gojuno/minimock/v3 v3.4.1
