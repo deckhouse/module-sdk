@@ -46,8 +46,6 @@ type ScheduleConfig struct {
 	Name string `yaml:"name,omitempty" json:"name,omitempty"`
 	// Crontab is a schedule config in crontab format. (5 or 6 fields)
 	Crontab string `yaml:"crontab" json:"crontab"`
-	// Group                string   `yaml:"group,omitempty" json:"group,omitempty"`
-	// Queue                string   `yaml:"queue,omitempty" json:"queue,omitempty"`
 }
 
 type FilterResult any
