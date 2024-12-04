@@ -46,7 +46,7 @@ func NewQuery(query string) (*Query, error) {
 	}, nil
 }
 
-func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
+func (q *Query) FilterObject(ctx context.Context, v any) (*Result, error) {
 	buf := bytes.NewBuffer([]byte{})
 	err := json.NewEncoder(buf).Encode(v)
 	if err != nil {
@@ -60,7 +60,7 @@ func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 	}
 
 	var errs error
-	result := make([]Result, 0, 1)
+	result := make([]any, 0, 1)
 	iter := q.code.RunWithContext(ctx, input)
 
 	for {
@@ -77,15 +77,15 @@ func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 			errs = errors.Join(errs, err)
 		}
 
-		result = append(result, Result{data: v})
+		result = append(result, v)
 	}
 
-	return result, errs
+	return &Result{data: result}, errs
 }
 
 var ErrJSONIsNotValid = errors.New("json is not valid")
 
-func (q *Query) FilterStringObject(ctx context.Context, str string) ([]Result, error) {
+func (q *Query) FilterStringObject(ctx context.Context, str string) (*Result, error) {
 	byteStr := []byte(str)
 
 	if !json.Valid(byteStr) {
@@ -101,7 +101,7 @@ func (q *Query) FilterStringObject(ctx context.Context, str string) ([]Result, e
 	}
 
 	var errs error
-	result := make([]Result, 0, 1)
+	result := make([]any, 0, 1)
 	iter := q.code.RunWithContext(ctx, input)
 
 	for {
@@ -118,10 +118,10 @@ func (q *Query) FilterStringObject(ctx context.Context, str string) ([]Result, e
 			errs = errors.Join(errs, err)
 		}
 
-		result = append(result, Result{data: v})
+		result = append(result, v)
 	}
 
-	return result, errs
+	return &Result{data: result}, errs
 }
 
 func Validate(query string) error {
