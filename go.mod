@@ -5,7 +5,6 @@ go 1.22.8
 require (
 	github.com/Masterminds/semver/v3 v3.2.1
 	github.com/caarlos0/env/v11 v11.2.2
-	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241106140903-258b93b3334e
 	github.com/gojuno/minimock/v3 v3.4.1
 	github.com/google/go-containerregistry v0.17.0
@@ -31,6 +30,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/docker/cli v27.1.1+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.7.0 // indirect
