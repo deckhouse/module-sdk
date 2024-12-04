@@ -10,7 +10,8 @@ import (
 type GoHookMetadata struct {
 	// Name is a key in snapshots map.
 	Name string `yaml:"name" json:"name"`
-	// Name is path to hook folder.
+	// Name is path to hook build folder.
+	// Use it only if you need to build unique hook name
 	Path string `yaml:"path" json:"path"`
 }
 
