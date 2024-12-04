@@ -1,9 +1,7 @@
 # Module SDK
 SDK to easy compile your hooks as a binary and integrate with addon operator
 
-### Using
-
-See [examples](https://github.com/deckhouse/module-sdk/tree/main/examples)
+## Usage
 
 ### One file example
 This file must be in 'hooks/' folder to build binary (see examples for correct layout)
@@ -60,6 +58,8 @@ func main() {
   app.Run()
 }
 ```
+
+More examples you can find [here](https://github.com/deckhouse/module-sdk/tree/main/examples)
 
 ## For deckhouse developers
 
