@@ -81,7 +81,7 @@ More examples you can find [here](https://github.com/deckhouse/module-sdk/tree/m
 ### Work sequence
 
 #### Deckhouse register process
-1) To register your hooks, add them to import section in main package like in examples
+1) To register your hooks, add them to import section in main package like in [examples](https://github.com/deckhouse/module-sdk/tree/main/examples)
 2) Compile your binary and deliver to "hooks" folder in Deckhouse
 3) Addon operator finds it automatically and register all your hooks in binary, corresponding with your HookConfigs
 4) When addon operator has a reason, it calls hook in your binary 
