@@ -1,14 +1,17 @@
-package jq
+package jq_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/deckhouse/module-sdk/pkg/jq"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestJqFilter(t *testing.T) {
 	const jqFilter = `.metadata.name // "foobar"`
-	query, err := NewQuery(jqFilter)
+
+	query, err := jq.NewQuery(jqFilter)
 	if err != nil {
 		panic(err)
 	}
