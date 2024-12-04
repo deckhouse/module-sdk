@@ -46,9 +46,10 @@ precompiled hooks to use with corresponding module.`,
 
 func (c *cmd) hooksCmd() *cobra.Command {
 	hooksCmd := &cobra.Command{
-		Use:   "hook",
-		Short: "Working with hooks",
-		Long:  `Tools for working with nested hooks`,
+		Use:     "hooks",
+		Aliases: []string{"hook"},
+		Short:   "Working with hooks",
+		Long:    `Tools for working with nested hooks`,
 	}
 
 	hooksCmd.AddCommand(&cobra.Command{
