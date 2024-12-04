@@ -59,11 +59,11 @@ func main() {
 }
 ```
 
+More examples you can find [here](https://github.com/deckhouse/module-sdk/tree/main/examples)
+
 ## Testing
 
 If you want to test your JQ filter, you can use JQ helper like in example [here](https://github.com/deckhouse/module-sdk/blob/main/pkg/jq/jq_test.go)
-
-More examples you can find [here](https://github.com/deckhouse/module-sdk/tree/main/examples)
 
 ## For deckhouse developers
 
