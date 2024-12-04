@@ -19,7 +19,6 @@ package k8s
 import (
 	"fmt"
 
-	"github.com/deckhouse/module-sdk/pkg"
 	admissionv1 "k8s.io/api/admission/v1"
 	admissionregv1 "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
@@ -45,6 +44,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 var _ pkg.KubernetesClient = (*Client)(nil)

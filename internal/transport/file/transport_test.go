@@ -6,11 +6,12 @@ import (
 	"os"
 	"testing"
 
+	uuid "github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	fileTransport "github.com/deckhouse/module-sdk/internal/transport/file"
-	uuid "github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -29,7 +30,7 @@ func Test_RequestGetValues(t *testing.T) {
 
 	const (
 		values  = `{"some-module":{},"global":{"modules":{"publicDomainTemplate":"%s.com"}}}`
-		badJson = `{{{{{`
+		badJSON = `{{{{{`
 	)
 
 	type meta struct {
@@ -58,7 +59,7 @@ func Test_RequestGetValues(t *testing.T) {
 	}{
 		{
 			meta: meta{
-				name:    "successfull get values",
+				name:    "successful get values",
 				enabled: true,
 			},
 			fields: fields{},
@@ -125,7 +126,7 @@ func Test_RequestGetValues(t *testing.T) {
 				filesContent: map[string]file{
 					valuesFilePath: {
 						Name:    generateFileNameWithTs(valuesFilePath),
-						Content: badJson,
+						Content: badJSON,
 					},
 				},
 				filesPermissions: 0777,
@@ -179,7 +180,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 
 	const (
 		configValues = `{"global":{"modules":{"publicDomainTemplate":"%s.com"}},"some-module":{}}`
-		badJson      = `{{{{{`
+		badJSON      = `{{{{{`
 	)
 
 	type meta struct {
@@ -208,7 +209,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 	}{
 		{
 			meta: meta{
-				name:    "successfull get config values",
+				name:    "successful get config values",
 				enabled: true,
 			},
 			fields: fields{},
@@ -275,7 +276,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 				filesContent: map[string]file{
 					configValuesFilePath: {
 						Name:    generateFileNameWithTs(configValuesFilePath),
-						Content: badJson,
+						Content: badJSON,
 					},
 				},
 				filesPermissions: 0777,
@@ -423,7 +424,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 	}{
 		{
 			meta: meta{
-				name:    "successfull get binding context",
+				name:    "successful get binding context",
 				enabled: true,
 			},
 			fields: fields{},

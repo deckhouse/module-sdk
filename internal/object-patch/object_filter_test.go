@@ -3,9 +3,10 @@ package objectpatch_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"
 	pkgobjectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Snapshots(t *testing.T) {

@@ -5,11 +5,12 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/deckhouse/deckhouse/pkg/log"
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	"github.com/deckhouse/module-sdk/internal/hook"
 	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Go_Hook_Execute(t *testing.T) {
@@ -206,7 +207,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					return hr
 				},
-				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
 					return func(_ context.Context, input *pkg.HookInput) error {
 						return nil
 					}
@@ -233,7 +234,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					return hr
 				},
-				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
 					return func(_ context.Context, input *pkg.HookInput) error {
 						return nil
 					}
@@ -261,7 +262,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					return hr
 				},
-				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
 					return func(_ context.Context, input *pkg.HookInput) error {
 						return nil
 					}
@@ -390,7 +391,6 @@ func Test_Go_Hook_Execute(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-
 		})
 	}
 }

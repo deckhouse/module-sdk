@@ -83,13 +83,13 @@ func (q *Query) FilterObject(ctx context.Context, v any) ([]Result, error) {
 	return result, errs
 }
 
-var ErrJsonIsNotValid = errors.New("json is not valid")
+var ErrJSONIsNotValid = errors.New("json is not valid")
 
 func (q *Query) FilterStringObject(ctx context.Context, str string) ([]Result, error) {
 	byteStr := []byte(str)
 
 	if !json.Valid(byteStr) {
-		return nil, ErrJsonIsNotValid
+		return nil, ErrJSONIsNotValid
 	}
 
 	buf := bytes.NewBuffer(byteStr)

@@ -31,13 +31,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	oci_tools "github.com/sylabs/oci-tools/pkg/mutate"
 	"github.com/tidwall/gjson"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 //go:generate minimock -i Client -o cr_mock.go

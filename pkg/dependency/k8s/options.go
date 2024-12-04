@@ -17,8 +17,9 @@ limitations under the License.
 package k8s
 
 import (
-	"github.com/deckhouse/module-sdk/pkg"
 	"k8s.io/apimachinery/pkg/runtime"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 type Option func(optionsApplier pkg.KubernetesOptionApplier)
