@@ -80,6 +80,10 @@ func (q *Query) FilterObject(ctx context.Context, v any) (*Result, error) {
 		result = append(result, v)
 	}
 
+	if len(result) == 1 {
+		return &Result{data: result[0]}, nil
+	}
+
 	return &Result{data: result}, errs
 }
 
@@ -119,6 +123,10 @@ func (q *Query) FilterStringObject(ctx context.Context, str string) (*Result, er
 		}
 
 		result = append(result, v)
+	}
+
+	if len(result) == 1 {
+		return &Result{data: result[0]}, nil
 	}
 
 	return &Result{data: result}, errs
