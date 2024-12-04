@@ -63,7 +63,7 @@ More examples you can find [here](https://github.com/deckhouse/module-sdk/tree/m
 
 ## Testing
 
-If you want to test your JQ filter, you can use JQ helper like in example [here](https://github.com/deckhouse/module-sdk/blob/main/pkg/jq/jq_test.go)
+If you want to test your JQ filter, you can use JQ helper like in example [here](https://github.com/deckhouse/module-sdk/blob/main/pkg/jq/jq_test.go)  [jq_test](./pkg/jq/jq_test.go)
 
 ## For deckhouse developers
 
