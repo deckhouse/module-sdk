@@ -10,15 +10,25 @@ import (
 )
 
 func Run() {
+	logger := log.Default()
+
+	defer func() {
+		// recover from panic if one occurred. Set err to nil otherwise.
+		if r := recover(); r != nil {
+			panicLogger := logger.WithGroup("panic").
+				With(slog.Any("error", r)).
+				With(slog.String("stacktrace", string(debug.Stack())))
+			panicLogger.Error("panic recover")
+		}
+	}()
+
 	cfg := newConfig()
 	err := cfg.Parse()
 	if err != nil {
 		panic(err)
 	}
 
-	logger := log.NewLogger(log.Options{
-		Level: cfg.LogLevel.Level(),
-	})
+	logger.SetLevel(cfg.LogLevel)
 
 	fConfig := &file.Config{
 		BindingContextPath: cfg.HookConfig.BindingContextPath,
@@ -38,16 +48,6 @@ func Run() {
 	controller := controller.NewHookController(fConfig, logger.Named("hook-controller"))
 
 	c := newCMD(controller)
-
-	defer func() {
-		// recover from panic if one occurred. Set err to nil otherwise.
-		if r := recover(); r != nil {
-			panicLogger := logger.WithGroup("panic").
-				With(slog.Any("error", r)).
-				With(slog.String("stacktrace", string(debug.Stack())))
-			panicLogger.Error("panic recover")
-		}
-	}()
 
 	c.Execute()
 }

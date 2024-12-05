@@ -119,6 +119,7 @@ func (c *cmd) hooksCmd() *cobra.Command {
 			return nil
 		},
 	})
+	panic("there is a lol")
 
 	return hooksCmd
 }
