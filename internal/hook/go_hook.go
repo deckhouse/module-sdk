@@ -122,7 +122,7 @@ func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, err
 		PatchCollector:   objectPatchCollector,
 		MetricsCollector: metricsCollector,
 		DC:               req.GetDependencyContainer(),
-		Logger:           h.logger.With("output", "gohook"),
+		Logger:           h.logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("hook reconcile func: %w", err)
