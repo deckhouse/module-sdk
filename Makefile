@@ -5,8 +5,12 @@ GIT=$(shell which git)
 go-check:
 	$(call error-if-empty,$(GO),go)
 
+.PHONY: git-check
+git-check:
+	$(call error-if-empty,$(GIT),git)
+
 .PHONY: go-module-version
-go-module-version: go-check
+go-module-version: go-check git-check
 	@echo "go get $(shell $(GO) list)@$(shell $(GIT) rev-parse HEAD)"
 
 .PHONY: test
