@@ -15,6 +15,8 @@ func (s Snapshots) Get(key string) []pkg.Snapshot {
 	return s[key]
 }
 
+var _ pkg.Snapshot = (*Snapshot)(nil)
+
 type Snapshot json.RawMessage
 
 func (snap Snapshot) UnmarhalTo(v any) error {
