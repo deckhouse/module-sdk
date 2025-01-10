@@ -37,9 +37,9 @@ import (
 const CertificateWaitTimeoutDefault = 1 * time.Minute
 
 type CertificateSecret struct {
-	Name string
-	Crt  []byte
-	Key  []byte
+	Name string `json:"name"`
+	Key  string `json:"key"`
+	Cert string `json:"cert"`
 }
 
 type CertificateInfo struct {
@@ -79,26 +79,6 @@ func (r *OrderCertificateRequest) DeepCopy() OrderCertificateRequest {
 		WaitTimeout: r.WaitTimeout,
 	}
 	return newR
-}
-
-func ParseSecret(secret *v1.Secret) *CertificateSecret {
-	cc := &CertificateSecret{
-		Name: secret.Name,
-	}
-
-	if tls, ok := secret.Data["tls.crt"]; ok {
-		cc.Crt = tls
-	} else if client, ok := secret.Data["client.crt"]; ok {
-		cc.Crt = client
-	}
-
-	if tls, ok := secret.Data["tls.key"]; ok {
-		cc.Key = tls
-	} else if client, ok := secret.Data["client.key"]; ok {
-		cc.Key = client
-	}
-
-	return cc
 }
 
 func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCertificateRequest) (*CertificateInfo, error) {

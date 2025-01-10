@@ -25,7 +25,7 @@ const (
 
 var JQFilterTLS = `{
     "key": .data."tls.key",
-    "cert": .data."tls.crt"
+    "cert": .data."tls.crt",
     "ca": .data."ca.crt"
 }`
 

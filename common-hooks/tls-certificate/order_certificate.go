@@ -142,14 +142,14 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 				}
 			}
 
-			if secret != nil && len(secret.Crt) > 0 && len(secret.Key) > 0 {
+			if secret != nil && len(secret.Cert) > 0 && len(secret.Key) > 0 {
 				// Check that certificate is not expired and has the same order request
-				genNew, err := shouldGenerateNewCert(secret.Crt, request, time.Hour*24*15)
+				genNew, err := shouldGenerateNewCert(secret.Cert, request, time.Hour*24*15)
 				if err != nil {
 					return err
 				}
 				if !genNew {
-					info := tlscertificate.CertificateInfo{Certificate: string(secret.Crt), Key: string(secret.Key)}
+					info := tlscertificate.CertificateInfo{Certificate: string(secret.Cert), Key: string(secret.Key)}
 					input.Values.Set(valueName, info)
 					continue
 				}
@@ -166,8 +166,8 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 }
 
 // shouldGenerateNewCert checks that the certificate from the cluster matches the order
-func shouldGenerateNewCert(cert []byte, request tlscertificate.OrderCertificateRequest, durationLeft time.Duration) (bool, error) {
-	c, err := helpers.ParseCertificatePEM(cert)
+func shouldGenerateNewCert(cert string, request tlscertificate.OrderCertificateRequest, durationLeft time.Duration) (bool, error) {
+	c, err := helpers.ParseCertificatePEM([]byte(cert))
 	if err != nil {
 		return false, fmt.Errorf("certificate cannot parsed: %v", err)
 	}
