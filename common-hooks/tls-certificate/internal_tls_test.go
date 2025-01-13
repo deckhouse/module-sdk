@@ -34,9 +34,9 @@ func Test_JQFilterTLS(t *testing.T) {
 		{
 	  "apiVersion": "v1",
 	  "data": {
-		"ca.crt": "some-ca",
-		"tls.crt": "some-crt",
-		"tls.key": "some-key"
+		"ca.crt": "c29tZS1jYQ==",
+		"tls.crt": "c29tZS1jcnQ=",
+		"tls.key": "c29tZS1rZXk="
 	  },
 	  "kind": "Secret",
 	  "metadata": {
@@ -56,8 +56,8 @@ func Test_JQFilterTLS(t *testing.T) {
 		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(cert)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "some-key", cert.Key)
-		assert.Equal(t, "some-crt", cert.Cert)
-		assert.Equal(t, "some-ca", cert.CA)
+		assert.Equal(t, "some-key", string(cert.Key))
+		assert.Equal(t, "some-crt", string(cert.Cert))
+		assert.Equal(t, "some-ca", string(cert.CA))
 	})
 }

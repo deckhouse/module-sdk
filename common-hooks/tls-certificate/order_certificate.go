@@ -74,7 +74,7 @@ func (r *OrderCertificateRequest) DeepCopy() OrderCertificateRequest {
 var JQFilterApplyCertificateSecret = `{
     "name": .metadata.name,
     "key": (if (.data."tls.key" != null and .data."tls.key" != "") then .data."tls.key" else (if (.data."client.key" != null and .data."client.key" != "") then .data."client.key" else null end) end),
-    "cert": (if (.data."tls.crt" != null and .data."tls.crt" != "") then .data."tls.crt" else (if (.data."client.crt" != null and .data."client.crt" != "") then .data."client.crt" else null end) end)
+    "crt": (if (.data."tls.crt" != null and .data."tls.crt" != "") then .data."tls.crt" else (if (.data."client.crt" != null and .data."client.crt" != "") then .data."client.crt" else null end) end)
 }`
 
 // RegisterOrderCertificateHookEM must be used for external modules
@@ -134,13 +134,13 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 
 		valueName := fmt.Sprintf("%s.%s", request.ModuleName, request.ValueName)
 
-		certSecrets, err := objectpatch.UnmarshalToStruct[CertificateSecret](input.Snapshots, "certificateSecrets")
+		certSecrets, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, "certificateSecrets")
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)
 		}
 
 		if len(certSecrets) > 0 {
-			var secret *CertificateSecret
+			var secret *certificate.Certificate
 
 			for _, snapSecret := range certSecrets {
 				if snapSecret.Name == request.SecretName {
@@ -151,7 +151,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 
 			if secret != nil && len(secret.Cert) > 0 && len(secret.Key) > 0 {
 				// Check that certificate is not expired and has the same order request
-				genNew, err := shouldGenerateNewCert(secret.Cert, request, time.Hour*24*15)
+				genNew, err := shouldGenerateNewCert(string(secret.Cert), request, time.Hour*24*15)
 				if err != nil {
 					return err
 				}
@@ -167,6 +167,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 		if err != nil {
 			return err
 		}
+
 		input.Values.Set(valueName, info)
 	}
 	return nil
@@ -216,12 +217,6 @@ func arraysAreEqual(a, b []string) bool {
 		}
 	}
 	return true
-}
-
-type CertificateSecret struct {
-	Name string `json:"name"`
-	Key  string `json:"key"`
-	Cert string `json:"cert"`
 }
 
 type CertificateInfo struct {

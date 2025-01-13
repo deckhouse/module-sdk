@@ -26,8 +26,8 @@ import (
 )
 
 type Authority struct {
-	Key  string `json:"key"`
-	Cert string `json:"cert"`
+	Key  []byte `json:"key"`
+	Cert []byte `json:"crt"`
 }
 
 func GenerateCA(logger pkg.Logger, cn string, options ...Option) (Authority, error) {
@@ -58,5 +58,5 @@ func GenerateCA(logger pkg.Logger, cn string, options ...Option) (Authority, err
 		logger.Error(buf.String())
 	}
 
-	return Authority{Cert: string(ca), Key: string(key)}, err
+	return Authority{Cert: ca, Key: key}, err
 }

@@ -25,7 +25,7 @@ import (
 
 var JQFilterApplyCaSelfSignedCert = `{
     "key": .data."tls.key",
-    "cert": .data."tls.crt"
+    "crt": .data."tls.crt"
 }`
 
 func GetOrCreateCa(input *pkg.HookInput, snapshotKey, cn string) (*Authority, error) {

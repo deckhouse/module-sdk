@@ -33,9 +33,9 @@ func Test_JQFilterApplyCaSelfSignedCert(t *testing.T) {
 		{
 	  "apiVersion": "v1",
 	  "data": {
-		"ca.crt": "some-ca",
-		"tls.crt": "some-crt",
-		"tls.key": "some-key"
+		"ca.crt": "c29tZS1jYQ==",
+		"tls.crt": "c29tZS1jcnQ=",
+		"tls.key": "c29tZS1rZXk="
 	  },
 	  "kind": "Secret",
 	  "metadata": {
@@ -55,7 +55,7 @@ func Test_JQFilterApplyCaSelfSignedCert(t *testing.T) {
 		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "some-key", auth.Key)
-		assert.Equal(t, "some-crt", auth.Cert)
+		assert.Equal(t, "some-key", string(auth.Key))
+		assert.Equal(t, "some-crt", string(auth.Cert))
 	})
 }

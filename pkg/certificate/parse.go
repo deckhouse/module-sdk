@@ -83,13 +83,13 @@ func generateTLSCert(crt, key string) (*tls.Certificate, error) {
 }
 
 // ParseCertificatesFromPEM parsing PEM input strings and return ca cert and/or verified tls.Certificate
-func ParseCertificatesFromPEM(ca, crt, key string) (*x509.Certificate, *tls.Certificate, error) {
+func ParseCertificatesFromPEM(ca, crt, key []byte) (*x509.Certificate, *tls.Certificate, error) {
 	caCert, err := ParseCertificate(ca)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	clientCert, err := tls.X509KeyPair([]byte(crt), []byte(key))
+	clientCert, err := tls.X509KeyPair(crt, key)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -98,8 +98,8 @@ func ParseCertificatesFromPEM(ca, crt, key string) (*x509.Certificate, *tls.Cert
 }
 
 // ParseCertificate parse x509 certificate PEM encoded
-func ParseCertificate(crt string) (*x509.Certificate, error) {
-	block, _ := pem.Decode([]byte(crt))
+func ParseCertificate(crt []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(crt)
 	if block == nil {
 		return nil, fmt.Errorf("block not found")
 	}

@@ -27,7 +27,7 @@ const (
 
 var JQFilterTLS = `{
     "key": .data."tls.key",
-    "cert": .data."tls.crt",
+    "crt": .data."tls.crt",
     "ca": .data."ca.crt"
 }`
 
@@ -93,22 +93,11 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		}
 
 		var cert certificate.Certificate
-		var err error
-
 		cn, sans := conf.CN, conf.SANs(input)
 
-		enccerts, err := objectpatch.UnmarshalToStruct[certificate.EncodedCertificate](input.Snapshots, SnapshotKey)
+		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, SnapshotKey)
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)
-		}
-
-		certs := make([]certificate.Certificate, 0, len(enccerts))
-		for _, c := range enccerts {
-			certs = append(certs, certificate.Certificate{
-				Key:  string(c.Key),
-				Cert: string(c.Cert),
-				CA:   string(c.CA),
-			})
 		}
 
 		if len(certs) == 0 {
@@ -164,9 +153,9 @@ type certValues struct {
 // in values.
 func convCertToValues(cert certificate.Certificate) certValues {
 	return certValues{
-		CA:  cert.CA,
-		Crt: cert.Cert,
-		Key: cert.Key,
+		CA:  string(cert.CA),
+		Crt: string(cert.Cert),
+		Key: string(cert.Key),
 	}
 }
 
@@ -192,7 +181,7 @@ func generateNewSelfSignedTLS(input *pkg.HookInput, cn string, sans, usages []st
 }
 
 // check certificate duration and SANs list
-func isIrrelevantCert(certData string, desiredSANSs []string) (bool, error) {
+func isIrrelevantCert(certData []byte, desiredSANSs []string) (bool, error) {
 	cert, err := certificate.ParseCertificate(certData)
 	if err != nil {
 		return false, err
@@ -227,7 +216,7 @@ func isIrrelevantCert(certData string, desiredSANSs []string) (bool, error) {
 	return false, nil
 }
 
-func isOutdatedCA(ca string) (bool, error) {
+func isOutdatedCA(ca []byte) (bool, error) {
 	// Issue a new certificate if there is no CA in the secret.
 	// Without CA it is not possible to validate the certificate.
 	if len(ca) == 0 {

@@ -31,16 +31,12 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
-type EncodedCertificate struct {
-	Key  []byte `json:"key"`
-	Cert []byte `json:"cert"`
-	CA   []byte `json:"ca"`
-}
-
 type Certificate struct {
-	Key  string
-	Cert string
-	CA   string
+	Name string `json:"name,omitempty"`
+
+	Key  []byte `json:"key"`
+	Cert []byte `json:"crt"`
+	CA   []byte `json:"ca"`
 }
 
 type SigningOption func(signing *config.Signing)
@@ -119,5 +115,9 @@ func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca Authority, options 
 		return Certificate{}, err
 	}
 
-	return Certificate{CA: ca.Cert, Key: string(key), Cert: string(cert)}, nil
+	return Certificate{
+		CA:   ca.Cert,
+		Key:  key,
+		Cert: cert,
+	}, nil
 }

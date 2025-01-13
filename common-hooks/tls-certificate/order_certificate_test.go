@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
+	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
 	"github.com/stretchr/testify/assert"
 )
@@ -33,9 +34,9 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		{
 	  "apiVersion": "v1",
 	  "data": {
-		"ca.crt": "some-ca",
-		"tls.crt": "some-crt",
-		"tls.key": "some-key"
+		"ca.crt": "c29tZS1jYQ==",
+		"tls.crt": "c29tZS1jcnQ=",
+		"tls.key": "c29tZS1rZXk="
 	  },
 	  "kind": "Secret",
 	  "metadata": {
@@ -51,12 +52,12 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		res, err := q.FilterStringObject(context.Background(), rawSecret)
 		assert.NoError(t, err)
 
-		auth := new(tlscertificate.CertificateSecret)
+		auth := new(certificate.Certificate)
 		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "some-key", auth.Key)
-		assert.Equal(t, "some-crt", auth.Cert)
+		assert.Equal(t, "some-key", string(auth.Key))
+		assert.Equal(t, "some-crt", string(auth.Cert))
 		assert.Equal(t, "some-cert", auth.Name)
 	})
 
@@ -65,9 +66,9 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		{
 	  "apiVersion": "v1",
 	  "data": {
-		"ca.crt": "some-ca",
-		"client.crt": "some-crt",
-		"client.key": "some-key"
+		"ca.crt": "c29tZS1jYQ==",
+		"client.crt": "c29tZS1jcnQ=",
+		"client.key": "c29tZS1rZXk="
 	  },
 	  "kind": "Secret",
 	  "metadata": {
@@ -83,12 +84,12 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		res, err := q.FilterStringObject(context.Background(), rawSecret)
 		assert.NoError(t, err)
 
-		auth := new(tlscertificate.CertificateSecret)
+		auth := new(certificate.Certificate)
 		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "some-key", auth.Key)
-		assert.Equal(t, "some-crt", auth.Cert)
+		assert.Equal(t, "some-key", string(auth.Key))
+		assert.Equal(t, "some-crt", string(auth.Cert))
 		assert.Equal(t, "some-cert", auth.Name)
 	})
 }
