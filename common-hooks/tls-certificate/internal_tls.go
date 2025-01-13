@@ -71,7 +71,6 @@ func RegisterInternalTLSHookEM(conf GenSelfSignedTLSHookConf) bool {
 }
 
 func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
-
 	var usages []string
 	if conf.Usages == nil {
 		usages = []string{
@@ -98,9 +97,18 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		cn, sans := conf.CN, conf.SANs(input)
 
-		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, SnapshotKey)
+		enccerts, err := objectpatch.UnmarshalToStruct[certificate.EncodedCertificate](input.Snapshots, SnapshotKey)
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)
+		}
+
+		certs := make([]certificate.Certificate, 0, len(enccerts))
+		for _, c := range enccerts {
+			certs = append(certs, certificate.Certificate{
+				Key:  string(c.Key),
+				Cert: string(c.Cert),
+				CA:   string(c.CA),
+			})
 		}
 
 		if len(certs) == 0 {

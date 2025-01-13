@@ -31,10 +31,16 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
+type EncodedCertificate struct {
+	Key  []byte `json:"key"`
+	Cert []byte `json:"cert"`
+	CA   []byte `json:"ca"`
+}
+
 type Certificate struct {
-	Key  string `json:"key"`
-	Cert string `json:"cert"`
-	CA   string `json:"ca"`
+	Key  string
+	Cert string
+	CA   string
 }
 
 type SigningOption func(signing *config.Signing)
