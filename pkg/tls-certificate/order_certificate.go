@@ -19,14 +19,11 @@ package tlscertificate
 import (
 	"context"
 	"fmt"
-	"sort"
 	"time"
 
-	"github.com/cloudflare/cfssl/helpers"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	csrutil "k8s.io/client-go/util/certificate/csr"
 
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
@@ -156,7 +153,7 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 	defer cancel()
 
 	// TODO: MUST REWRITE FUNCTION FOR CONTROLER RUNTIME CLIENT
-	crtPEM, err := csrutil.WaitForCertificate(ctxWTO, nil, csr.Name, csr.UID)
+	crtPEM, err := WaitForCertificate(ctxWTO, k8, csr.Name, csr.UID)
 	if err != nil {
 		return nil, fmt.Errorf("%s CertificateSigningRequest was not signed: %v", request.CommonName, err)
 	}
@@ -167,50 +164,4 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 	info := CertificateInfo{Certificate: string(crtPEM), Key: string(key), CertificateUpdated: true}
 
 	return &info, nil
-}
-
-// shouldGenerateNewCert checks that the certificate from the cluster matches the order
-func shouldGenerateNewCert(cert []byte, request OrderCertificateRequest, durationLeft time.Duration) (bool, error) {
-	c, err := helpers.ParseCertificatePEM(cert)
-	if err != nil {
-		return false, fmt.Errorf("certificate cannot parsed: %v", err)
-	}
-
-	if c.Subject.CommonName != request.CommonName {
-		return true, nil
-	}
-
-	if !arraysAreEqual(c.Subject.Organization, request.Groups) {
-		return true, nil
-	}
-
-	if !arraysAreEqual(c.DNSNames, request.SANs) {
-		return true, nil
-	}
-
-	// TODO: compare usages
-	// if !arraysAreEqual(c.ExtKeyUsage, request.Usages) {
-	//	  return true, nil
-	// }
-
-	if time.Until(c.NotAfter) < durationLeft {
-		return true, nil
-	}
-	return false, nil
-}
-
-func arraysAreEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	sort.Strings(a)
-	sort.Strings(b)
-
-	for i, v := range a {
-		if v != b[i] {
-			return false
-		}
-	}
-	return true
 }
