@@ -24,7 +24,6 @@ import (
 
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
-	tlscertificatelib "github.com/deckhouse/module-sdk/pkg/tls-certificate"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -52,7 +51,7 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		res, err := q.FilterStringObject(context.Background(), rawSecret)
 		assert.NoError(t, err)
 
-		auth := new(tlscertificatelib.CertificateSecret)
+		auth := new(tlscertificate.CertificateSecret)
 		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
 		assert.NoError(t, err)
 
@@ -84,7 +83,7 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		res, err := q.FilterStringObject(context.Background(), rawSecret)
 		assert.NoError(t, err)
 
-		auth := new(tlscertificatelib.CertificateSecret)
+		auth := new(tlscertificate.CertificateSecret)
 		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
 		assert.NoError(t, err)
 
