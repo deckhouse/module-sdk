@@ -25,6 +25,53 @@ const (
 	SnapshotKey  = "secret"
 )
 
+type GenSelfSignedTLSHookConf struct {
+	// SANs function which returns list of domain to include into cert. Use DefaultSANs helper
+	SANs SANsGenerator
+
+	// CN - Certificate common Name
+	// often it is module name
+	CN string
+
+	// Namespace - namespace for TLS secret
+	Namespace string
+	// TLSSecretName - TLS secret name
+	// secret must be TLS secret type https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets
+	// CA certificate MUST set to ca.crt key
+	TLSSecretName string
+
+	// Usages specifies valid usage contexts for keys.
+	// See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
+	//      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
+	Usages []certificatesv1.KeyUsage
+
+	// FullValuesPathPrefix - prefix full path to store CA certificate TLS private key and cert
+	// full paths will be
+	//   FullValuesPathPrefix + .ca  - CA certificate
+	//   FullValuesPathPrefix + .crt - TLS private key
+	//   FullValuesPathPrefix + .key - TLS certificate
+	// Example: FullValuesPathPrefix =  'prometheusMetricsAdapter.internal.adapter'
+	// Values to store:
+	// prometheusMetricsAdapter.internal.adapter.ca
+	// prometheusMetricsAdapter.internal.adapter.crt
+	// prometheusMetricsAdapter.internal.adapter.key
+	// Data in values store as plain text
+	// In helm templates you need use `b64enc` function to encode
+	FullValuesPathPrefix string
+
+	// BeforeHookCheck runs check function before hook execution. Function should return boolean 'continue' value
+	// if return value is false - hook will stop its execution
+	// if return value is true - hook will continue
+	BeforeHookCheck func(input *pkg.HookInput) bool
+}
+
+func (gss GenSelfSignedTLSHookConf) Path() string {
+	return strings.TrimSuffix(gss.FullValuesPathPrefix, ".")
+}
+
+// SANsGenerator function for generating sans
+type SANsGenerator func(input *pkg.HookInput) []string
+
 var JQFilterTLS = `{
     "key": .data."tls.key",
     "crt": .data."tls.crt",
@@ -240,16 +287,16 @@ func DefaultSANs(sans []string) SANsGenerator {
 	return func(input *pkg.HookInput) []string {
 		res := make([]string, 0, len(sans))
 
-		clusterDomain := input.Values.Get("global.discovery.clusterDomain").String()
-		publicDomain := input.Values.Get("global.modules.publicDomainTemplate").String()
+		clusterDomainTemplate := input.Values.Get("global.discovery.clusterDomain").String()
+		publicDomainTemplate := input.Values.Get("global.modules.publicDomainTemplate").String()
 
 		for _, san := range sans {
 			switch {
-			case strings.HasPrefix(san, publicDomainPrefix) && publicDomain != "":
-				san = getPublicDomainSAN(san, publicDomain)
+			case strings.HasPrefix(san, publicDomainPrefix) && publicDomainTemplate != "":
+				san = getPublicDomainSAN(publicDomainTemplate, san)
 
-			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomain != "":
-				san = getClusterDomainSAN(san, clusterDomain)
+			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomainTemplate != "":
+				san = getClusterDomainSAN(clusterDomainTemplate, san)
 			}
 
 			res = append(res, san)
@@ -257,50 +304,3 @@ func DefaultSANs(sans []string) SANsGenerator {
 		return res
 	}
 }
-
-type GenSelfSignedTLSHookConf struct {
-	// SANs function which returns list of domain to include into cert. Use DefaultSANs helper
-	SANs SANsGenerator
-
-	// CN - Certificate common Name
-	// often it is module name
-	CN string
-
-	// Namespace - namespace for TLS secret
-	Namespace string
-	// TLSSecretName - TLS secret name
-	// secret must be TLS secret type https://kubernetes.io/docs/concepts/configuration/secret/#tls-secrets
-	// CA certificate MUST set to ca.crt key
-	TLSSecretName string
-
-	// Usages specifies valid usage contexts for keys.
-	// See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
-	//      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
-	Usages []certificatesv1.KeyUsage
-
-	// FullValuesPathPrefix - prefix full path to store CA certificate TLS private key and cert
-	// full paths will be
-	//   FullValuesPathPrefix + .ca  - CA certificate
-	//   FullValuesPathPrefix + .crt - TLS private key
-	//   FullValuesPathPrefix + .key - TLS certificate
-	// Example: FullValuesPathPrefix =  'prometheusMetricsAdapter.internal.adapter'
-	// Values to store:
-	// prometheusMetricsAdapter.internal.adapter.ca
-	// prometheusMetricsAdapter.internal.adapter.crt
-	// prometheusMetricsAdapter.internal.adapter.key
-	// Data in values store as plain text
-	// In helm templates you need use `b64enc` function to encode
-	FullValuesPathPrefix string
-
-	// BeforeHookCheck runs check function before hook execution. Function should return boolean 'continue' value
-	// if return value is false - hook will stop its execution
-	// if return value is true - hook will continue
-	BeforeHookCheck func(input *pkg.HookInput) bool
-}
-
-func (gss GenSelfSignedTLSHookConf) Path() string {
-	return strings.TrimSuffix(gss.FullValuesPathPrefix, ".")
-}
-
-// SANsGenerator function for generating sans
-type SANsGenerator func(input *pkg.HookInput) []string
