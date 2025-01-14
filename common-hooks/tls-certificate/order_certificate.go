@@ -115,7 +115,6 @@ func certificateHandler(requests []OrderCertificateRequest) func(ctx context.Con
 }
 
 func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, requests []OrderCertificateRequest) error {
-	// TODO: use func "DefaultSANs", because its equal
 	publicDomainTemplate := input.Values.Get("global.modules.publicDomainTemplate").String()
 	clusterDomainTemplate := input.Values.Get("global.discovery.clusterDomain").String()
 
