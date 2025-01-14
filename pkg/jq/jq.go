@@ -15,10 +15,8 @@ type Result struct {
 }
 
 func (res *Result) String() string {
-	b, err := gojq.Marshal(res.data)
-	if err != nil {
-		return err.Error()
-	}
+	// returns nil err everytime
+	b, _ := gojq.Marshal(res.data)
 
 	return string(b)
 }
