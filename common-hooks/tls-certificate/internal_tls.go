@@ -108,10 +108,6 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 				return err
 			}
 		} else {
-			input.Logger.Debug(fmt.Sprintf("[internal_tls] Snaphots: %+v", input.Snapshots))
-			input.Logger.Debug(fmt.Sprintf("[internal_tls] Snaphots by key: %+v", input.Snapshots.Get(SnapshotKey)))
-			input.Logger.Debug(fmt.Sprintf("[internal_tls] Certs: %+v", certs))
-
 			// Certificate is in the snapshot => load it.
 			cert = certs[0]
 
