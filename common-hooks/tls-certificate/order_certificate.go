@@ -115,8 +115,9 @@ func certificateHandler(requests []OrderCertificateRequest) func(ctx context.Con
 }
 
 func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, requests []OrderCertificateRequest) error {
-	publicDomain := input.Values.Get("global.modules.publicDomainTemplate").String()
-	clusterDomain := input.Values.Get("global.discovery.clusterDomain").String()
+	// TODO: use func "DefaultSANs", because its equal
+	publicDomainTemplate := input.Values.Get("global.modules.publicDomainTemplate").String()
+	clusterDomainTemplate := input.Values.Get("global.discovery.clusterDomain").String()
 
 	for _, originalRequest := range requests {
 		request := originalRequest.DeepCopy()
@@ -124,11 +125,11 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 		// Convert cluster domain and public domain sans
 		for index, san := range request.SANs {
 			switch {
-			case strings.HasPrefix(san, publicDomainPrefix) && publicDomain != "":
-				request.SANs[index] = getPublicDomainSAN(san, publicDomain)
+			case strings.HasPrefix(san, publicDomainPrefix) && publicDomainTemplate != "":
+				request.SANs[index] = getPublicDomainSAN(publicDomainTemplate, san)
 
-			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomain != "":
-				request.SANs[index] = getClusterDomainSAN(san, clusterDomain)
+			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomainTemplate != "":
+				request.SANs[index] = getClusterDomainSAN(clusterDomainTemplate, san)
 			}
 		}
 
@@ -151,7 +152,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 
 			if secret != nil && len(secret.Cert) > 0 && len(secret.Key) > 0 {
 				// Check that certificate is not expired and has the same order request
-				genNew, err := shouldGenerateNewCert(string(secret.Cert), request, time.Hour*24*15)
+				genNew, err := shouldGenerateNewCert(secret.Cert, request, time.Hour*24*15)
 				if err != nil {
 					return err
 				}
@@ -174,8 +175,8 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 }
 
 // shouldGenerateNewCert checks that the certificate from the cluster matches the order
-func shouldGenerateNewCert(cert string, request OrderCertificateRequest, durationLeft time.Duration) (bool, error) {
-	c, err := helpers.ParseCertificatePEM([]byte(cert))
+func shouldGenerateNewCert(cert []byte, request OrderCertificateRequest, durationLeft time.Duration) (bool, error) {
+	c, err := helpers.ParseCertificatePEM(cert)
 	if err != nil {
 		return false, fmt.Errorf("certificate cannot parsed: %v", err)
 	}
