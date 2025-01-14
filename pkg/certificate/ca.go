@@ -22,6 +22,7 @@ import (
 
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/initca"
+
 	"github.com/deckhouse/module-sdk/pkg"
 )
 

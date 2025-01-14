@@ -22,9 +22,10 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_JQFilterApplyCaSelfSignedCert(t *testing.T) {

@@ -28,6 +28,7 @@ import (
 	"github.com/cloudflare/cfssl/helpers"
 	"github.com/cloudflare/cfssl/signer"
 	"github.com/cloudflare/cfssl/signer/local"
+
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
@@ -85,12 +86,12 @@ func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca Authority, options 
 
 	req := signer.SignRequest{Request: string(csrBytes)}
 
-	parsedCa, err := helpers.ParseCertificatePEM([]byte(ca.Cert))
+	parsedCa, err := helpers.ParseCertificatePEM(ca.Cert)
 	if err != nil {
 		return Certificate{}, err
 	}
 
-	priv, err := helpers.ParsePrivateKeyPEM([]byte(ca.Key))
+	priv, err := helpers.ParsePrivateKeyPEM(ca.Key)
 	if err != nil {
 		return Certificate{}, err
 	}

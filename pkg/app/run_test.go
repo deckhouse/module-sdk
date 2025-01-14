@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/pkg/app"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_Run(t *testing.T) {

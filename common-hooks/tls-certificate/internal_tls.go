@@ -6,12 +6,13 @@ import (
 	"strings"
 	"time"
 
+	certificatesv1 "k8s.io/api/certificates/v1"
+	"k8s.io/utils/net"
+
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
-	certificatesv1 "k8s.io/api/certificates/v1"
-	"k8s.io/utils/net"
 )
 
 const (
@@ -132,7 +133,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		}
 	}
 
-	return func(ctx context.Context, input *pkg.HookInput) error {
+	return func(_ context.Context, input *pkg.HookInput) error {
 		if conf.BeforeHookCheck != nil {
 			passed := conf.BeforeHookCheck(input)
 			if !passed {

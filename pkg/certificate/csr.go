@@ -21,6 +21,7 @@ import (
 	"log"
 
 	"github.com/cloudflare/cfssl/csr"
+
 	"github.com/deckhouse/module-sdk/pkg"
 )
 

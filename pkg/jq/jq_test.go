@@ -4,8 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/deckhouse/module-sdk/pkg/jq"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/deckhouse/module-sdk/pkg/jq"
 )
 
 func TestJqFilter(t *testing.T) {

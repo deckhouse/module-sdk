@@ -67,20 +67,21 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 			// watch v1 objects
 			obj = &certificatesv1.CertificateSigningRequest{}
 			lw = &cache.ListWatch{
-				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				ListFunc: func(_ metav1.ListOptions) (runtime.Object, error) {
 					list := new(certificatesv1.CertificateSigningRequestList)
 					err := c.List(ctx, list, fieldSelector)
 					return list, err
 				},
-				WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				WatchFunc: func(_ metav1.ListOptions) (watch.Interface, error) {
 					w, err := c.Watch(ctx, new(certificatesv1.CertificateSigningRequestList), fieldSelector)
 					return w, err
 				},
 			}
+
 			break
-		} else {
-			klog.V(2).Infof("error fetching v1 certificate signing request: %v", err)
 		}
+
+		klog.V(2).Infof("error fetching v1 certificate signing request: %v", err)
 
 		// return if we've timed out
 		if err := ctx.Err(); err != nil {
@@ -92,24 +93,25 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 			// watch v1beta1 objects
 			obj = &certificatesv1beta1.CertificateSigningRequest{}
 			lw = &cache.ListWatch{
-				ListFunc: func(options metav1.ListOptions) (runtime.Object, error) {
+				ListFunc: func(_ metav1.ListOptions) (runtime.Object, error) {
 					list := new(certificatesv1beta1.CertificateSigningRequestList)
 					err := c.List(ctx, list, fieldSelector)
 					return list, err
 				},
-				WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				WatchFunc: func(_ metav1.ListOptions) (watch.Interface, error) {
 					w, err := c.Watch(ctx, new(certificatesv1beta1.CertificateSigningRequestList), fieldSelector)
 					return w, err
 				},
 			}
+
 			break
-		} else {
-			klog.V(2).Infof("error fetching v1beta1 certificate signing request: %v", err)
 		}
+
+		klog.V(2).Infof("error fetching v1beta1 certificate signing request: %v", err)
 
 		// return if we've timed out
 		if err := ctx.Err(); err != nil {
-			return nil, wait.ErrWaitTimeout
+			return nil, wait.ErrorInterrupted(err)
 		}
 
 		// wait and try again
