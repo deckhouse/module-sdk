@@ -116,7 +116,7 @@ func certificateHandler(requests []OrderCertificateRequest) func(ctx context.Con
 
 func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, requests []OrderCertificateRequest) error {
 	publicDomainTemplate := input.Values.Get("global.modules.publicDomainTemplate").String()
-	clusterDomainTemplate := input.Values.Get("global.discovery.clusterDomain").String()
+	clusterDomain := input.Values.Get("global.discovery.clusterDomain").String()
 
 	for _, originalRequest := range requests {
 		request := originalRequest.DeepCopy()
@@ -127,8 +127,8 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 			case strings.HasPrefix(san, publicDomainPrefix) && publicDomainTemplate != "":
 				request.SANs[index] = getPublicDomainSAN(publicDomainTemplate, san)
 
-			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomainTemplate != "":
-				request.SANs[index] = getClusterDomainSAN(clusterDomainTemplate, san)
+			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomain != "":
+				request.SANs[index] = getClusterDomainSAN(clusterDomain, san)
 			}
 		}
 

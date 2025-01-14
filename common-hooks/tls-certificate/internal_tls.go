@@ -287,7 +287,7 @@ func DefaultSANs(sans []string) SANsGenerator {
 	return func(input *pkg.HookInput) []string {
 		res := make([]string, 0, len(sans))
 
-		clusterDomainTemplate := input.Values.Get("global.discovery.clusterDomain").String()
+		clusterDomain := input.Values.Get("global.discovery.clusterDomain").String()
 		publicDomainTemplate := input.Values.Get("global.modules.publicDomainTemplate").String()
 
 		for _, san := range sans {
@@ -295,8 +295,8 @@ func DefaultSANs(sans []string) SANsGenerator {
 			case strings.HasPrefix(san, publicDomainPrefix) && publicDomainTemplate != "":
 				san = getPublicDomainSAN(publicDomainTemplate, san)
 
-			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomainTemplate != "":
-				san = getClusterDomainSAN(clusterDomainTemplate, san)
+			case strings.HasPrefix(san, clusterDomainPrefix) && clusterDomain != "":
+				san = getClusterDomainSAN(clusterDomain, san)
 			}
 
 			res = append(res, san)

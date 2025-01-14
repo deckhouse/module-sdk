@@ -36,10 +36,10 @@ func ClusterDomainSAN(san string) string {
 	return clusterDomainPrefix + strings.TrimSuffix(san, ".")
 }
 
-func getClusterDomainSAN(domainTemplate, sanValue string) string {
+func getClusterDomainSAN(domain, sanValue string) string {
 	sanValue = strings.TrimPrefix(sanValue, clusterDomainPrefix)
 
-	return fmt.Sprintf("%s.%s", sanValue, domainTemplate)
+	return strings.Join([]string{sanValue, domain}, ".")
 }
 
 func getPublicDomainSAN(domainTemplate, sanValue string) string {
