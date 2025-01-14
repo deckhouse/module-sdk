@@ -15,7 +15,10 @@ type Result struct {
 }
 
 func (res *Result) String() string {
-	return gojq.Preview(res.data)
+	// returns nil err everytime
+	b, _ := gojq.Marshal(res.data)
+
+	return string(b)
 }
 
 func (res *Result) TypeOf() string {
