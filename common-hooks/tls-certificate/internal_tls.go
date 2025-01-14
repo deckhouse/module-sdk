@@ -119,6 +119,7 @@ func RegisterInternalTLSHookEM(conf GenSelfSignedTLSHookConf) bool {
 
 func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
 	var usages []string
+
 	if conf.Usages == nil {
 		usages = []string{
 			"signing",
@@ -140,6 +141,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		}
 
 		var cert certificate.Certificate
+
 		cn, sans := conf.CN, conf.SANs(input)
 
 		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, SnapshotKey)
@@ -233,6 +235,7 @@ func isIrrelevantCert(certData []byte, desiredSANSs []string) (bool, error) {
 	if time.Until(cert.NotAfter) < certOutdatedDuration {
 		return true, nil
 	}
+
 	var dnsNames, ipAddrs []string
 	for _, san := range desiredSANSs {
 		if net.IsIPv4String(san) {
@@ -251,6 +254,7 @@ func isIrrelevantCert(certData []byte, desiredSANSs []string) (bool, error) {
 		for _, cip := range cert.IPAddresses {
 			certIPs = append(certIPs, cip.String())
 		}
+
 		if !arraysAreEqual(ipAddrs, certIPs) {
 			return true, nil
 		}
@@ -301,6 +305,7 @@ func DefaultSANs(sans []string) SANsGenerator {
 
 			res = append(res, san)
 		}
+
 		return res
 	}
 }

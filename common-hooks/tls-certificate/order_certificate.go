@@ -155,9 +155,12 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 				if err != nil {
 					return err
 				}
+
 				if !genNew {
 					info := CertificateInfo{Certificate: string(secret.Cert), Key: string(secret.Key)}
+
 					input.Values.Set(valueName, info)
+
 					continue
 				}
 			}
@@ -306,7 +309,11 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 	// Delete CSR.
 	_ = k8.Delete(ctx, &certificatesv1.CertificateSigningRequest{ObjectMeta: metav1.ObjectMeta{Name: request.CommonName}})
 
-	info := CertificateInfo{Certificate: string(crtPEM), Key: string(key), CertificateUpdated: true}
+	info := CertificateInfo{
+		Certificate:        string(crtPEM),
+		Key:                string(key),
+		CertificateUpdated: true,
+	}
 
 	return &info, nil
 }
