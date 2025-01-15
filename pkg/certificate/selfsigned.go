@@ -56,9 +56,9 @@ func WithSigningDefaultUsage(usage []string) SigningOption {
 	}
 }
 
-func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options ...interface{}) (Certificate, error) {
+func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options ...interface{}) (*Certificate, error) {
 	if ca == nil {
-		return Certificate{}, errors.New("ca is nil")
+		return nil, errors.New("ca is nil")
 	}
 
 	logger.Debug("Generate self-signed cert", slog.String("cn", cn))
@@ -86,19 +86,19 @@ func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options
 	g := &csr.Generator{Validator: genkey.Validator}
 	csrBytes, key, err := g.ProcessRequest(request)
 	if err != nil {
-		return Certificate{}, err
+		return nil, err
 	}
 
 	req := signer.SignRequest{Request: string(csrBytes)}
 
 	parsedCa, err := helpers.ParseCertificatePEM(ca.Cert)
 	if err != nil {
-		return Certificate{}, err
+		return nil, err
 	}
 
 	priv, err := helpers.ParsePrivateKeyPEM(ca.Key)
 	if err != nil {
-		return Certificate{}, err
+		return nil, err
 	}
 
 	signingConfig := &config.Signing{
@@ -113,15 +113,15 @@ func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options
 
 	s, err := local.NewSigner(priv, parsedCa, signer.DefaultSigAlgo(priv), signingConfig)
 	if err != nil {
-		return Certificate{}, err
+		return nil, err
 	}
 
 	cert, err := s.Sign(req)
 	if err != nil {
-		return Certificate{}, err
+		return nil, err
 	}
 
-	return Certificate{
+	return &Certificate{
 		CA:   ca.Cert,
 		Key:  key,
 		Cert: cert,
