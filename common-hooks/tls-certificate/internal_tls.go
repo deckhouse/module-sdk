@@ -196,17 +196,19 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			// and we don't need to create Crontab schedule
 			caOutdated, err := isOutdatedCA(cert.CA)
 			if err != nil {
-				input.Logger.Error("is outdated ca", log.Err(err))
+				input.Logger.Warn("is outdated ca", log.Err(err))
 			}
 
 			// if common ca and cert ca is not equal - regenerate cert
 			if conf.CommonCA && !slices.Equal(auth.Cert, cert.CA) {
+				input.Logger.Warn("common ca is not equal cert ca")
+
 				caOutdated = true
 			}
 
 			certOutdated, err := isIrrelevantCert(cert.Cert, sans)
 			if err != nil {
-				input.Logger.Error("is irrelevant cert", log.Err(err))
+				input.Logger.Warn("is irrelevant cert", log.Err(err))
 			}
 
 			// In case of errors, both these flags are false to avoid regeneration loop for the
