@@ -166,7 +166,6 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		// 2) get common ca
 		// 3) validate common ca
 		// 4) if not valid regen common ca
-
 		if conf.CommonCA {
 			auth, err = getCommonCA(input, conf.Path())
 			if err != nil {
@@ -200,6 +199,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 				input.Logger.Error("is outdated ca", log.Err(err))
 			}
 
+			// if common ca and cert ca is not equal - regenerate cert
 			if conf.CommonCA && !slices.Equal(auth.Cert, cert.CA) {
 				caOutdated = true
 			}
