@@ -16,7 +16,7 @@ golangci-lint-check:
 
 .PHONY: go-module-version
 go-module-version: go-check git-check
-	@echo "go get $(shell $(GO) list ./cmd/addon-operator)@$(shell $(GIT) rev-parse HEAD)"
+	@echo "go get $(shell $(GO) list ./pkg/app)@$(shell $(GIT) rev-parse HEAD)"
 
 .PHONY: test
 test: go-check

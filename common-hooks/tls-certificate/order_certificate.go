@@ -301,7 +301,7 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 	ctxWTO, cancel := context.WithTimeout(context.Background(), request.WaitTimeout)
 	defer cancel()
 
-	crtPEM, err := certificate.WaitForCertificate(ctxWTO, k8, csr.Name, csr.UID)
+	crtPEM, err := certificate.WaitForCertificate(ctxWTO, k8, csr.Name, csr.UID, input.Logger)
 	if err != nil {
 		return nil, fmt.Errorf("%s CertificateSigningRequest was not signed: %v", request.CommonName, err)
 	}

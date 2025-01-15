@@ -23,7 +23,7 @@ func TestJqFilter(t *testing.T) {
 	}
 
 	for source, result := range testCases {
-		ress, err := query.FilterStringObject(context.TODO(), source)
+		ress, err := query.FilterStringObject(context.Background(), source)
 		if err != nil {
 			panic(err)
 		}

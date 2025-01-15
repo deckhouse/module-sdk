@@ -39,6 +39,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	schedulingv1 "k8s.io/api/scheduling/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/dynamic"
@@ -58,6 +59,7 @@ type Client struct {
 var defaultBuilders = []runtime.SchemeBuilder{
 	admissionv1.SchemeBuilder,
 	admissionregv1.SchemeBuilder,
+	apiextensionsv1.SchemeBuilder,
 	appsv1.SchemeBuilder,
 	authenticationv1.SchemeBuilder,
 	authorizationv1.SchemeBuilder,
