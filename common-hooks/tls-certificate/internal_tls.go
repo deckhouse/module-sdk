@@ -3,7 +3,9 @@ package tlscertificate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -158,16 +160,34 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		var auth *certificate.Authority
 
-		if conf.CommonCA {
-			auth, err = handleCommonCA(input, conf.Path(), cn)
-			if err != nil {
-				return fmt.Errorf("handle common ca: %w", err)
-			}
+		mustGenerate := false
 
-			input.Values.Set(conf.Path()+CommonCAKey, auth)
+		// 1) if use common ca
+		// 2) get common ca
+		// 3) validate common ca
+		// 4) if not valid regen common ca
+
+		if conf.CommonCA {
+			auth, err = getCommonCA(input, conf.Path())
+			if err != nil {
+				auth, err = certificate.GenerateCA(input.Logger,
+					cn,
+					certificate.WithKeyAlgo(keyAlgorithm),
+					certificate.WithKeySize(keySize),
+					certificate.WithCAExpiry(caExpiryDurationStr))
+				if err != nil {
+					return fmt.Errorf("generate ca: %w", err)
+				}
+
+				input.Values.Set(conf.Path()+CommonCAKey, auth)
+
+				mustGenerate = true
+			}
 		}
 
-		mustRegenerate := true
+		if len(certs) == 0 {
+			mustGenerate = true
+		}
 
 		if len(certs) > 0 {
 			// Certificate is in the snapshot => load it.
@@ -180,6 +200,10 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 				input.Logger.Error("is outdated ca", log.Err(err))
 			}
 
+			if conf.CommonCA && !slices.Equal(auth.Cert, cert.CA) {
+				caOutdated = true
+			}
+
 			certOutdated, err := isIrrelevantCert(cert.Cert, sans)
 			if err != nil {
 				input.Logger.Error("is irrelevant cert", log.Err(err))
@@ -187,10 +211,13 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 			// In case of errors, both these flags are false to avoid regeneration loop for the
 			// certificate.
-			mustRegenerate = caOutdated || certOutdated
+			mustGenerate = caOutdated || certOutdated
 		}
 
-		if mustRegenerate {
+		if mustGenerate {
+			// if common-ca auth is filled at handleCommonCA
+			//
+			// if not common-ca auth will be nil and generate
 			cert, err = generateNewSelfSignedTLS(input, cn, auth, sans, usages)
 			if err != nil {
 				return fmt.Errorf("generate new self signed tls: %w", err)
@@ -219,7 +246,9 @@ func convCertToValues(cert *certificate.Certificate) certValues {
 	}
 }
 
-func handleCommonCA(input *pkg.HookInput, valPrefix string, cn string) (*certificate.Authority, error) {
+var ErrCAIsInvalidOrOutdated = errors.New("ca is invalid or outdated")
+
+func getCommonCA(input *pkg.HookInput, valPrefix string) (*certificate.Authority, error) {
 	auth := new(certificate.Authority)
 
 	ca, ok := input.Values.GetOk(valPrefix + CommonCAKey)
@@ -241,16 +270,7 @@ func handleCommonCA(input *pkg.HookInput, valPrefix string, cn string) (*certifi
 		return auth, nil
 	}
 
-	auth, err = certificate.GenerateCA(input.Logger,
-		cn,
-		certificate.WithKeyAlgo(keyAlgorithm),
-		certificate.WithKeySize(keySize),
-		certificate.WithCAExpiry(caExpiryDurationStr))
-	if err != nil {
-		return nil, fmt.Errorf("generate ca: %w", err)
-	}
-
-	return auth, nil
+	return nil, ErrCAIsInvalidOrOutdated
 }
 
 func generateNewSelfSignedTLS(input *pkg.HookInput, cn string, ca *certificate.Authority, sans, usages []string) (*certificate.Certificate, error) {
