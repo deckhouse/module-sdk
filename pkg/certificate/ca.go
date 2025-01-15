@@ -31,7 +31,7 @@ type Authority struct {
 	Cert []byte `json:"crt"`
 }
 
-func GenerateCA(logger pkg.Logger, cn string, options ...Option) (Authority, error) {
+func GenerateCA(logger pkg.Logger, cn string, options ...Option) (*Authority, error) {
 	request := &csr.CertificateRequest{
 		CN: cn,
 		CA: &csr.CAConfig{
@@ -59,5 +59,5 @@ func GenerateCA(logger pkg.Logger, cn string, options ...Option) (Authority, err
 		logger.Error(buf.String())
 	}
 
-	return Authority{Cert: ca, Key: key}, err
+	return &Authority{Cert: ca, Key: key}, err
 }

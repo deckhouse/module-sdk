@@ -2,6 +2,7 @@ package tlscertificate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -24,6 +25,7 @@ const (
 	keyAlgorithm = "ecdsa"
 	keySize      = 256
 	SnapshotKey  = "secret"
+	CommonCAKey  = "common_selfsigned_ca"
 )
 
 type GenSelfSignedTLSHookConf struct {
@@ -64,6 +66,9 @@ type GenSelfSignedTLSHookConf struct {
 	// if return value is false - hook will stop its execution
 	// if return value is true - hook will continue
 	BeforeHookCheck func(input *pkg.HookInput) bool
+
+	// CommonCA
+	CommonCA bool
 }
 
 func (gss GenSelfSignedTLSHookConf) Path() string {
@@ -150,10 +155,24 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			return fmt.Errorf("unmarshal to struct: %w", err)
 		}
 
+		var auth *certificate.Authority
+
+		if conf.CommonCA {
+			ca, ok := input.Values.GetOk(conf.Path() + CommonCAKey)
+			if ok {
+				auth = new(certificate.Authority)
+
+				err = json.Unmarshal([]byte(ca.String()), auth)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
 		if len(certs) == 0 {
 			// No certificate in snapshot => generate a new one.
 			// Secret will be updated by Helm.
-			cert, err = generateNewSelfSignedTLS(input, cn, sans, usages)
+			cert, err = generateNewSelfSignedTLS(input, cn, auth, sans, usages)
 			if err != nil {
 				return err
 			}
@@ -176,7 +195,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			// In case of errors, both these flags are false to avoid regeneration loop for the
 			// certificate.
 			if caOutdated || certOutdated {
-				cert, err = generateNewSelfSignedTLS(input, cn, sans, usages)
+				cert, err = generateNewSelfSignedTLS(input, cn, auth, sans, usages)
 				if err != nil {
 					return err
 				}
@@ -205,14 +224,18 @@ func convCertToValues(cert certificate.Certificate) certValues {
 	}
 }
 
-func generateNewSelfSignedTLS(input *pkg.HookInput, cn string, sans, usages []string) (certificate.Certificate, error) {
-	ca, err := certificate.GenerateCA(input.Logger,
-		cn,
-		certificate.WithKeyAlgo(keyAlgorithm),
-		certificate.WithKeySize(keySize),
-		certificate.WithCAExpiry(caExpiryDurationStr))
-	if err != nil {
-		return certificate.Certificate{}, err
+func generateNewSelfSignedTLS(input *pkg.HookInput, cn string, ca *certificate.Authority, sans, usages []string) (certificate.Certificate, error) {
+	if ca == nil {
+		var err error
+
+		ca, err = certificate.GenerateCA(input.Logger,
+			cn,
+			certificate.WithKeyAlgo(keyAlgorithm),
+			certificate.WithKeySize(keySize),
+			certificate.WithCAExpiry(caExpiryDurationStr))
+		if err != nil {
+			return certificate.Certificate{}, err
+		}
 	}
 
 	return certificate.GenerateSelfSignedCert(input.Logger,

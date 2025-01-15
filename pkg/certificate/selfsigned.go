@@ -55,7 +55,7 @@ func WithSigningDefaultUsage(usage []string) SigningOption {
 	}
 }
 
-func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca Authority, options ...interface{}) (Certificate, error) {
+func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options ...interface{}) (Certificate, error) {
 	logger.Debug("Generate self-signed cert", slog.String("cn", cn))
 	request := &csr.CertificateRequest{
 		CN: cn,
