@@ -28,7 +28,7 @@ const (
 	keyAlgorithm = "ecdsa"
 	keySize      = 256
 	SnapshotKey  = "secret"
-	CommonCAKey  = "common_selfsigned_ca"
+	CommonCAKey  = "commonSelfsignedCa"
 )
 
 type GenSelfSignedTLSHookConf struct {
@@ -70,12 +70,26 @@ type GenSelfSignedTLSHookConf struct {
 	// if return value is true - hook will continue
 	BeforeHookCheck func(input *pkg.HookInput) bool
 
-	// CommonCA
+	// CommonCA option toggle using common ca, you can pass your ca with values
+	// full path will be
+	//   FullValuesPathPrefix + CommonCAKey
+	// Example: FullValuesPathPrefix =  'prometheusMetricsAdapter.internal.adapter'
+	// Values to store:
+	// prometheusMetricsAdapter.internal.adapter.commonSelfsignedCa.key
+	// prometheusMetricsAdapter.internal.adapter.commonSelfsignedCa.crt
+	// Data in values store as plain text
+	// In helm templates you need use `b64enc` function to encode
 	CommonCA bool
 }
 
 func (gss GenSelfSignedTLSHookConf) Path() string {
 	return strings.TrimSuffix(gss.FullValuesPathPrefix, ".")
+}
+
+func (gss GenSelfSignedTLSHookConf) CommonCAPath() string {
+	path := strings.Join([]string{gss.FullValuesPathPrefix, CommonCAKey}, ".")
+
+	return strings.TrimSuffix(path, ".")
 }
 
 // SANsGenerator function for generating sans
@@ -162,12 +176,13 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		mustGenerate := false
 
-		// 1) if use common ca
-		// 2) get common ca
-		// 3) validate common ca
-		// 4) if not valid regen common ca
+		// 1) get and validate common ca
+		// 2) if not valid:
+		// 2.1) regenerate common ca
+		// 2.2) save new common ca in values
+		// 2.3) mark certificates to regenerate
 		if conf.CommonCA {
-			auth, err = getCommonCA(input, conf.Path())
+			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
 				auth, err = certificate.GenerateCA(input.Logger,
 					cn,
@@ -178,16 +193,22 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 					return fmt.Errorf("generate ca: %w", err)
 				}
 
-				input.Values.Set(conf.Path()+CommonCAKey, auth)
+				input.Values.Set(conf.CommonCAPath(), auth)
 
 				mustGenerate = true
 			}
 		}
 
+		// if no certificate - regenerate
 		if len(certs) == 0 {
 			mustGenerate = true
 		}
 
+		// 1) take first certificate
+		// 2) check certificate ca outdated
+		// 3) if using common CA - compare cert CA and common CA (if different - mark outdated)
+		// 4) check certificate outdated
+		// 5) if CA or cert outdated - regenerate
 		if len(certs) > 0 {
 			// Certificate is in the snapshot => load it.
 			cert = &certs[0]
@@ -217,9 +238,6 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		}
 
 		if mustGenerate {
-			// if common-ca auth is filled at handleCommonCA
-			//
-			// if not common-ca auth will be nil and generate
 			cert, err = generateNewSelfSignedTLS(input, cn, auth, sans, usages)
 			if err != nil {
 				return fmt.Errorf("generate new self signed tls: %w", err)
@@ -250,10 +268,10 @@ func convCertToValues(cert *certificate.Certificate) certValues {
 
 var ErrCAIsInvalidOrOutdated = errors.New("ca is invalid or outdated")
 
-func getCommonCA(input *pkg.HookInput, valPrefix string) (*certificate.Authority, error) {
+func getCommonCA(input *pkg.HookInput, valKey string) (*certificate.Authority, error) {
 	auth := new(certificate.Authority)
 
-	ca, ok := input.Values.GetOk(valPrefix + CommonCAKey)
+	ca, ok := input.Values.GetOk(valKey)
 	if ok {
 		err := json.Unmarshal([]byte(ca.String()), auth)
 		if err != nil {
@@ -275,6 +293,10 @@ func getCommonCA(input *pkg.HookInput, valPrefix string) (*certificate.Authority
 	return nil, ErrCAIsInvalidOrOutdated
 }
 
+// generateNewSelfSignedTLS
+//
+// if you pass ca - it will be used to sign new certificate
+// if pass nil ca - it will be generate to sign new certificate
 func generateNewSelfSignedTLS(input *pkg.HookInput, cn string, ca *certificate.Authority, sans, usages []string) (*certificate.Certificate, error) {
 	if ca == nil {
 		var err error
