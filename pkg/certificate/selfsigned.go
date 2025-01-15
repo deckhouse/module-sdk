@@ -18,6 +18,7 @@ package certificate
 
 import (
 	"bytes"
+	"errors"
 	"log"
 	"log/slog"
 	"time"
@@ -56,6 +57,10 @@ func WithSigningDefaultUsage(usage []string) SigningOption {
 }
 
 func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options ...interface{}) (Certificate, error) {
+	if ca == nil {
+		return Certificate{}, errors.New("ca is nil")
+	}
+
 	logger.Debug("Generate self-signed cert", slog.String("cn", cn))
 	request := &csr.CertificateRequest{
 		CN: cn,
