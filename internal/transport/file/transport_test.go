@@ -357,7 +357,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 	"type": "Group"
 	}
 ]`
-		bindingContextBadJson               = `{{{{`
+		bindingContextBadJSON               = `{{{{`
 		bindingContextEmptySnapshotsObjects = `
 [
   {
@@ -534,7 +534,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 				filesContent: map[string]file{
 					bindingContextsFilePath: {
 						Name:    generateFileNameWithTs(bindingContextsFilePath),
-						Content: bindingContextBadJson,
+						Content: bindingContextBadJSON,
 					},
 				},
 				filesPermissions: 0777,

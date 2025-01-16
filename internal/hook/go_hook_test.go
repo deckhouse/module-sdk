@@ -208,7 +208,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 					return hr
 				},
 				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
-					return func(_ context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, _ *pkg.HookInput) error {
 						return nil
 					}
 				},
@@ -235,7 +235,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 					return hr
 				},
 				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
-					return func(_ context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, _ *pkg.HookInput) error {
 						return nil
 					}
 				},
@@ -263,7 +263,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 					return hr
 				},
 				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
-					return func(_ context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, _ *pkg.HookInput) error {
 						return nil
 					}
 				},
@@ -292,8 +292,8 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					return hr
 				},
-				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
-					return func(_ context.Context, input *pkg.HookInput) error {
+				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, _ *pkg.HookInput) error {
 						return nil
 					}
 				},
@@ -326,8 +326,8 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					return hr
 				},
-				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
-					return func(_ context.Context, input *pkg.HookInput) error {
+				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, _ *pkg.HookInput) error {
 						return nil
 					}
 				},
@@ -360,8 +360,8 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 					return hr
 				},
-				setupHookReconcileFunc: func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
-					return func(_ context.Context, input *pkg.HookInput) error {
+				setupHookReconcileFunc: func(_ *testing.T) func(ctx context.Context, input *pkg.HookInput) error {
+					return func(_ context.Context, _ *pkg.HookInput) error {
 						return errors.New("error")
 					}
 				},

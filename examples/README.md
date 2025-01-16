@@ -8,4 +8,6 @@
 
 [Module hook example with dependency container](https://github.com/deckhouse/module-sdk/tree/main/examples/dependency-example-module)
 
+[Module hook examples with common hooks](https://github.com/deckhouse/module-sdk/tree/main/examples/common-hooks)
+
 [Dockerfile and Makefile for building](https://github.com/deckhouse/module-sdk/tree/main/examples/scripts)
