@@ -27,7 +27,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
-	valuespatch "github.com/deckhouse/module-sdk/pkg/utils/values-patch"
+	patchablevalues "github.com/deckhouse/module-sdk/pkg/utils/patchable-values"
 )
 
 const (
@@ -87,7 +87,7 @@ func copyCustomCertificatesHandler(moduleName string) func(ctx context.Context, 
 			customCertificates[cert.Name] = cert
 		}
 
-		httpsMode := valuespatch.GetHTTPSMode(input, moduleName)
+		httpsMode := patchablevalues.GetHTTPSMode(input, moduleName)
 
 		valuesPath := moduleName + ".internal.customCertificateData"
 		// fmt.Sprintf("%s.https.customCertificate.secretName", moduleName)
@@ -99,7 +99,7 @@ func copyCustomCertificatesHandler(moduleName string) func(ctx context.Context, 
 			return nil
 		}
 
-		rawsecretName, ok := valuespatch.GetValuesFirstDefined(input, configValuesPath, "global.modules.https.customCertificate.secretName")
+		rawsecretName, ok := patchablevalues.GetValuesFirstDefined(input, configValuesPath, "global.modules.https.customCertificate.secretName")
 
 		secretName := rawsecretName.String()
 

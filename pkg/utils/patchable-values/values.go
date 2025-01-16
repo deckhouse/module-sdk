@@ -1,4 +1,4 @@
-package valuespatch
+package patchablevalues
 
 import (
 	"github.com/deckhouse/module-sdk/pkg"
