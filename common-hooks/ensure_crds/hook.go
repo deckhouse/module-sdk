@@ -57,7 +57,7 @@ func EnsureCRDs(ctx context.Context, input *pkg.HookInput, crdsGlob string) erro
 		return fmt.Errorf("get k8s client: %w", err)
 	}
 
-	cp, err := NewCRDsInstaller(client, crdsGlob)
+	cp, err := newCRDsInstaller(client, crdsGlob)
 	if err != nil {
 		return fmt.Errorf("new crd installer: %w", err)
 	}
@@ -70,39 +70,20 @@ func EnsureCRDs(ctx context.Context, input *pkg.HookInput, crdsGlob string) erro
 	return nil
 }
 
-// CRDsInstaller simultaneously installs CRDs from specified directory
-type CRDsInstaller struct {
-	k8sClient    pkg.KubernetesClient
-	crdFilesPath []string
-	installer    *crdinstaller.CRDsInstaller
-}
-
-func (cp *CRDsInstaller) Run(ctx context.Context) error {
-	return cp.installer.Run(ctx)
-}
-
-func (cp *CRDsInstaller) DeleteCRDs(ctx context.Context, crdsToDelete []string) ([]string, error) {
-	return cp.installer.DeleteCRDs(ctx, crdsToDelete)
-}
-
-// NewCRDsInstaller creates new installer for CRDs
+// newCRDsInstaller creates new installer for CRDs
 // crdsGlob example: "/deckhouse/modules/002-deckhouse/crds/*.yaml"
-func NewCRDsInstaller(client pkg.KubernetesClient, crdsGlob string) (*CRDsInstaller, error) {
+func newCRDsInstaller(client pkg.KubernetesClient, crdsGlob string) (*crdinstaller.CRDsInstaller, error) {
 	crds, err := filepath.Glob(crdsGlob)
 	if err != nil {
 		return nil, fmt.Errorf("glob %q: %w", crdsGlob, err)
 	}
 
-	return &CRDsInstaller{
-		k8sClient: client,
-		installer: crdinstaller.NewCRDsInstaller(
-			client.Dynamic(),
-			crds,
-			crdinstaller.WithExtraLabels(defaultLabels),
-			crdinstaller.WithFileFilter(func(crdFilePath string) bool {
-				return !strings.HasPrefix(filepath.Base(crdFilePath), "doc-")
-			}),
-		),
-		crdFilesPath: crds,
-	}, nil
+	return crdinstaller.NewCRDsInstaller(
+		client.Dynamic(),
+		crds,
+		crdinstaller.WithExtraLabels(defaultLabels),
+		crdinstaller.WithFileFilter(func(crdFilePath string) bool {
+			return !strings.HasPrefix(filepath.Base(crdFilePath), "doc-")
+		}),
+	), nil
 }
