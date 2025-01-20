@@ -11,7 +11,11 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = registry.RegisterFunc(config, handlerHook)
+const (
+	SnapshotKey = "apiservers"
+)
+
+var _ = registry.RegisterFunc(config, HandlerHook)
 
 var config = &pkg.HookConfig{
 	Kubernetes: []pkg.KubernetesConfig{
@@ -32,7 +36,7 @@ var config = &pkg.HookConfig{
 	},
 }
 
-func handlerHook(_ context.Context, input *pkg.HookInput) error {
+func HandlerHook(_ context.Context, input *pkg.HookInput) error {
 	podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, "apiservers")
 	if err != nil {
 		return err

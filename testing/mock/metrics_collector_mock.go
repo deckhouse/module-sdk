@@ -19,9 +19,9 @@ type MetricsCollectorMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcAdd          func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)
+	funcAdd          func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)
 	funcAddOrigin    string
-	inspectFuncAdd   func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)
+	inspectFuncAdd   func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)
 	afterAddCounter  uint64
 	beforeAddCounter uint64
 	AddMock          mMetricsCollectorMockAdd
@@ -33,16 +33,16 @@ type MetricsCollectorMock struct {
 	beforeExpireCounter uint64
 	ExpireMock          mMetricsCollectorMockExpire
 
-	funcInc          func(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)
+	funcInc          func(name string, labels map[string]string, opts ...mm_pkg.Option)
 	funcIncOrigin    string
-	inspectFuncInc   func(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)
+	inspectFuncInc   func(name string, labels map[string]string, opts ...mm_pkg.Option)
 	afterIncCounter  uint64
 	beforeIncCounter uint64
 	IncMock          mMetricsCollectorMockInc
 
-	funcSet          func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)
+	funcSet          func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)
 	funcSetOrigin    string
-	inspectFuncSet   func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)
+	inspectFuncSet   func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)
 	afterSetCounter  uint64
 	beforeSetCounter uint64
 	SetMock          mMetricsCollectorMockSet
@@ -112,7 +112,7 @@ type MetricsCollectorMockAddParams struct {
 	name   string
 	value  float64
 	labels map[string]string
-	opts   []mm_pkg.MetricsCollectorOption
+	opts   []mm_pkg.Option
 }
 
 // MetricsCollectorMockAddParamPtrs contains pointers to parameters of the MetricsCollector.Add
@@ -120,7 +120,7 @@ type MetricsCollectorMockAddParamPtrs struct {
 	name   *string
 	value  *float64
 	labels *map[string]string
-	opts   *[]mm_pkg.MetricsCollectorOption
+	opts   *[]mm_pkg.Option
 }
 
 // MetricsCollectorMockAddOrigins contains origins of expectations of the MetricsCollector.Add
@@ -143,7 +143,7 @@ func (mmAdd *mMetricsCollectorMockAdd) Optional() *mMetricsCollectorMockAdd {
 }
 
 // Expect sets up expected params for MetricsCollector.Add
-func (mmAdd *mMetricsCollectorMockAdd) Expect(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) *mMetricsCollectorMockAdd {
+func (mmAdd *mMetricsCollectorMockAdd) Expect(name string, value float64, labels map[string]string, opts ...mm_pkg.Option) *mMetricsCollectorMockAdd {
 	if mmAdd.mock.funcAdd != nil {
 		mmAdd.mock.t.Fatalf("MetricsCollectorMock.Add mock is already set by Set")
 	}
@@ -237,7 +237,7 @@ func (mmAdd *mMetricsCollectorMockAdd) ExpectLabelsParam3(labels map[string]stri
 }
 
 // ExpectOptsParam4 sets up expected param opts for MetricsCollector.Add
-func (mmAdd *mMetricsCollectorMockAdd) ExpectOptsParam4(opts ...mm_pkg.MetricsCollectorOption) *mMetricsCollectorMockAdd {
+func (mmAdd *mMetricsCollectorMockAdd) ExpectOptsParam4(opts ...mm_pkg.Option) *mMetricsCollectorMockAdd {
 	if mmAdd.mock.funcAdd != nil {
 		mmAdd.mock.t.Fatalf("MetricsCollectorMock.Add mock is already set by Set")
 	}
@@ -260,7 +260,7 @@ func (mmAdd *mMetricsCollectorMockAdd) ExpectOptsParam4(opts ...mm_pkg.MetricsCo
 }
 
 // Inspect accepts an inspector function that has same arguments as the MetricsCollector.Add
-func (mmAdd *mMetricsCollectorMockAdd) Inspect(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)) *mMetricsCollectorMockAdd {
+func (mmAdd *mMetricsCollectorMockAdd) Inspect(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)) *mMetricsCollectorMockAdd {
 	if mmAdd.mock.inspectFuncAdd != nil {
 		mmAdd.mock.t.Fatalf("Inspect function is already set for MetricsCollectorMock.Add")
 	}
@@ -285,7 +285,7 @@ func (mmAdd *mMetricsCollectorMockAdd) Return() *MetricsCollectorMock {
 }
 
 // Set uses given function f to mock the MetricsCollector.Add method
-func (mmAdd *mMetricsCollectorMockAdd) Set(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)) *MetricsCollectorMock {
+func (mmAdd *mMetricsCollectorMockAdd) Set(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)) *MetricsCollectorMock {
 	if mmAdd.defaultExpectation != nil {
 		mmAdd.mock.t.Fatalf("Default expectation is already set for the MetricsCollector.Add method")
 	}
@@ -301,7 +301,7 @@ func (mmAdd *mMetricsCollectorMockAdd) Set(f func(name string, value float64, la
 
 // When sets expectation for the MetricsCollector.Add which will trigger the result defined by the following
 // Then helper
-func (mmAdd *mMetricsCollectorMockAdd) When(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) *MetricsCollectorMockAddExpectation {
+func (mmAdd *mMetricsCollectorMockAdd) When(name string, value float64, labels map[string]string, opts ...mm_pkg.Option) *MetricsCollectorMockAddExpectation {
 	if mmAdd.mock.funcAdd != nil {
 		mmAdd.mock.t.Fatalf("MetricsCollectorMock.Add mock is already set by Set")
 	}
@@ -342,7 +342,7 @@ func (mmAdd *mMetricsCollectorMockAdd) invocationsDone() bool {
 }
 
 // Add implements mm_pkg.MetricsCollector
-func (mmAdd *MetricsCollectorMock) Add(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) {
+func (mmAdd *MetricsCollectorMock) Add(name string, value float64, labels map[string]string, opts ...mm_pkg.Option) {
 	mm_atomic.AddUint64(&mmAdd.beforeAddCounter, 1)
 	defer mm_atomic.AddUint64(&mmAdd.afterAddCounter, 1)
 
@@ -810,14 +810,14 @@ type MetricsCollectorMockIncExpectation struct {
 type MetricsCollectorMockIncParams struct {
 	name   string
 	labels map[string]string
-	opts   []mm_pkg.MetricsCollectorOption
+	opts   []mm_pkg.Option
 }
 
 // MetricsCollectorMockIncParamPtrs contains pointers to parameters of the MetricsCollector.Inc
 type MetricsCollectorMockIncParamPtrs struct {
 	name   *string
 	labels *map[string]string
-	opts   *[]mm_pkg.MetricsCollectorOption
+	opts   *[]mm_pkg.Option
 }
 
 // MetricsCollectorMockIncOrigins contains origins of expectations of the MetricsCollector.Inc
@@ -839,7 +839,7 @@ func (mmInc *mMetricsCollectorMockInc) Optional() *mMetricsCollectorMockInc {
 }
 
 // Expect sets up expected params for MetricsCollector.Inc
-func (mmInc *mMetricsCollectorMockInc) Expect(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) *mMetricsCollectorMockInc {
+func (mmInc *mMetricsCollectorMockInc) Expect(name string, labels map[string]string, opts ...mm_pkg.Option) *mMetricsCollectorMockInc {
 	if mmInc.mock.funcInc != nil {
 		mmInc.mock.t.Fatalf("MetricsCollectorMock.Inc mock is already set by Set")
 	}
@@ -910,7 +910,7 @@ func (mmInc *mMetricsCollectorMockInc) ExpectLabelsParam2(labels map[string]stri
 }
 
 // ExpectOptsParam3 sets up expected param opts for MetricsCollector.Inc
-func (mmInc *mMetricsCollectorMockInc) ExpectOptsParam3(opts ...mm_pkg.MetricsCollectorOption) *mMetricsCollectorMockInc {
+func (mmInc *mMetricsCollectorMockInc) ExpectOptsParam3(opts ...mm_pkg.Option) *mMetricsCollectorMockInc {
 	if mmInc.mock.funcInc != nil {
 		mmInc.mock.t.Fatalf("MetricsCollectorMock.Inc mock is already set by Set")
 	}
@@ -933,7 +933,7 @@ func (mmInc *mMetricsCollectorMockInc) ExpectOptsParam3(opts ...mm_pkg.MetricsCo
 }
 
 // Inspect accepts an inspector function that has same arguments as the MetricsCollector.Inc
-func (mmInc *mMetricsCollectorMockInc) Inspect(f func(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)) *mMetricsCollectorMockInc {
+func (mmInc *mMetricsCollectorMockInc) Inspect(f func(name string, labels map[string]string, opts ...mm_pkg.Option)) *mMetricsCollectorMockInc {
 	if mmInc.mock.inspectFuncInc != nil {
 		mmInc.mock.t.Fatalf("Inspect function is already set for MetricsCollectorMock.Inc")
 	}
@@ -958,7 +958,7 @@ func (mmInc *mMetricsCollectorMockInc) Return() *MetricsCollectorMock {
 }
 
 // Set uses given function f to mock the MetricsCollector.Inc method
-func (mmInc *mMetricsCollectorMockInc) Set(f func(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)) *MetricsCollectorMock {
+func (mmInc *mMetricsCollectorMockInc) Set(f func(name string, labels map[string]string, opts ...mm_pkg.Option)) *MetricsCollectorMock {
 	if mmInc.defaultExpectation != nil {
 		mmInc.mock.t.Fatalf("Default expectation is already set for the MetricsCollector.Inc method")
 	}
@@ -974,7 +974,7 @@ func (mmInc *mMetricsCollectorMockInc) Set(f func(name string, labels map[string
 
 // When sets expectation for the MetricsCollector.Inc which will trigger the result defined by the following
 // Then helper
-func (mmInc *mMetricsCollectorMockInc) When(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) *MetricsCollectorMockIncExpectation {
+func (mmInc *mMetricsCollectorMockInc) When(name string, labels map[string]string, opts ...mm_pkg.Option) *MetricsCollectorMockIncExpectation {
 	if mmInc.mock.funcInc != nil {
 		mmInc.mock.t.Fatalf("MetricsCollectorMock.Inc mock is already set by Set")
 	}
@@ -1015,7 +1015,7 @@ func (mmInc *mMetricsCollectorMockInc) invocationsDone() bool {
 }
 
 // Inc implements mm_pkg.MetricsCollector
-func (mmInc *MetricsCollectorMock) Inc(name string, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) {
+func (mmInc *MetricsCollectorMock) Inc(name string, labels map[string]string, opts ...mm_pkg.Option) {
 	mm_atomic.AddUint64(&mmInc.beforeIncCounter, 1)
 	defer mm_atomic.AddUint64(&mmInc.afterIncCounter, 1)
 
@@ -1176,7 +1176,7 @@ type MetricsCollectorMockSetParams struct {
 	name   string
 	value  float64
 	labels map[string]string
-	opts   []mm_pkg.MetricsCollectorOption
+	opts   []mm_pkg.Option
 }
 
 // MetricsCollectorMockSetParamPtrs contains pointers to parameters of the MetricsCollector.Set
@@ -1184,7 +1184,7 @@ type MetricsCollectorMockSetParamPtrs struct {
 	name   *string
 	value  *float64
 	labels *map[string]string
-	opts   *[]mm_pkg.MetricsCollectorOption
+	opts   *[]mm_pkg.Option
 }
 
 // MetricsCollectorMockSetOrigins contains origins of expectations of the MetricsCollector.Set
@@ -1207,7 +1207,7 @@ func (mmSet *mMetricsCollectorMockSet) Optional() *mMetricsCollectorMockSet {
 }
 
 // Expect sets up expected params for MetricsCollector.Set
-func (mmSet *mMetricsCollectorMockSet) Expect(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) *mMetricsCollectorMockSet {
+func (mmSet *mMetricsCollectorMockSet) Expect(name string, value float64, labels map[string]string, opts ...mm_pkg.Option) *mMetricsCollectorMockSet {
 	if mmSet.mock.funcSet != nil {
 		mmSet.mock.t.Fatalf("MetricsCollectorMock.Set mock is already set by Set")
 	}
@@ -1301,7 +1301,7 @@ func (mmSet *mMetricsCollectorMockSet) ExpectLabelsParam3(labels map[string]stri
 }
 
 // ExpectOptsParam4 sets up expected param opts for MetricsCollector.Set
-func (mmSet *mMetricsCollectorMockSet) ExpectOptsParam4(opts ...mm_pkg.MetricsCollectorOption) *mMetricsCollectorMockSet {
+func (mmSet *mMetricsCollectorMockSet) ExpectOptsParam4(opts ...mm_pkg.Option) *mMetricsCollectorMockSet {
 	if mmSet.mock.funcSet != nil {
 		mmSet.mock.t.Fatalf("MetricsCollectorMock.Set mock is already set by Set")
 	}
@@ -1324,7 +1324,7 @@ func (mmSet *mMetricsCollectorMockSet) ExpectOptsParam4(opts ...mm_pkg.MetricsCo
 }
 
 // Inspect accepts an inspector function that has same arguments as the MetricsCollector.Set
-func (mmSet *mMetricsCollectorMockSet) Inspect(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)) *mMetricsCollectorMockSet {
+func (mmSet *mMetricsCollectorMockSet) Inspect(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)) *mMetricsCollectorMockSet {
 	if mmSet.mock.inspectFuncSet != nil {
 		mmSet.mock.t.Fatalf("Inspect function is already set for MetricsCollectorMock.Set")
 	}
@@ -1349,7 +1349,7 @@ func (mmSet *mMetricsCollectorMockSet) Return() *MetricsCollectorMock {
 }
 
 // Set uses given function f to mock the MetricsCollector.Set method
-func (mmSet *mMetricsCollectorMockSet) Set(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption)) *MetricsCollectorMock {
+func (mmSet *mMetricsCollectorMockSet) Set(f func(name string, value float64, labels map[string]string, opts ...mm_pkg.Option)) *MetricsCollectorMock {
 	if mmSet.defaultExpectation != nil {
 		mmSet.mock.t.Fatalf("Default expectation is already set for the MetricsCollector.Set method")
 	}
@@ -1365,7 +1365,7 @@ func (mmSet *mMetricsCollectorMockSet) Set(f func(name string, value float64, la
 
 // When sets expectation for the MetricsCollector.Set which will trigger the result defined by the following
 // Then helper
-func (mmSet *mMetricsCollectorMockSet) When(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) *MetricsCollectorMockSetExpectation {
+func (mmSet *mMetricsCollectorMockSet) When(name string, value float64, labels map[string]string, opts ...mm_pkg.Option) *MetricsCollectorMockSetExpectation {
 	if mmSet.mock.funcSet != nil {
 		mmSet.mock.t.Fatalf("MetricsCollectorMock.Set mock is already set by Set")
 	}
@@ -1406,7 +1406,7 @@ func (mmSet *mMetricsCollectorMockSet) invocationsDone() bool {
 }
 
 // Set implements mm_pkg.MetricsCollector
-func (mmSet *MetricsCollectorMock) Set(name string, value float64, labels map[string]string, opts ...mm_pkg.MetricsCollectorOption) {
+func (mmSet *MetricsCollectorMock) Set(name string, value float64, labels map[string]string, opts ...mm_pkg.Option) {
 	mm_atomic.AddUint64(&mmSet.beforeSetCounter, 1)
 	defer mm_atomic.AddUint64(&mmSet.afterSetCounter, 1)
 
