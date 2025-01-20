@@ -70,16 +70,16 @@ type GenSelfSignedTLSHookConf struct {
 	// if return value is true - hook will continue
 	BeforeHookCheck func(input *pkg.HookInput) bool
 
-	// CommonCA option toggle using common ca, you can pass your ca with values
+	// CommonCA - full path to store CA certificate TLS private key and cert
 	// full path will be
-	//   FullValuesPathPrefix + CommonCAKey
-	// Example: FullValuesPathPrefix =  'prometheusMetricsAdapter.internal.adapter'
+	//   CommonCAValuesPath
+	// Example: CommonCAValuesPath =  'commonCaPath'
 	// Values to store:
-	// prometheusMetricsAdapter.internal.adapter.commonSelfsignedCa.key
-	// prometheusMetricsAdapter.internal.adapter.commonSelfsignedCa.crt
+	// commonCaPath.key
+	// commonCaPath.crt
 	// Data in values store as plain text
 	// In helm templates you need use `b64enc` function to encode
-	CommonCA bool
+	CommonCAValuesPath string
 }
 
 func (gss GenSelfSignedTLSHookConf) Path() string {
@@ -87,7 +87,7 @@ func (gss GenSelfSignedTLSHookConf) Path() string {
 }
 
 func (gss GenSelfSignedTLSHookConf) CommonCAPath() string {
-	path := strings.Join([]string{gss.FullValuesPathPrefix, CommonCAKey}, ".")
+	path := strings.Join([]string{gss.CommonCAValuesPath, CommonCAKey}, ".")
 
 	return strings.TrimSuffix(path, ".")
 }
@@ -176,12 +176,14 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		mustGenerate := false
 
+		useCommonCA := conf.CommonCAValuesPath != ""
+
 		// 1) get and validate common ca
 		// 2) if not valid:
 		// 2.1) regenerate common ca
 		// 2.2) save new common ca in values
 		// 2.3) mark certificates to regenerate
-		if conf.CommonCA {
+		if useCommonCA {
 			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
 				auth, err = certificate.GenerateCA(input.Logger,
@@ -221,7 +223,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			}
 
 			// if common ca and cert ca is not equal - regenerate cert
-			if conf.CommonCA && !slices.Equal(auth.Cert, cert.CA) {
+			if useCommonCA && !slices.Equal(auth.Cert, cert.CA) {
 				input.Logger.Warn("common ca is not equal cert ca")
 
 				caOutdated = true
@@ -266,17 +268,20 @@ func convCertToValues(cert *certificate.Certificate) certValues {
 	}
 }
 
+var ErrCertificateIsNotFound = errors.New("certificate is not found")
 var ErrCAIsInvalidOrOutdated = errors.New("ca is invalid or outdated")
 
 func getCommonCA(input *pkg.HookInput, valKey string) (*certificate.Authority, error) {
 	auth := new(certificate.Authority)
 
 	ca, ok := input.Values.GetOk(valKey)
-	if ok {
-		err := json.Unmarshal([]byte(ca.String()), auth)
-		if err != nil {
-			return nil, err
-		}
+	if !ok {
+		return nil, ErrCertificateIsNotFound
+	}
+
+	err := json.Unmarshal([]byte(ca.String()), auth)
+	if err != nil {
+		return nil, err
 	}
 
 	outdated, err := isOutdatedCA(auth.Cert)
