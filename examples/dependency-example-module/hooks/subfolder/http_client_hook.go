@@ -11,9 +11,9 @@ import (
 
 var configHTTPCLient = &pkg.HookConfig{}
 
-var _ = registry.RegisterFunc(configHTTPCLient, handlerHTTPClient)
+var _ = registry.RegisterFunc(configHTTPCLient, HandlerHTTPClient)
 
-func handlerHTTPClient(ctx context.Context, input *pkg.HookInput) error {
+func HandlerHTTPClient(ctx context.Context, input *pkg.HookInput) error {
 	httpClient := input.DC.GetHTTPClient()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1", nil)
