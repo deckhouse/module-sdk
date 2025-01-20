@@ -13,43 +13,43 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
-type GoHook struct {
+type Hook struct {
 	config        *pkg.HookConfig
 	reconcileFunc pkg.ReconcileFunc
 
 	logger *log.Logger
 }
 
-// NewGoHook creates a new go hook
-func NewGoHook(config *pkg.HookConfig, f pkg.ReconcileFunc) *GoHook {
+// NewHook creates a new go hook
+func NewHook(config *pkg.HookConfig, f pkg.ReconcileFunc) *Hook {
 	logger := log.NewLogger(log.Options{})
 
-	return &GoHook{
+	return &Hook{
 		config:        config,
 		reconcileFunc: f,
 		logger:        logger.Named("hook-auto-logger"),
 	}
 }
 
-func (h *GoHook) GetName() string {
+func (h *Hook) GetName() string {
 	return h.config.Metadata.Name
 }
 
-func (h *GoHook) GetPath() string {
+func (h *Hook) GetPath() string {
 	return h.config.Metadata.Path
 }
 
-func (h *GoHook) GetConfig() *pkg.HookConfig {
+func (h *Hook) GetConfig() *pkg.HookConfig {
 	return h.config
 }
 
-func (h *GoHook) SetMetadata(m *pkg.GoHookMetadata) *GoHook {
+func (h *Hook) SetMetadata(m *pkg.HookMetadata) *Hook {
 	h.config.Metadata = *m
 
 	return h
 }
 
-func (h *GoHook) SetLogger(logger *log.Logger) *GoHook {
+func (h *Hook) SetLogger(logger *log.Logger) *Hook {
 	h.logger = logger
 
 	return h
@@ -62,7 +62,7 @@ type HookRequest interface {
 	GetDependencyContainer() pkg.DependencyContainer
 }
 
-func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, error) {
+func (h *Hook) Execute(ctx context.Context, req HookRequest) (*HookResult, error) {
 	// Values are patched in-place, so an error can occur.
 	rawValues, err := req.GetValues()
 	if err != nil {
@@ -122,7 +122,7 @@ func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, err
 		PatchCollector:   objectPatchCollector,
 		MetricsCollector: metricsCollector,
 		DC:               req.GetDependencyContainer(),
-		Logger:           h.logger.With("output", "gohook"),
+		Logger:           h.logger,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("hook reconcile func: %w", err)
@@ -139,7 +139,7 @@ func (h *GoHook) Execute(ctx context.Context, req HookRequest) (*HookResult, err
 }
 
 // Run start ReconcileFunc
-func (h *GoHook) Run(ctx context.Context, input *pkg.HookInput) error {
+func (h *Hook) Run(ctx context.Context, input *pkg.HookInput) error {
 	return h.reconcileFunc(ctx, input)
 }
 

@@ -7,6 +7,10 @@ var _ pkg.PatchCollectorDeleteOptionApplier = (Patch)(nil)
 
 type Patch map[string]any
 
+func (p Patch) Operation() string {
+	return p["operation"].(string)
+}
+
 func (p Patch) WithSubresource(subresource string) {
 	p["subresource"] = subresource
 }

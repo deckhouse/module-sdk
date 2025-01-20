@@ -47,10 +47,10 @@ func NewHookController(fConfig *file.Config, logger *log.Logger) *HookController
 	}
 }
 
-func (c *HookController) ListHooksMeta() []pkg.GoHookMetadata {
+func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
 	hooks := c.registry.Hooks()
 
-	hooksmetas := make([]pkg.GoHookMetadata, 0, len(hooks))
+	hooksmetas := make([]pkg.HookMetadata, 0, len(hooks))
 	for _, hook := range hooks {
 		hooksmetas = append(hooksmetas, hook.GetConfig().Metadata)
 	}

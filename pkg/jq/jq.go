@@ -131,12 +131,3 @@ func (q *Query) FilterStringObject(ctx context.Context, str string) (*Result, er
 
 	return &Result{data: result}, errs
 }
-
-func Validate(query string) error {
-	_, err := gojq.Parse(query)
-	if err != nil {
-		return fmt.Errorf("parse: %w", err)
-	}
-
-	return nil
-}

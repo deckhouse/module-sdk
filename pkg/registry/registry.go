@@ -59,7 +59,7 @@ func (h *HookRegistry) Add(hook *pkg.Hook) {
 	pc = pc[:n] // pass only valid pcs to runtime.CallersFrames
 	frames := runtime.CallersFrames(pc)
 
-	meta := pkg.GoHookMetadata{}
+	meta := pkg.HookMetadata{}
 
 	for {
 		frame, more := frames.Next()

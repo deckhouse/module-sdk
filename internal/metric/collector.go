@@ -8,11 +8,11 @@ import (
 	pointer "k8s.io/utils/ptr"
 
 	"github.com/deckhouse/module-sdk/pkg"
-	service "github.com/deckhouse/module-sdk/pkg"
 	metric "github.com/deckhouse/module-sdk/pkg/metric/operation"
 )
 
-var _ service.MetricsCollector = (*Collector)(nil)
+var _ pkg.MetricsCollector = (*Collector)(nil)
+var _ pkg.MetricsCollectorOptionApplier = (*Collector)(nil)
 
 type Collector struct {
 	defaultGroup string
@@ -20,17 +20,27 @@ type Collector struct {
 	metrics []metric.Operation
 }
 
-func NewCollector() *Collector {
-	return &Collector{metrics: make([]metric.Operation, 0)}
+func NewCollector(opts ...pkg.MetricsCollectorOption) *Collector {
+	c := &Collector{metrics: make([]metric.Operation, 0)}
+
+	for _, opt := range opts {
+		opt.Apply(c)
+	}
+
+	return c
+}
+
+func (mc *Collector) WithDefaultGroup(group string) {
+	mc.defaultGroup = group
 }
 
 // Inc increments specified Counter metric
-func (mc *Collector) Inc(name string, labels map[string]string, opts ...pkg.MetricsOption) {
+func (mc *Collector) Inc(name string, labels map[string]string, opts ...pkg.Option) {
 	mc.Add(name, 1, labels, opts...)
 }
 
 // Add adds custom value for Counter metric
-func (mc *Collector) Add(name string, value float64, labels map[string]string, options ...pkg.MetricsOption) {
+func (mc *Collector) Add(name string, value float64, labels map[string]string, options ...pkg.Option) {
 	m := metric.Operation{
 		Name:   name,
 		Group:  mc.defaultGroup,
@@ -47,7 +57,7 @@ func (mc *Collector) Add(name string, value float64, labels map[string]string, o
 }
 
 // Set specifies custom value for Gauge metric
-func (mc *Collector) Set(name string, value float64, labels map[string]string, options ...pkg.MetricsOption) {
+func (mc *Collector) Set(name string, value float64, labels map[string]string, options ...pkg.Option) {
 	m := metric.Operation{
 		Name:   name,
 		Group:  mc.defaultGroup,
@@ -73,6 +83,10 @@ func (mc *Collector) Expire(group string) {
 		Group:  group,
 		Action: "expire",
 	})
+}
+
+func (dms *Collector) CollectedMetrics() []metric.Operation {
+	return dms.metrics
 }
 
 func (mc *Collector) WriteOutput(w io.Writer) error {
