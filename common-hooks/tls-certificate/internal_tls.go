@@ -28,7 +28,6 @@ const (
 	keyAlgorithm = "ecdsa"
 	keySize      = 256
 	SnapshotKey  = "secret"
-	CommonCAKey  = "commonSelfsignedCa"
 )
 
 type GenSelfSignedTLSHookConf struct {
@@ -87,9 +86,7 @@ func (gss GenSelfSignedTLSHookConf) Path() string {
 }
 
 func (gss GenSelfSignedTLSHookConf) CommonCAPath() string {
-	path := strings.Join([]string{gss.CommonCAValuesPath, CommonCAKey}, ".")
-
-	return strings.TrimSuffix(path, ".")
+	return strings.TrimSuffix(gss.CommonCAValuesPath, ".")
 }
 
 // SANsGenerator function for generating sans
