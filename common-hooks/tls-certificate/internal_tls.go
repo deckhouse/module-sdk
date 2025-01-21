@@ -141,7 +141,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			}
 		}
 
-		var cert certificate.Certificate
+		var cert *certificate.Certificate
 
 		cn, sans := conf.CN, conf.SANs(input)
 
@@ -159,7 +159,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			}
 		} else {
 			// Certificate is in the snapshot => load it.
-			cert = certs[0]
+			cert = &certs[0]
 
 			// update certificate if less than 6 month left. We create certificate for 10 years, so it looks acceptable
 			// and we don't need to create Crontab schedule
@@ -197,7 +197,7 @@ type CertValues struct {
 
 // The certificate mapping "cert" -> "crt". We are migrating to "crt" naming for certificates
 // in values.
-func convCertToValues(cert certificate.Certificate) CertValues {
+func convCertToValues(cert *certificate.Certificate) CertValues {
 	return CertValues{
 		CA:  string(cert.CA),
 		Crt: string(cert.Cert),
@@ -205,14 +205,14 @@ func convCertToValues(cert certificate.Certificate) CertValues {
 	}
 }
 
-func generateNewSelfSignedTLS(cn string, sans, usages []string) (certificate.Certificate, error) {
+func generateNewSelfSignedTLS(cn string, sans, usages []string) (*certificate.Certificate, error) {
 	ca, err := certificate.GenerateCA(
 		cn,
 		certificate.WithKeyAlgo(keyAlgorithm),
 		certificate.WithKeySize(keySize),
 		certificate.WithCAExpiry(caExpiryDurationStr))
 	if err != nil {
-		return certificate.Certificate{}, fmt.Errorf("generate ca: %w", err)
+		return nil, fmt.Errorf("generate ca: %w", err)
 	}
 
 	cert, err := certificate.GenerateSelfSignedCert(
@@ -225,7 +225,7 @@ func generateNewSelfSignedTLS(cn string, sans, usages []string) (certificate.Cer
 		certificate.WithSigningDefaultUsage(usages),
 	)
 	if err != nil {
-		return certificate.Certificate{}, fmt.Errorf("generate ca: %w", err)
+		return nil, fmt.Errorf("generate ca: %w", err)
 	}
 
 	return cert, nil
