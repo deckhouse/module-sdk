@@ -21,9 +21,9 @@ const (
 	certOutdatedDuration = (24 * time.Hour) * 365 / 2  // 6 month, just enough to renew certificate
 
 	// certificate encryption algorithm
-	keyAlgorithm = "ecdsa"
-	keySize      = 256
-	SnapshotKey  = "secret"
+	keyAlgorithm           = "ecdsa"
+	keySize                = 256
+	InternalTLSSnapshotKey = "secret"
 )
 
 type GenSelfSignedTLSHookConf struct {
@@ -95,7 +95,7 @@ func RegisterInternalTLSHookEM(conf GenSelfSignedTLSHookConf) bool {
 		OnBeforeHelm: &pkg.OrderedConfig{Order: 5},
 		Kubernetes: []pkg.KubernetesConfig{
 			{
-				Name:       SnapshotKey,
+				Name:       InternalTLSSnapshotKey,
 				APIVersion: "v1",
 				Kind:       "Secret",
 				NamespaceSelector: &pkg.NamespaceSelector{
@@ -115,10 +115,10 @@ func RegisterInternalTLSHookEM(conf GenSelfSignedTLSHookConf) bool {
 				Crontab: "42 4 * * *",
 			},
 		},
-	}, genSelfSignedTLS(conf))
+	}, GenSelfSignedTLS(conf))
 }
 
-func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
+func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
 	var usages []string
 
 	if conf.Usages == nil {
@@ -145,7 +145,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		cn, sans := conf.CN, conf.SANs(input)
 
-		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, SnapshotKey)
+		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, InternalTLSSnapshotKey)
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)
 		}
@@ -153,7 +153,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		if len(certs) == 0 {
 			// No certificate in snapshot => generate a new one.
 			// Secret will be updated by Helm.
-			cert, err = generateNewSelfSignedTLS(input, cn, sans, usages)
+			cert, err = generateNewSelfSignedTLS(cn, sans, usages)
 			if err != nil {
 				return err
 			}
@@ -176,7 +176,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			// In case of errors, both these flags are false to avoid regeneration loop for the
 			// certificate.
 			if caOutdated || certOutdated {
-				cert, err = generateNewSelfSignedTLS(input, cn, sans, usages)
+				cert, err = generateNewSelfSignedTLS(cn, sans, usages)
 				if err != nil {
 					return err
 				}
@@ -189,7 +189,7 @@ func genSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 	}
 }
 
-type certValues struct {
+type CertValues struct {
 	CA  string `json:"ca"`
 	Crt string `json:"crt"`
 	Key string `json:"key"`
@@ -197,33 +197,38 @@ type certValues struct {
 
 // The certificate mapping "cert" -> "crt". We are migrating to "crt" naming for certificates
 // in values.
-func convCertToValues(cert certificate.Certificate) certValues {
-	return certValues{
+func convCertToValues(cert certificate.Certificate) CertValues {
+	return CertValues{
 		CA:  string(cert.CA),
 		Crt: string(cert.Cert),
 		Key: string(cert.Key),
 	}
 }
 
-func generateNewSelfSignedTLS(input *pkg.HookInput, cn string, sans, usages []string) (certificate.Certificate, error) {
-	ca, err := certificate.GenerateCA(input.Logger,
+func generateNewSelfSignedTLS(cn string, sans, usages []string) (certificate.Certificate, error) {
+	ca, err := certificate.GenerateCA(
 		cn,
 		certificate.WithKeyAlgo(keyAlgorithm),
 		certificate.WithKeySize(keySize),
 		certificate.WithCAExpiry(caExpiryDurationStr))
 	if err != nil {
-		return certificate.Certificate{}, err
+		return certificate.Certificate{}, fmt.Errorf("generate ca: %w", err)
 	}
 
-	return certificate.GenerateSelfSignedCert(input.Logger,
+	cert, err := certificate.GenerateSelfSignedCert(
 		cn,
-		ca,
+		*ca,
 		certificate.WithSANs(sans...),
 		certificate.WithKeyAlgo(keyAlgorithm),
 		certificate.WithKeySize(keySize),
 		certificate.WithSigningDefaultExpiry(certExpiryDuration),
 		certificate.WithSigningDefaultUsage(usages),
 	)
+	if err != nil {
+		return certificate.Certificate{}, fmt.Errorf("generate ca: %w", err)
+	}
+
+	return cert, nil
 }
 
 // check certificate duration and SANs list

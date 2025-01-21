@@ -19,7 +19,6 @@ package certificate
 import (
 	"bytes"
 	"log"
-	"log/slog"
 	"time"
 
 	"github.com/cloudflare/cfssl/cli/genkey"
@@ -28,8 +27,6 @@ import (
 	"github.com/cloudflare/cfssl/helpers"
 	"github.com/cloudflare/cfssl/signer"
 	"github.com/cloudflare/cfssl/signer/local"
-
-	"github.com/deckhouse/module-sdk/pkg"
 )
 
 type Certificate struct {
@@ -55,8 +52,7 @@ func WithSigningDefaultUsage(usage []string) SigningOption {
 	}
 }
 
-func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca Authority, options ...interface{}) (Certificate, error) {
-	logger.Debug("Generate self-signed cert", slog.String("cn", cn))
+func GenerateSelfSignedCert(cn string, ca Authority, options ...interface{}) (Certificate, error) {
 	request := &csr.CertificateRequest{
 		CN: cn,
 		KeyRequest: &csr.KeyRequest{

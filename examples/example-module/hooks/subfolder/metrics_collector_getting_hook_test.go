@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("handle hook single file example", func() {
+var _ = Describe("metrics collector example", func() {
 	collector := mock.NewMetricsCollectorMock(GinkgoT())
 
 	collector.AddMock.Set(func(name string, value float64, labels map[string]string, opts ...pkg.Option) {

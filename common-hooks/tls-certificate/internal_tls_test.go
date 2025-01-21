@@ -22,11 +22,14 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
+	"github.com/deckhouse/deckhouse/pkg/log"
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
+	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
+	mock "github.com/deckhouse/module-sdk/testing/mock"
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
 )
 
 func Test_JQFilterTLS(t *testing.T) {
@@ -60,5 +63,70 @@ func Test_JQFilterTLS(t *testing.T) {
 		assert.Equal(t, "some-key", string(cert.Key))
 		assert.Equal(t, "some-crt", string(cert.Cert))
 		assert.Equal(t, "some-ca", string(cert.CA))
+	})
+}
+
+func Test_GenSelfSignedTLS(t *testing.T) {
+	t.Run("refoncile func", func(t *testing.T) {
+		dc := mock.NewDependencyContainerMock(t)
+		// dc.GetHTTPClientMock.Set(func(options ...pkg.HTTPOption) (h1 pkg.HTTPClient) {
+		// 	return mock.NewHTTPClientMock(t).DoMock.Set(func(req *http.Request) (rp1 *http.Response, err error) {
+		// 		assert.Equal(t, req.Method, http.MethodGet)
+		// 		assert.Equal(t, req.URL.String(), "http://127.0.0.1")
+
+		// 		return &http.Response{}, nil
+		// 	})
+		// })
+
+		snapshots := mock.NewSnapshotsMock(t)
+		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
+			[]pkg.Snapshot{
+				mock.NewSnapshotMock(t).UnmarhalToMock.Set(func(v any) (err error) {
+					cert := v.(*certificate.Certificate)
+					*cert = certificate.Certificate{}
+
+					return nil
+				}),
+			},
+		)
+
+		values := mock.NewPatchableValuesCollectorMock(t)
+
+		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Str: "d8-example-module"})
+		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Str: "%.d8-example-module"})
+
+		values.SetMock.Set(func(path string, v any) {
+			assert.Equal(t, "d8-example-module.internal.webhookCert", path)
+
+			values, ok := v.(tlscertificate.CertValues)
+			assert.True(t, ok)
+
+			assert.NotEmpty(t, values.CA)
+			assert.NotEmpty(t, values.Crt)
+			assert.NotEmpty(t, values.Key)
+		})
+
+		var input = &pkg.HookInput{
+			Snapshots: snapshots,
+			Values:    values,
+			DC:        dc,
+			Logger:    log.NewNop(),
+		}
+
+		config := tlscertificate.GenSelfSignedTLSHookConf{
+			CN:            "secr-name",
+			TLSSecretName: "secret-webhook-cert",
+			Namespace:     "some-namespace",
+			SANs: tlscertificate.DefaultSANs([]string{
+				"example-webhook",
+				"example-webhook.d8-example-module",
+				"example-webhook.d8-example-module.svc",
+				"example-webhook.d8-example-module.svc.cluster.local",
+			}),
+			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+		}
+
+		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
+		assert.NoError(t, err)
 	})
 }

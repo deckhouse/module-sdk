@@ -17,7 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("handle hook single file example", func() {
+var _ = Describe("snapshot alternative example", func() {
 	Context("refoncile func", func() {
 		When("all services works correctly", func() {
 			snapshots := mock.NewSnapshotsMock(GinkgoT())

@@ -36,7 +36,10 @@ import (
 
 // CertificateWaitTimeoutDefault controls default amount of time we wait for certificate
 // approval in one iteration.
-const CertificateWaitTimeoutDefault = 1 * time.Minute
+const (
+	CertificateWaitTimeoutDefault = 1 * time.Minute
+	OrderSertificateSnapshotKey   = "certificateSecrets"
+)
 
 type OrderCertificateRequest struct {
 	Namespace  string
@@ -91,7 +94,7 @@ func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
 		},
 		Kubernetes: []pkg.KubernetesConfig{
 			{
-				Name:              "certificateSecrets",
+				Name:              OrderSertificateSnapshotKey,
 				APIVersion:        "v1",
 				Kind:              "Secret",
 				NamespaceSelector: &pkg.NamespaceSelector{NameSelector: &pkg.NameSelector{MatchNames: namespaces}},

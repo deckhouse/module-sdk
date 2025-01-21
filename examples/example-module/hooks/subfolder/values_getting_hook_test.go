@@ -16,7 +16,7 @@ import (
 	"github.com/tidwall/gjson"
 )
 
-var _ = Describe("handle hook single file example", func() {
+var _ = Describe("values example", func() {
 	Context("refoncile func", func() {
 		When("all services works correctly", func() {
 			values := mock.NewPatchableValuesCollectorMock(GinkgoT())

@@ -29,8 +29,6 @@ var JQFilterApplyCaSelfSignedCert = `{
 }`
 
 func GetOrCreateCa(input *pkg.HookInput, snapshotKey, cn string) (*Authority, error) {
-	var selfSignedCA Authority
-
 	authorities, err := objectpatch.UnmarshalToStruct[Authority](input.Snapshots, snapshotKey)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal to struct: %w", err)
@@ -41,10 +39,10 @@ func GetOrCreateCa(input *pkg.HookInput, snapshotKey, cn string) (*Authority, er
 		return &authorities[0], nil
 	}
 
-	selfSignedCA, err = GenerateCA(input.Logger, cn)
+	selfSignedCA, err := GenerateCA(cn)
 	if err != nil {
 		return nil, fmt.Errorf("cannot generate selfsigned ca: %v", err)
 	}
 
-	return &selfSignedCA, nil
+	return selfSignedCA, nil
 }
