@@ -69,14 +69,6 @@ func Test_JQFilterTLS(t *testing.T) {
 func Test_GenSelfSignedTLS(t *testing.T) {
 	t.Run("refoncile func", func(t *testing.T) {
 		dc := mock.NewDependencyContainerMock(t)
-		// dc.GetHTTPClientMock.Set(func(options ...pkg.HTTPOption) (h1 pkg.HTTPClient) {
-		// 	return mock.NewHTTPClientMock(t).DoMock.Set(func(req *http.Request) (rp1 *http.Response, err error) {
-		// 		assert.Equal(t, req.Method, http.MethodGet)
-		// 		assert.Equal(t, req.URL.String(), "http://127.0.0.1")
-
-		// 		return &http.Response{}, nil
-		// 	})
-		// })
 
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
