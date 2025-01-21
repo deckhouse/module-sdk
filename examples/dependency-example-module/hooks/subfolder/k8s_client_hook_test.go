@@ -18,7 +18,7 @@ import (
 
 var _ = Describe("k8s client hook example", func() {
 	Context("refoncile func", func() {
-		Context("when all services works correctly", func() {
+		When("all services works correctly", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.MustGetK8sClientMock.Set(func(options ...pkg.KubernetesOption) (k1 pkg.KubernetesClient) {
 				return mock.NewKubernetesClientMock(GinkgoT()).GetMock.Set(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) (err error) {
@@ -42,7 +42,7 @@ var _ = Describe("k8s client hook example", func() {
 			})
 		})
 
-		Context("kubernetes client has an error", func() {
+		When("kubernetes client has an error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.MustGetK8sClientMock.Set(func(options ...pkg.KubernetesOption) (k1 pkg.KubernetesClient) {
 				return mock.NewKubernetesClientMock(GinkgoT()).GetMock.Set(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) (err error) {

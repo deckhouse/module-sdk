@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("http client hook example", func() {
 	Context("refoncile func", func() {
-		Context("when all services works correctly", func() {
+		When("all services works correctly", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.GetHTTPClientMock.Set(func(options ...pkg.HTTPOption) (h1 pkg.HTTPClient) {
 				return mock.NewHTTPClientMock(GinkgoT()).DoMock.Set(func(req *http.Request) (rp1 *http.Response, err error) {
@@ -39,7 +39,7 @@ var _ = Describe("http client hook example", func() {
 			})
 		})
 
-		Context("http client receive error", func() {
+		When("http client receive error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.GetHTTPClientMock.Set(func(options ...pkg.HTTPOption) (h1 pkg.HTTPClient) {
 				return mock.NewHTTPClientMock(GinkgoT())
@@ -57,7 +57,7 @@ var _ = Describe("http client hook example", func() {
 			})
 		})
 
-		Context("http client receive error", func() {
+		When("http client receive error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.GetHTTPClientMock.Set(func(options ...pkg.HTTPOption) (h1 pkg.HTTPClient) {
 				return mock.NewHTTPClientMock(GinkgoT()).DoMock.Set(func(req *http.Request) (rp1 *http.Response, err error) {

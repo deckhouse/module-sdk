@@ -23,7 +23,7 @@ const (
 
 var _ = Describe("registry client hook example", func() {
 	Context("refoncile func", func() {
-		Context("when all services works correctly", func() {
+		When("all services works correctly", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
@@ -59,7 +59,7 @@ var _ = Describe("registry client hook example", func() {
 			})
 		})
 
-		Context("no tags listed", func() {
+		When("no tags listed", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
@@ -81,7 +81,7 @@ var _ = Describe("registry client hook example", func() {
 			})
 		})
 
-		Context("list tags error", func() {
+		When("list tags error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
@@ -104,7 +104,7 @@ var _ = Describe("registry client hook example", func() {
 			})
 		})
 
-		Context("getting image errror", func() {
+		When("getting image errror", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
@@ -132,7 +132,7 @@ var _ = Describe("registry client hook example", func() {
 			})
 		})
 
-		Context("config name error", func() {
+		When("config name error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
@@ -161,7 +161,7 @@ var _ = Describe("registry client hook example", func() {
 			})
 		})
 
-		Context("get digest error", func() {
+		When("get digest error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
