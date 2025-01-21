@@ -49,7 +49,7 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Use:     "hooks",
 		Aliases: []string{"hook"},
 		Short:   "Working with hooks",
-		Long:    `Tools for working with nested hooks`,
+		Long:    `Command for working with nested hooks`,
 	}
 
 	hooksCmd.AddCommand(&cobra.Command{
@@ -82,9 +82,10 @@ func (c *cmd) hooksCmd() *cobra.Command {
 	})
 
 	hooksCmd.AddCommand(&cobra.Command{
-		Use:   "dump",
-		Short: "Dump hooks configs",
-		Long:  `Dump list of hooks configs in config.json file`,
+		Use:    "dump",
+		Short:  "Dump hooks configs",
+		Long:   `Dump list of hooks configs in config.json file`,
+		Hidden: true,
 		RunE: func(_ *cobra.Command, _ []string) error {
 			err := c.controller.WriteHookConfigsInFile()
 			if err != nil {
@@ -98,10 +99,11 @@ func (c *cmd) hooksCmd() *cobra.Command {
 	})
 
 	hooksCmd.AddCommand(&cobra.Command{
-		Use:   "run",
-		Short: "Running hook",
-		Long:  `Run hook from binary registry`,
-		Args:  cobra.ExactArgs(1),
+		Use:    "run",
+		Short:  "Running hook",
+		Long:   `Run hook from binary registry`,
+		Hidden: true,
+		Args:   cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
