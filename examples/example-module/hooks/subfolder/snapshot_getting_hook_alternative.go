@@ -10,13 +10,13 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
-var _ = registry.RegisterFunc(configSnapshotsAlt, handlerHookSnapshotsAlt)
+var _ = registry.RegisterFunc(configSnapshotsAlt, HandlerHookSnapshotsAlt)
 
 var configSnapshotsAlt = &pkg.HookConfig{
 	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
 	Kubernetes: []pkg.KubernetesConfig{
 		{
-			Name:       nodeInfoSnapshotName,
+			Name:       NodeInfoSnapshotName,
 			APIVersion: "v1",
 			Kind:       "Node",
 			JqFilter:   applyNodeJQFilter,
@@ -24,12 +24,12 @@ var configSnapshotsAlt = &pkg.HookConfig{
 	},
 }
 
-func handlerHookSnapshotsAlt(_ context.Context, input *pkg.HookInput) error {
+func HandlerHookSnapshotsAlt(_ context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from snapshot alt hook")
 
 	// getting info from snapshot
 	// no info about key not found, if you need it - check length
-	nodeInfos, err := objectpatch.UnmarshalToStruct[NodeInfo](input.Snapshots, nodeInfoSnapshotName)
+	nodeInfos, err := objectpatch.UnmarshalToStruct[NodeInfo](input.Snapshots, NodeInfoSnapshotName)
 	if err != nil {
 		return fmt.Errorf("unmarshal to struct: %w", err)
 	}

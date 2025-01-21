@@ -10,21 +10,13 @@ import (
 
 // values and config values have indent interface
 
-var _ = registry.RegisterFunc(configValues, handlerHookValues)
+var _ = registry.RegisterFunc(configValues, HandlerHookValues)
 
 var configValues = &pkg.HookConfig{
 	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
-	Kubernetes: []pkg.KubernetesConfig{
-		{
-			Name:       nodeInfoSnapshotName,
-			APIVersion: "v1",
-			Kind:       "Node",
-			JqFilter:   applyNodeJQFilter,
-		},
-	},
 }
 
-func handlerHookValues(ctx context.Context, input *pkg.HookInput) error {
+func HandlerHookValues(ctx context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from values hook")
 
 	valuesGetExamples(ctx, input)
