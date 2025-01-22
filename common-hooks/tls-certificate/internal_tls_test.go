@@ -67,6 +67,12 @@ func Test_JQFilterTLS(t *testing.T) {
 	})
 }
 
+func Test_InternalTLSConfig(t *testing.T) {
+	t.Run("config is valid", func(t *testing.T) {
+		assert.NoError(t, tlscertificate.GenSelfSignedTLSConfig(tlscertificate.GenSelfSignedTLSHookConf{}).Validate())
+	})
+}
+
 func Test_GenSelfSignedTLS(t *testing.T) {
 	t.Run("no certificate in snapshot", func(t *testing.T) {
 		dc := mock.NewDependencyContainerMock(t)

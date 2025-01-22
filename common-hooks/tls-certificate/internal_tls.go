@@ -91,7 +91,11 @@ var JQFilterTLS = `{
 // with service which order tls
 // Clients need to use CA cert for verify connection
 func RegisterInternalTLSHookEM(conf GenSelfSignedTLSHookConf) bool {
-	return registry.RegisterFunc(&pkg.HookConfig{
+	return registry.RegisterFunc(GenSelfSignedTLSConfig(conf), GenSelfSignedTLS(conf))
+}
+
+func GenSelfSignedTLSConfig(conf GenSelfSignedTLSHookConf) *pkg.HookConfig {
+	return &pkg.HookConfig{
 		OnBeforeHelm: &pkg.OrderedConfig{Order: 5},
 		Kubernetes: []pkg.KubernetesConfig{
 			{
@@ -115,7 +119,7 @@ func RegisterInternalTLSHookEM(conf GenSelfSignedTLSHookConf) bool {
 				Crontab: "42 4 * * *",
 			},
 		},
-	}, GenSelfSignedTLS(conf))
+	}
 }
 
 func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
