@@ -93,3 +93,9 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		assert.Equal(t, "some-cert", auth.Name)
 	})
 }
+
+func Test_CertificateHandlerConfig(t *testing.T) {
+	t.Run("config is valid", func(t *testing.T) {
+		assert.NoError(t, tlscertificate.CertificateHandlerConfig([]string{}, []string{}).Validate())
+	})
+}

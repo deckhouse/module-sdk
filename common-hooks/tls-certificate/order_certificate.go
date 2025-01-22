@@ -92,7 +92,11 @@ func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
 		secretNames = append(secretNames, request.SecretName)
 	}
 
-	return registry.RegisterFunc(&pkg.HookConfig{
+	return registry.RegisterFunc(CertificateHandlerConfig(namespaces, secretNames), CertificateHandler(requests))
+}
+
+func CertificateHandlerConfig(namespaces, secretNames []string) *pkg.HookConfig {
+	return &pkg.HookConfig{
 		OnBeforeHelm: &pkg.OrderedConfig{
 			Order: 5,
 		},
@@ -112,10 +116,10 @@ func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
 				Crontab: "42 4 * * *",
 			},
 		},
-	}, СertificateHandler(requests))
+	}
 }
 
-func СertificateHandler(requests []OrderCertificateRequest) func(ctx context.Context, input *pkg.HookInput) error {
+func CertificateHandler(requests []OrderCertificateRequest) func(ctx context.Context, input *pkg.HookInput) error {
 	return func(ctx context.Context, input *pkg.HookInput) error {
 		return certificateHandlerWithRequests(ctx, input, requests)
 	}
