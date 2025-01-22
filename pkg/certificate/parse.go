@@ -52,7 +52,7 @@ func generateCACert(caBase64 string) (*x509.Certificate, error) {
 
 	block, _ := pem.Decode(caData)
 	if block == nil {
-		return nil, fmt.Errorf("block not found")
+		return nil, ErrBlockNotFound
 	}
 
 	if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {

@@ -72,6 +72,7 @@ func (r *OrderCertificateRequest) DeepCopy() OrderCertificateRequest {
 		ModuleName:  r.ModuleName,
 		WaitTimeout: r.WaitTimeout,
 	}
+
 	return newR
 }
 
@@ -85,10 +86,12 @@ var JQFilterApplyCertificateSecret = `{
 func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
 	var namespaces []string
 	var secretNames []string
+
 	for _, request := range requests {
 		namespaces = append(namespaces, request.Namespace)
 		secretNames = append(secretNames, request.SecretName)
 	}
+
 	return registry.RegisterFunc(&pkg.HookConfig{
 		OnBeforeHelm: &pkg.OrderedConfig{
 			Order: 5,
@@ -138,7 +141,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 
 		valueName := fmt.Sprintf("%s.%s", request.ModuleName, request.ValueName)
 
-		certSecrets, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, "certificateSecrets")
+		certSecrets, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, OrderSertificateSnapshotKey)
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)
 		}
