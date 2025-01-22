@@ -41,7 +41,7 @@ func GetOrCreateCa(input *pkg.HookInput, snapshotKey, cn string) (*Authority, er
 
 	selfSignedCA, err := GenerateCA(cn)
 	if err != nil {
-		return nil, fmt.Errorf("cannot generate selfsigned ca: %v", err)
+		return nil, fmt.Errorf("cannot generate selfsigned ca: %w", err)
 	}
 
 	return selfSignedCA, nil

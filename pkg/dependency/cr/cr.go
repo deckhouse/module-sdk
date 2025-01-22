@@ -230,7 +230,7 @@ func GetHTTPTransport(ca string) (transport http.RoundTripper) {
 
 	caPool, err := x509.SystemCertPool()
 	if err != nil {
-		panic(fmt.Errorf("cannot get system cert pool: %v", err))
+		panic(fmt.Errorf("cannot get system cert pool: %w", err))
 	}
 
 	caPool.AppendCertsFromPEM([]byte(ca))

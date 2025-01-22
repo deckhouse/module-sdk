@@ -18,6 +18,7 @@ package certificate
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"time"
 
@@ -77,19 +78,19 @@ func GenerateSelfSignedCert(cn string, ca Authority, options ...interface{}) (*C
 	g := &csr.Generator{Validator: genkey.Validator}
 	csrBytes, key, err := g.ProcessRequest(request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("process request: %w", err)
 	}
 
 	req := signer.SignRequest{Request: string(csrBytes)}
 
 	parsedCa, err := helpers.ParseCertificatePEM(ca.Cert)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse certificate pem: %w", err)
 	}
 
 	priv, err := helpers.ParsePrivateKeyPEM(ca.Key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse private key pem: %w", err)
 	}
 
 	signingConfig := &config.Signing{
@@ -104,12 +105,12 @@ func GenerateSelfSignedCert(cn string, ca Authority, options ...interface{}) (*C
 
 	s, err := local.NewSigner(priv, parsedCa, signer.DefaultSigAlgo(priv), signingConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new signer: %w", err)
 	}
 
 	cert, err := s.Sign(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sign: %w", err)
 	}
 
 	return &Certificate{

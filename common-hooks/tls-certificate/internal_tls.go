@@ -155,7 +155,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			// Secret will be updated by Helm.
 			cert, err = generateNewSelfSignedTLS(cn, sans, usages)
 			if err != nil {
-				return err
+				return fmt.Errorf("generate new self signed tls: %w", err)
 			}
 		} else {
 			// Certificate is in the snapshot => load it.
@@ -178,7 +178,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			if caOutdated || certOutdated {
 				cert, err = generateNewSelfSignedTLS(cn, sans, usages)
 				if err != nil {
-					return err
+					return fmt.Errorf("re generate new self signed tls: %w", err)
 				}
 			}
 		}
@@ -235,7 +235,7 @@ func generateNewSelfSignedTLS(cn string, sans, usages []string) (*certificate.Ce
 func isIrrelevantCert(certData []byte, desiredSANSs []string) (bool, error) {
 	cert, err := certificate.ParseCertificate(certData)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("parse certificate: %w", err)
 	}
 
 	if time.Until(cert.NotAfter) < certOutdatedDuration {
@@ -278,7 +278,7 @@ func isOutdatedCA(ca []byte) (bool, error) {
 
 	cert, err := certificate.ParseCertificate(ca)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("parse certificate: %w", err)
 	}
 
 	if time.Until(cert.NotAfter) < certOutdatedDuration {

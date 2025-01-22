@@ -21,6 +21,7 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/pem"
+	"errors"
 	"fmt"
 )
 
@@ -28,12 +29,12 @@ import (
 func ParseCertificatesFromBase64(ca, crt, key string) (*x509.Certificate, *tls.Certificate, error) {
 	caCert, err := generateCACert(ca)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("generate ca cert: %w", err)
 	}
 
 	clientCert, err := generateTLSCert(crt, key)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("generate tls cert: %w", err)
 	}
 
 	return caCert, clientCert, nil
@@ -46,7 +47,7 @@ func generateCACert(caBase64 string) (*x509.Certificate, error) {
 
 	caData, err := base64.StdEncoding.DecodeString(caBase64)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("base64 decode string ca: %w", err)
 	}
 
 	block, _ := pem.Decode(caData)
@@ -68,16 +69,16 @@ func generateTLSCert(crt, key string) (*tls.Certificate, error) {
 
 	certData, err := base64.StdEncoding.DecodeString(crt)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("base64 decode string crt: %w", err)
 	}
 	keyData, err := base64.StdEncoding.DecodeString(key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("base64 decode string key: %w", err)
 	}
 
 	cert, err := tls.X509KeyPair(certData, keyData)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("tls x509 key pair: %w", err)
 	}
 	return &cert, nil
 }
@@ -86,31 +87,34 @@ func generateTLSCert(crt, key string) (*tls.Certificate, error) {
 func ParseCertificatesFromPEM(ca, crt, key []byte) (*x509.Certificate, *tls.Certificate, error) {
 	caCert, err := ParseCertificate(ca)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("parse certificate: %w", err)
 	}
 
 	clientCert, err := tls.X509KeyPair(crt, key)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("tls x509 key pair: %w", err)
 	}
 
 	return caCert, &clientCert, nil
 }
 
+var ErrNotValidCACertificate = errors.New("not valid ca certificate")
+var ErrBlockNotFound = errors.New("block not found")
+
 // ParseCertificate parse x509 certificate PEM encoded
 func ParseCertificate(crt []byte) (*x509.Certificate, error) {
 	block, _ := pem.Decode(crt)
 	if block == nil {
-		return nil, fmt.Errorf("block not found")
+		return nil, ErrBlockNotFound
 	}
 
 	if block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
-		return nil, fmt.Errorf("not valid ca certificate")
+		return nil, ErrNotValidCACertificate
 	}
 
 	cert, err := x509.ParseCertificate(block.Bytes)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("x509 parse certificate: %w", err)
 	}
 
 	return cert, nil
