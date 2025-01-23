@@ -3,12 +3,14 @@ package tlscertificate
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
 	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/utils/net"
 
+	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
@@ -64,10 +66,25 @@ type GenSelfSignedTLSHookConf struct {
 	// if return value is false - hook will stop its execution
 	// if return value is true - hook will continue
 	BeforeHookCheck func(input *pkg.HookInput) bool
+
+	// CommonCA - full path to store CA certificate TLS private key and cert
+	// full path will be
+	//   CommonCAValuesPath
+	// Example: CommonCAValuesPath =  'commonCaPath'
+	// Values to store:
+	// commonCaPath.key
+	// commonCaPath.crt
+	// Data in values store as plain text
+	// In helm templates you need use `b64enc` function to encode
+	CommonCAValuesPath string
 }
 
 func (gss GenSelfSignedTLSHookConf) Path() string {
 	return strings.TrimSuffix(gss.FullValuesPathPrefix, ".")
+}
+
+func (gss GenSelfSignedTLSHookConf) CommonCAPath() string {
+	return strings.TrimSuffix(gss.CommonCAValuesPath, ".")
 }
 
 // SANsGenerator function for generating sans
@@ -154,14 +171,46 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			return fmt.Errorf("unmarshal to struct: %w", err)
 		}
 
-		if len(certs) == 0 {
-			// No certificate in snapshot => generate a new one.
-			// Secret will be updated by Helm.
-			cert, err = generateNewSelfSignedTLS(cn, sans, usages)
+		var auth *certificate.Authority
+
+		mustGenerate := false
+
+		useCommonCA := conf.CommonCAValuesPath != ""
+
+		// 1) get and validate common ca
+		// 2) if not valid:
+		// 2.1) regenerate common ca
+		// 2.2) save new common ca in values
+		// 2.3) mark certificates to regenerate
+		if useCommonCA {
+			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
-				return fmt.Errorf("generate new self signed tls: %w", err)
+				auth, err = certificate.GenerateCA(input.Logger,
+					cn,
+					certificate.WithKeyAlgo(keyAlgorithm),
+					certificate.WithKeySize(keySize),
+					certificate.WithCAExpiry(caExpiryDurationStr))
+				if err != nil {
+					return fmt.Errorf("generate ca: %w", err)
+				}
+
+				input.Values.Set(conf.CommonCAPath(), auth)
+
+				mustGenerate = true
 			}
-		} else {
+		}
+
+		// if no certificate - regenerate
+		if len(certs) == 0 {
+			mustGenerate = true
+		}
+
+		// 1) take first certificate
+		// 2) check certificate ca outdated
+		// 3) if using common CA - compare cert CA and common CA (if different - mark outdated)
+		// 4) check certificate outdated
+		// 5) if CA or cert outdated - regenerate
+		if len(certs) > 0 {
 			// Certificate is in the snapshot => load it.
 			cert = &certs[0]
 
@@ -169,21 +218,30 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			// and we don't need to create Crontab schedule
 			caOutdated, err := isOutdatedCA(cert.CA)
 			if err != nil {
-				input.Logger.Error(err.Error())
+				input.Logger.Warn("is outdated ca", log.Err(err))
+			}
+
+			// if common ca and cert ca is not equal - regenerate cert
+			if useCommonCA && !slices.Equal(auth.Cert, cert.CA) {
+				input.Logger.Warn("common ca is not equal cert ca")
+
+				caOutdated = true
 			}
 
 			certOutdated, err := isIrrelevantCert(cert.Cert, sans)
 			if err != nil {
-				input.Logger.Error(err.Error())
+				input.Logger.Warn("is irrelevant cert", log.Err(err))
 			}
 
 			// In case of errors, both these flags are false to avoid regeneration loop for the
 			// certificate.
-			if caOutdated || certOutdated {
-				cert, err = generateNewSelfSignedTLS(cn, sans, usages)
-				if err != nil {
-					return fmt.Errorf("re generate new self signed tls: %w", err)
-				}
+			mustGenerate = caOutdated || certOutdated
+		}
+
+		if mustGenerate {
+			cert, err = generateNewSelfSignedTLS(input, cn, auth, sans, usages)
+			if err != nil {
+				return fmt.Errorf("generate new self signed tls: %w", err)
 			}
 		}
 
