@@ -54,7 +54,7 @@ func WithSigningDefaultUsage(usage []string) SigningOption {
 	}
 }
 
-func GenerateSelfSignedCert(cn string, ca Authority, options ...interface{}) (*Certificate, error) {
+func GenerateSelfSignedCert(cn string, ca *Authority, options ...interface{}) (*Certificate, error) {
 	if ca == nil {
 		return nil, errors.New("ca is nil")
 	}

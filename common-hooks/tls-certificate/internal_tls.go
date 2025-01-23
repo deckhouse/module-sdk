@@ -2,6 +2,8 @@ package tlscertificate
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -185,7 +187,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		if useCommonCA {
 			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
-				auth, err = certificate.GenerateCA(input.Logger,
+				auth, err = certificate.GenerateCA(
 					cn,
 					certificate.WithKeyAlgo(keyAlgorithm),
 					certificate.WithKeySize(keySize),
@@ -239,7 +241,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		}
 
 		if mustGenerate {
-			cert, err = generateNewSelfSignedTLS(input, cn, auth, sans, usages)
+			cert, err = generateNewSelfSignedTLS(cn, auth, sans, usages)
 			if err != nil {
 				return fmt.Errorf("generate new self signed tls: %w", err)
 			}
@@ -267,19 +269,57 @@ func convCertToValues(cert *certificate.Certificate) CertValues {
 	}
 }
 
-func generateNewSelfSignedTLS(cn string, sans, usages []string) (*certificate.Certificate, error) {
-	ca, err := certificate.GenerateCA(
-		cn,
-		certificate.WithKeyAlgo(keyAlgorithm),
-		certificate.WithKeySize(keySize),
-		certificate.WithCAExpiry(caExpiryDurationStr))
+var ErrCertificateIsNotFound = errors.New("certificate is not found")
+var ErrCAIsInvalidOrOutdated = errors.New("ca is invalid or outdated")
+
+func getCommonCA(input *pkg.HookInput, valKey string) (*certificate.Authority, error) {
+	auth := new(certificate.Authority)
+
+	ca, ok := input.Values.GetOk(valKey)
+	if !ok {
+		return nil, ErrCertificateIsNotFound
+	}
+
+	err := json.Unmarshal([]byte(ca.String()), auth)
 	if err != nil {
-		return nil, fmt.Errorf("generate ca: %w", err)
+		return nil, err
+	}
+
+	outdated, err := isOutdatedCA(auth.Cert)
+	if err != nil {
+		input.Logger.Error("is outdated ca", log.Err(err))
+
+		return nil, err
+	}
+
+	if !outdated {
+		return auth, nil
+	}
+
+	return nil, ErrCAIsInvalidOrOutdated
+}
+
+// generateNewSelfSignedTLS
+//
+// if you pass ca - it will be used to sign new certificate
+// if pass nil ca - it will be generate to sign new certificate
+func generateNewSelfSignedTLS(cn string, ca *certificate.Authority, sans, usages []string) (*certificate.Certificate, error) {
+	if ca == nil {
+		var err error
+
+		ca, err = certificate.GenerateCA(
+			cn,
+			certificate.WithKeyAlgo(keyAlgorithm),
+			certificate.WithKeySize(keySize),
+			certificate.WithCAExpiry(caExpiryDurationStr))
+		if err != nil {
+			return nil, fmt.Errorf("generate ca: %w", err)
+		}
 	}
 
 	cert, err := certificate.GenerateSelfSignedCert(
 		cn,
-		*ca,
+		ca,
 		certificate.WithSANs(sans...),
 		certificate.WithKeyAlgo(keyAlgorithm),
 		certificate.WithKeySize(keySize),

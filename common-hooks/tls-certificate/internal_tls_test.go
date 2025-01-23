@@ -154,7 +154,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 
 					cert, err := certificate.GenerateSelfSignedCert(
 						"cert-name",
-						*ca,
+						ca,
 						certificate.WithSANs([]string{
 							"example-webhook",
 							"example-webhook.d8-example-module",
@@ -251,7 +251,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 
 					cert, err := certificate.GenerateSelfSignedCert(
 						"cert-name",
-						*ca,
+						ca,
 						certificate.WithSANs([]string{
 							"example-webhook",
 							"example-webhook.d8-example-module",
@@ -348,7 +348,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 
 					cert, err := certificate.GenerateSelfSignedCert(
 						"cert-name",
-						*ca,
+						ca,
 						certificate.WithSANs([]string{
 							"example-webhook",
 							"example-webhook.d8-example-module",
