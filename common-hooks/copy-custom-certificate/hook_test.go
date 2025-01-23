@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package tlscertificate_test
+package copycustomcertificate_test
 
 import (
 	"bytes"
@@ -22,10 +22,12 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
+	copycustomcertificate "github.com/deckhouse/module-sdk/common-hooks/copy-custom-certificate"
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_JQFilterApplyCertificateSecret(t *testing.T) {
@@ -46,19 +48,20 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 	  "type": "kubernetes.io/tls"
 	}`
 
-		q, err := jq.NewQuery(tlscertificate.JQFilterApplyCertificateSecret)
+		q, err := jq.NewQuery(copycustomcertificate.JQFilterCustomCertificate)
 		assert.NoError(t, err)
 
 		res, err := q.FilterStringObject(context.Background(), rawSecret)
 		assert.NoError(t, err)
 
-		auth := new(certificate.Certificate)
-		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
+		cert := new(certificate.Certificate)
+		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(cert)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "some-key", string(auth.Key))
-		assert.Equal(t, "some-crt", string(auth.Cert))
-		assert.Equal(t, "some-cert", auth.Name)
+		assert.Equal(t, "some-key", string(cert.Key))
+		assert.Equal(t, "some-crt", string(cert.Cert))
+		assert.Equal(t, "some-ca", string(cert.CA))
+		assert.Equal(t, "some-cert", cert.Name)
 	})
 
 	t.Run("apply tls from client", func(t *testing.T) {
@@ -84,18 +87,12 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		res, err := q.FilterStringObject(context.Background(), rawSecret)
 		assert.NoError(t, err)
 
-		cert := new(certificate.Certificate)
-		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(cert)
+		auth := new(certificate.Certificate)
+		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
 		assert.NoError(t, err)
 
-		assert.Equal(t, "some-key", string(cert.Key))
-		assert.Equal(t, "some-crt", string(cert.Cert))
-		assert.Equal(t, "some-cert", cert.Name)
-	})
-}
-
-func Test_CertificateHandlerConfig(t *testing.T) {
-	t.Run("config is valid", func(t *testing.T) {
-		assert.NoError(t, tlscertificate.CertificateHandlerConfig([]string{}, []string{}).Validate())
+		assert.Equal(t, "some-key", string(auth.Key))
+		assert.Equal(t, "some-crt", string(auth.Cert))
+		assert.Equal(t, "some-cert", auth.Name)
 	})
 }

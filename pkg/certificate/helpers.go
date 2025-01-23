@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/cloudflare/cfssl/helpers"
@@ -33,8 +34,10 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/tools/cache"
 	watchtools "k8s.io/client-go/tools/watch"
-	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 func IsCertificateExpiringSoon(cert []byte, durationLeft time.Duration) (bool, error) {
@@ -53,7 +56,7 @@ func IsCertificateExpiringSoon(cert []byte, durationLeft time.Duration) (bool, e
 // modified client-go@v0.29.8/util/certificate/csr/csr.go
 //
 // WaitForCertificate waits for a certificate to be issued until timeout, or returns an error.
-func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqName string, reqUID types.UID) (certData []byte, err error) {
+func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqName string, reqUID types.UID, logger pkg.Logger) (certData []byte, err error) {
 	c, ok := clientWOWatch.(client.WithWatch)
 	if !ok {
 		return nil, errors.New("client without watch")
@@ -83,7 +86,7 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 			break
 		}
 
-		klog.V(2).Infof("error fetching v1 certificate signing request: %v", err)
+		logger.Info("error fetching v1 certificate signing request", log.Err(err))
 
 		// return if we've timed out
 		if err := ctx.Err(); err != nil {
@@ -109,7 +112,7 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 			break
 		}
 
-		klog.V(2).Infof("error fetching v1beta1 certificate signing request: %v", err)
+		logger.Info("error fetching v1beta1 certificate signing request", log.Err(err))
 
 		// return if we've timed out
 		if err := ctx.Err(); err != nil {
@@ -154,11 +157,11 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 				}
 				if approved {
 					if len(csr.Status.Certificate) > 0 {
-						klog.V(2).Infof("certificate signing request %s is issued", csr.Name)
+						logger.Info("certificate signing request is issued", slog.String("request", csr.Name))
 						issuedCertificate = csr.Status.Certificate
 						return true, nil
 					}
-					klog.V(2).Infof("certificate signing request %s is approved, waiting to be issued", csr.Name)
+					logger.Info("certificate signing request is approved, waiting to be issued", slog.String("request", csr.Name))
 				}
 
 			case *certificatesv1beta1.CertificateSigningRequest:
@@ -179,11 +182,11 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 				}
 				if approved {
 					if len(csr.Status.Certificate) > 0 {
-						klog.V(2).Infof("certificate signing request %s is issued", csr.Name)
+						logger.Info("certificate signing request is issued", slog.String("request", csr.Name))
 						issuedCertificate = csr.Status.Certificate
 						return true, nil
 					}
-					klog.V(2).Infof("certificate signing request %s is approved, waiting to be issued", csr.Name)
+					logger.Info("certificate signing request is approved, waiting to be issued", slog.String("request", csr.Name))
 				}
 
 			default:
