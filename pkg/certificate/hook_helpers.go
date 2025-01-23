@@ -29,7 +29,7 @@ var JQFilterApplyCaSelfSignedCert = `{
 }`
 
 func GetOrCreateCa(input *pkg.HookInput, snapshotKey, cn string) (*Authority, error) {
-	var selfSignedCA Authority
+	var selfSignedCA *Authority
 
 	authorities, err := objectpatch.UnmarshalToStruct[Authority](input.Snapshots, snapshotKey)
 	if err != nil {
@@ -46,5 +46,5 @@ func GetOrCreateCa(input *pkg.HookInput, snapshotKey, cn string) (*Authority, er
 		return nil, fmt.Errorf("cannot generate selfsigned ca: %v", err)
 	}
 
-	return &selfSignedCA, nil
+	return selfSignedCA, nil
 }
