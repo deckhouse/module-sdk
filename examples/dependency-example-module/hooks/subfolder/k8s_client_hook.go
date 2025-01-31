@@ -11,11 +11,11 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-var _ = registry.RegisterFunc(configKubernetesClient, handlerKubernetesClient)
+var _ = registry.RegisterFunc(configKubernetesClient, HandlerKubernetesClient)
 
 var configKubernetesClient = &pkg.HookConfig{}
 
-func handlerKubernetesClient(ctx context.Context, input *pkg.HookInput) error {
+func HandlerKubernetesClient(ctx context.Context, input *pkg.HookInput) error {
 	k8sClient := input.DC.MustGetK8sClient()
 
 	const (

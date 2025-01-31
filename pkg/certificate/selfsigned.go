@@ -19,8 +19,8 @@ package certificate
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"log"
-	"log/slog"
 	"time"
 
 	"github.com/cloudflare/cfssl/cli/genkey"
@@ -29,8 +29,6 @@ import (
 	"github.com/cloudflare/cfssl/helpers"
 	"github.com/cloudflare/cfssl/signer"
 	"github.com/cloudflare/cfssl/signer/local"
-
-	"github.com/deckhouse/module-sdk/pkg"
 )
 
 type Certificate struct {
@@ -56,12 +54,11 @@ func WithSigningDefaultUsage(usage []string) SigningOption {
 	}
 }
 
-func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options ...interface{}) (*Certificate, error) {
+func GenerateSelfSignedCert(cn string, ca *Authority, options ...interface{}) (*Certificate, error) {
 	if ca == nil {
 		return nil, errors.New("ca is nil")
 	}
 
-	logger.Debug("Generate self-signed cert", slog.String("cn", cn))
 	request := &csr.CertificateRequest{
 		CN: cn,
 		KeyRequest: &csr.KeyRequest{
@@ -86,19 +83,19 @@ func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options
 	g := &csr.Generator{Validator: genkey.Validator}
 	csrBytes, key, err := g.ProcessRequest(request)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("process request: %w", err)
 	}
 
 	req := signer.SignRequest{Request: string(csrBytes)}
 
 	parsedCa, err := helpers.ParseCertificatePEM(ca.Cert)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse certificate pem: %w", err)
 	}
 
 	priv, err := helpers.ParsePrivateKeyPEM(ca.Key)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse private key pem: %w", err)
 	}
 
 	signingConfig := &config.Signing{
@@ -113,12 +110,12 @@ func GenerateSelfSignedCert(logger pkg.Logger, cn string, ca *Authority, options
 
 	s, err := local.NewSigner(priv, parsedCa, signer.DefaultSigAlgo(priv), signingConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new signer: %w", err)
 	}
 
 	cert, err := s.Sign(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("sign: %w", err)
 	}
 
 	return &Certificate{

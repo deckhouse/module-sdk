@@ -22,11 +22,10 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_JQFilterApplyCertificateSecret(t *testing.T) {
@@ -92,5 +91,11 @@ func Test_JQFilterApplyCertificateSecret(t *testing.T) {
 		assert.Equal(t, "some-key", string(cert.Key))
 		assert.Equal(t, "some-crt", string(cert.Cert))
 		assert.Equal(t, "some-cert", cert.Name)
+	})
+}
+
+func Test_CertificateHandlerConfig(t *testing.T) {
+	t.Run("config is valid", func(t *testing.T) {
+		assert.NoError(t, tlscertificate.CertificateHandlerConfig([]string{}, []string{}).Validate())
 	})
 }

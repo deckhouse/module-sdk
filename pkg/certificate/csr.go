@@ -18,14 +18,13 @@ package certificate
 
 import (
 	"bytes"
+	"errors"
 	"log"
 
 	"github.com/cloudflare/cfssl/csr"
-
-	"github.com/deckhouse/module-sdk/pkg"
 )
 
-func GenerateCSR(logger pkg.Logger, cn string, options ...Option) ([]byte, []byte, error) {
+func GenerateCSR(cn string, options ...Option) ([]byte, []byte, error) {
 	request := &csr.CertificateRequest{
 		CN:         cn,
 		KeyRequest: csr.NewKeyRequest(),
@@ -45,11 +44,11 @@ func GenerateCSR(logger pkg.Logger, cn string, options ...Option) ([]byte, []byt
 	defer log.SetOutput(logWriter)
 
 	csrPEM, key, err := g.ProcessRequest(request)
-	if err != nil && logger != nil {
-		logger.Error(buf.String())
+	if err != nil {
+		return nil, nil, errors.New(buf.String())
 	}
 
-	return csrPEM, key, err
+	return csrPEM, key, nil
 }
 
 // Validator does nothing and will never return an error. It exists because creating a

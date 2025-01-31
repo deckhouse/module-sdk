@@ -115,6 +115,11 @@ func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVer
 	c.collect(p)
 }
 
+// Operations returns all collected operations
+func (c *ObjectPatchCollector) Operations() []Patch {
+	return c.dataStorage
+}
+
 func (c *ObjectPatchCollector) WriteOutput(w io.Writer) error {
 	for _, object := range c.dataStorage {
 		err := json.NewEncoder(w).Encode(object)

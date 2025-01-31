@@ -9,7 +9,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
-var _ = registry.RegisterFunc(configSnapshots, handlerHookSnapshots)
+var _ = registry.RegisterFunc(configSnapshots, HandlerHookSnapshots)
 
 type NodeInfo struct {
 	APIVersion string           `json:"apiVersion"`
@@ -33,13 +33,13 @@ const applyNodeJQFilter = `{
 	}
 }`
 
-const nodeInfoSnapshotName = "node_info"
+const NodeInfoSnapshotName = "node_info"
 
 var configSnapshots = &pkg.HookConfig{
 	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
 	Kubernetes: []pkg.KubernetesConfig{
 		{
-			Name:       nodeInfoSnapshotName,
+			Name:       NodeInfoSnapshotName,
 			APIVersion: "v1",
 			Kind:       "Node",
 			JqFilter:   applyNodeJQFilter,
@@ -47,12 +47,12 @@ var configSnapshots = &pkg.HookConfig{
 	},
 }
 
-func handlerHookSnapshots(_ context.Context, input *pkg.HookInput) error {
+func HandlerHookSnapshots(_ context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from snapshot hook")
 
 	// getting info from snapshot
 	// no info about key not found, if you need it - check length
-	nodes := input.Snapshots.Get(nodeInfoSnapshotName)
+	nodes := input.Snapshots.Get(NodeInfoSnapshotName)
 
 	for _, o := range nodes {
 		nodeInfo := new(NodeInfo)

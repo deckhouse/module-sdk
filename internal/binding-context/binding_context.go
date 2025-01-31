@@ -34,7 +34,7 @@ const (
 
 // from shell operator
 type BindingContext struct {
-	BindingContextMetadata `json:"metadata"`
+	Metadata `json:"metadata"`
 	// name of a binding or a group or kubeEventType if binding has no 'name' field
 	Binding string `json:"binding,omitempty"`
 	// additional fields for 'kubernetes' binding
@@ -51,7 +51,7 @@ type BindingContext struct {
 	// Objects []map[string]any `json:"objects,omitempty"`
 }
 
-type BindingContextMetadata struct {
+type Metadata struct {
 	Version             string      `json:"version,omitempty"`
 	BindingType         BindingType `json:"bindingType,omitempty"`
 	JqFilter            string      `json:"jqFilter,omitempty"`

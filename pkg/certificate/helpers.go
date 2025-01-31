@@ -43,11 +43,13 @@ import (
 func IsCertificateExpiringSoon(cert []byte, durationLeft time.Duration) (bool, error) {
 	c, err := helpers.ParseCertificatePEM(cert)
 	if err != nil {
-		return false, fmt.Errorf("certificate cannot parsed: %v", err)
+		return false, fmt.Errorf("certificate cannot parsed: %w", err)
 	}
+
 	if time.Until(c.NotAfter) < durationLeft {
 		return true, nil
 	}
+
 	return false, nil
 }
 
@@ -194,11 +196,13 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 			return false, nil
 		},
 	)
+
 	if wait.Interrupted(err) {
 		return nil, wait.ErrorInterrupted(err)
 	}
+
 	if err != nil {
-		return nil, formatError("cannot watch on the certificate signing request: %v", err)
+		return nil, formatError("cannot watch on the certificate signing request: %w", err)
 	}
 
 	return issuedCertificate, nil
@@ -210,7 +214,9 @@ func formatError(format string, err error) error {
 	if s, ok := err.(apierrors.APIStatus); ok {
 		se := &apierrors.StatusError{ErrStatus: s.Status()}
 		se.ErrStatus.Message = fmt.Sprintf(format, se.ErrStatus.Message)
+
 		return se
 	}
+
 	return fmt.Errorf(format, err)
 }

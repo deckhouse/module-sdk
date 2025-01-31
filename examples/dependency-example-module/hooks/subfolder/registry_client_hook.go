@@ -9,19 +9,23 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
+const (
+	RegistryAddress = "registry.address.com/"
+)
+
 var configRegistryCLient = &pkg.HookConfig{}
 
-var _ = registry.RegisterFunc(configRegistryCLient, handlerRegistryClient)
+var _ = registry.RegisterFunc(configRegistryCLient, HandlerRegistryClient)
 
-func handlerRegistryClient(ctx context.Context, input *pkg.HookInput) error {
-	registryClient := input.DC.MustGetRegistryClient("registry.address.com/")
+func HandlerRegistryClient(ctx context.Context, input *pkg.HookInput) error {
+	registryClient := input.DC.MustGetRegistryClient(RegistryAddress)
 
 	tags, err := registryClient.ListTags(ctx)
 	if err != nil {
 		return fmt.Errorf("list tags: %w", err)
 	}
 
-	if len(tags) > 0 {
+	if len(tags) == 0 {
 		input.Logger.Warn("tags not found")
 		return nil
 	}

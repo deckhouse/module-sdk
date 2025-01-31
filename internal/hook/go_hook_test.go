@@ -383,7 +383,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 
 			cfg := &pkg.HookConfig{}
 
-			h := hook.NewGoHook(cfg, tt.fields.setupHookReconcileFunc(t)).SetLogger(log.NewNop())
+			h := hook.NewHook(cfg, tt.fields.setupHookReconcileFunc(t)).SetLogger(log.NewNop())
 
 			_, err := h.Execute(context.Background(), tt.fields.setupHookRequest(t))
 			if tt.wants.err != "" {

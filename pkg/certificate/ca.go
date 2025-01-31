@@ -18,12 +18,11 @@ package certificate
 
 import (
 	"bytes"
+	"errors"
 	"log"
 
 	"github.com/cloudflare/cfssl/csr"
 	"github.com/cloudflare/cfssl/initca"
-
-	"github.com/deckhouse/module-sdk/pkg"
 )
 
 type Authority struct {
@@ -31,7 +30,7 @@ type Authority struct {
 	Cert []byte `json:"crt"`
 }
 
-func GenerateCA(logger pkg.Logger, cn string, options ...Option) (*Authority, error) {
+func GenerateCA(cn string, options ...Option) (*Authority, error) {
 	request := &csr.CertificateRequest{
 		CN: cn,
 		CA: &csr.CAConfig{
@@ -56,8 +55,8 @@ func GenerateCA(logger pkg.Logger, cn string, options ...Option) (*Authority, er
 
 	ca, _, key, err := initca.New(request)
 	if err != nil {
-		logger.Error(buf.String())
+		return nil, errors.New(buf.String())
 	}
 
-	return &Authority{Cert: ca, Key: key}, err
+	return &Authority{Cert: ca, Key: key}, nil
 }

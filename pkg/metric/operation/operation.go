@@ -11,21 +11,21 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
-var _ pkg.MetricsOption = (Option)(nil)
+var _ pkg.Option = (Option)(nil)
 
-type Option func(o pkg.MetricsOperation)
+type Option func(o pkg.Operation)
 
-func (opt Option) Apply(o pkg.MetricsOperation) {
+func (opt Option) Apply(o pkg.Operation) {
 	opt(o)
 }
 
 func WithGroup(group string) Option {
-	return func(o pkg.MetricsOperation) {
+	return func(o pkg.Operation) {
 		o.WithGroup(group)
 	}
 }
 
-var _ pkg.MetricsOperation = (*Operation)(nil)
+var _ pkg.Operation = (*Operation)(nil)
 
 type Operation struct {
 	Name    string            `json:"name"`

@@ -24,19 +24,23 @@ import (
 	"time"
 
 	"github.com/cloudflare/cfssl/helpers"
-	certificatesv1 "k8s.io/api/certificates/v1"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
+	certificatesv1 "k8s.io/api/certificates/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // CertificateWaitTimeoutDefault controls default amount of time we wait for certificate
 // approval in one iteration.
-const CertificateWaitTimeoutDefault = 1 * time.Minute
+const (
+	CertificateWaitTimeoutDefault = 1 * time.Minute
+	OrderSertificateSnapshotKey   = "certificateSecrets"
+)
 
 type OrderCertificateRequest struct {
 	Namespace  string
@@ -68,6 +72,7 @@ func (r *OrderCertificateRequest) DeepCopy() OrderCertificateRequest {
 		ModuleName:  r.ModuleName,
 		WaitTimeout: r.WaitTimeout,
 	}
+
 	return newR
 }
 
@@ -81,17 +86,23 @@ var JQFilterApplyCertificateSecret = `{
 func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
 	var namespaces []string
 	var secretNames []string
+
 	for _, request := range requests {
 		namespaces = append(namespaces, request.Namespace)
 		secretNames = append(secretNames, request.SecretName)
 	}
-	return registry.RegisterFunc(&pkg.HookConfig{
+
+	return registry.RegisterFunc(CertificateHandlerConfig(namespaces, secretNames), CertificateHandler(requests))
+}
+
+func CertificateHandlerConfig(namespaces, secretNames []string) *pkg.HookConfig {
+	return &pkg.HookConfig{
 		OnBeforeHelm: &pkg.OrderedConfig{
 			Order: 5,
 		},
 		Kubernetes: []pkg.KubernetesConfig{
 			{
-				Name:              "certificateSecrets",
+				Name:              OrderSertificateSnapshotKey,
 				APIVersion:        "v1",
 				Kind:              "Secret",
 				NamespaceSelector: &pkg.NamespaceSelector{NameSelector: &pkg.NameSelector{MatchNames: namespaces}},
@@ -105,10 +116,10 @@ func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
 				Crontab: "42 4 * * *",
 			},
 		},
-	}, certificateHandler(requests))
+	}
 }
 
-func certificateHandler(requests []OrderCertificateRequest) func(ctx context.Context, input *pkg.HookInput) error {
+func CertificateHandler(requests []OrderCertificateRequest) func(ctx context.Context, input *pkg.HookInput) error {
 	return func(ctx context.Context, input *pkg.HookInput) error {
 		return certificateHandlerWithRequests(ctx, input, requests)
 	}
@@ -134,7 +145,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 
 		valueName := fmt.Sprintf("%s.%s", request.ModuleName, request.ValueName)
 
-		certSecrets, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, "certificateSecrets")
+		certSecrets, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, OrderSertificateSnapshotKey)
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)
 		}
@@ -145,6 +156,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 			for _, snapSecret := range certSecrets {
 				if snapSecret.Name == request.SecretName {
 					secret = &snapSecret
+
 					break
 				}
 			}
@@ -153,7 +165,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 				// Check that certificate is not expired and has the same order request
 				genNew, err := shouldGenerateNewCert(secret.Cert, request, time.Hour*24*15)
 				if err != nil {
-					return err
+					return fmt.Errorf("should generate new cert: %w", err)
 				}
 
 				if !genNew {
@@ -168,7 +180,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 
 		info, err := IssueCertificate(ctx, input, request)
 		if err != nil {
-			return err
+			return fmt.Errorf("issue certificate: %w", err)
 		}
 
 		input.Values.Set(valueName, info)
@@ -180,7 +192,7 @@ func certificateHandlerWithRequests(ctx context.Context, input *pkg.HookInput, r
 func shouldGenerateNewCert(cert []byte, request OrderCertificateRequest, durationLeft time.Duration) (bool, error) {
 	c, err := helpers.ParseCertificatePEM(cert)
 	if err != nil {
-		return false, fmt.Errorf("certificate cannot parsed: %v", err)
+		return false, fmt.Errorf("certificate cannot parsed: %w", err)
 	}
 
 	if c.Subject.CommonName != request.CommonName {
@@ -231,7 +243,7 @@ type CertificateInfo struct {
 func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCertificateRequest) (*CertificateInfo, error) {
 	k8, err := input.DC.GetK8sClient()
 	if err != nil {
-		return nil, fmt.Errorf("can't init Kubernetes client: %v", err)
+		return nil, fmt.Errorf("can't init Kubernetes client: %w", err)
 	}
 
 	if request.WaitTimeout == 0 {
@@ -251,13 +263,17 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 	}
 
 	// Delete existing CSR from the cluster.
-	_ = k8.Delete(ctx, &certificatesv1.CertificateSigningRequest{ObjectMeta: metav1.ObjectMeta{Name: request.CommonName}})
+	err = k8.Delete(ctx, &certificatesv1.CertificateSigningRequest{ObjectMeta: metav1.ObjectMeta{Name: request.CommonName}})
+	if client.IgnoreNotFound(err) != nil {
+		input.Logger.Warn("delete existing CSR from the cluster", log.Err(err))
+	}
 
-	csrPEM, key, err := certificate.GenerateCSR(input.Logger, request.CommonName,
+	csrPEM, key, err := certificate.GenerateCSR(
+		request.CommonName,
 		certificate.WithGroups(request.Groups...),
 		certificate.WithSANs(request.SANs...))
 	if err != nil {
-		return nil, fmt.Errorf("error generating CSR: %v", err)
+		return nil, fmt.Errorf("error generating CSR: %w", err)
 	}
 
 	// Create new CSR in the cluster.
@@ -280,7 +296,7 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 	// Create CSR.
 	err = k8.Create(ctx, csr)
 	if err != nil {
-		return nil, fmt.Errorf("error creating CertificateSigningRequest: %v", err)
+		return nil, fmt.Errorf("error creating CertificateSigningRequest: %w", err)
 	}
 
 	// Add CSR approved status.
@@ -290,12 +306,13 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 			Status:  v1.ConditionTrue,
 			Reason:  "HookApprove",
 			Message: "This CSR was approved by a hook.",
-		})
+		},
+	)
 
 	// Approve CSR.
 	err = k8.Status().Update(ctx, csr)
 	if err != nil {
-		return nil, fmt.Errorf("error approving of CertificateSigningRequest: %v", err)
+		return nil, fmt.Errorf("error approving of CertificateSigningRequest: %w", err)
 	}
 
 	ctxWTO, cancel := context.WithTimeout(context.Background(), request.WaitTimeout)
@@ -303,11 +320,14 @@ func IssueCertificate(ctx context.Context, input *pkg.HookInput, request OrderCe
 
 	crtPEM, err := certificate.WaitForCertificate(ctxWTO, k8, csr.Name, csr.UID, input.Logger)
 	if err != nil {
-		return nil, fmt.Errorf("%s CertificateSigningRequest was not signed: %v", request.CommonName, err)
+		return nil, fmt.Errorf("%s CertificateSigningRequest was not signed: %w", request.CommonName, err)
 	}
 
 	// Delete CSR.
-	_ = k8.Delete(ctx, &certificatesv1.CertificateSigningRequest{ObjectMeta: metav1.ObjectMeta{Name: request.CommonName}})
+	err = k8.Delete(ctx, &certificatesv1.CertificateSigningRequest{ObjectMeta: metav1.ObjectMeta{Name: request.CommonName}})
+	if client.IgnoreNotFound(err) != nil {
+		input.Logger.Warn("delete CSR", log.Err(err))
+	}
 
 	info := CertificateInfo{
 		Certificate:        string(crtPEM),
