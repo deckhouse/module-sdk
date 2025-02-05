@@ -18,6 +18,7 @@ package liveness_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
@@ -107,5 +108,147 @@ func Test_CheckModuleLiveness(t *testing.T) {
 
 		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
 		assert.NoError(t, err)
+	})
+
+	t.Run("k8s client error", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		defer mc.Cleanup(func() {})
+
+		dc := mock.NewDependencyContainerMock(mc)
+		dc.GetK8sClientMock.
+			Expect().
+			Return(nil, fmt.Errorf("k8s client error"))
+
+		input := &pkg.HookInput{
+			DC:     dc,
+			Logger: log.NewNop(),
+		}
+
+		config := &liveness.LivenessHookConfig{
+			ModuleName:        "stub",
+			IntervalInMinutes: 10,
+			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+				return nil
+			},
+		}
+
+		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "k8s client error")
+	})
+
+	t.Run("get resource error", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		defer mc.Cleanup(func() {})
+
+		dc := mock.NewDependencyContainerMock(mc)
+
+		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
+		resourceMock.GetMock.
+			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
+			Return(nil, fmt.Errorf("get error"))
+
+		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
+		dynamicClientMock.ResourceMock.
+			Expect(*liveness.GetModuleGVK()).
+			Return(resourceMock)
+
+		k8sClientMock := mock.NewKubernetesClientMock(mc)
+		k8sClientMock.DynamicMock.
+			Return(dynamicClientMock)
+
+		dc.GetK8sClientMock.
+			Expect().
+			Return(k8sClientMock, nil)
+
+		input := &pkg.HookInput{
+			DC:     dc,
+			Logger: log.NewNop(),
+		}
+
+		config := &liveness.LivenessHookConfig{
+			ModuleName:        "stub",
+			IntervalInMinutes: 10,
+			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+				return nil
+			},
+		}
+
+		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "get error")
+	})
+
+	t.Run("update status error", func(t *testing.T) {
+		mc := minimock.NewController(t)
+		defer mc.Cleanup(func() {})
+
+		dc := mock.NewDependencyContainerMock(mc)
+
+		resource := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"status": map[string]interface{}{
+					"conditions": []interface{}{
+						map[string]interface{}{
+							"type":    "IsReady",
+							"status":  "False",
+							"message": "Module is not ready",
+						},
+					},
+				},
+			},
+		}
+
+		updatedResource := &unstructured.Unstructured{
+			Object: map[string]interface{}{
+				"status": map[string]interface{}{
+					"conditions": []interface{}{
+						map[string]interface{}{
+							"type":    "IsReady",
+							"status":  "True",
+							"message": "Module is ready",
+						},
+					},
+				},
+			},
+		}
+
+		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
+		resourceMock.GetMock.
+			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
+			Return(resource, nil)
+		resourceMock.UpdateStatusMock.
+			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
+			Return(nil, fmt.Errorf("update error"))
+
+		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
+		dynamicClientMock.ResourceMock.
+			Expect(*liveness.GetModuleGVK()).
+			Return(resourceMock)
+
+		k8sClientMock := mock.NewKubernetesClientMock(mc)
+		k8sClientMock.DynamicMock.
+			Return(dynamicClientMock)
+
+		dc.GetK8sClientMock.
+			Expect().
+			Return(k8sClientMock, nil)
+
+		input := &pkg.HookInput{
+			DC:     dc,
+			Logger: log.NewNop(),
+		}
+
+		config := &liveness.LivenessHookConfig{
+			ModuleName:        "stub",
+			IntervalInMinutes: 10,
+			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+				return nil
+			},
+		}
+
+		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "update error")
 	})
 }
