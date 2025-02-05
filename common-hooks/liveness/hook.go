@@ -24,12 +24,13 @@ import (
 
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/registry"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
-func getModuleGVK() *schema.GroupVersionResource {
+func GetModuleGVK() *schema.GroupVersionResource {
 	// ModuleGVR GroupVersionResource
 	return &schema.GroupVersionResource{
 		Group:    "deckhouse.io",
@@ -49,20 +50,31 @@ func RegisterLivenessHookEM(cfg *LivenessHookConfig) bool {
 		panic("empty config")
 	}
 
-	return registry.RegisterFunc(&pkg.HookConfig{
+	return registry.RegisterFunc(GenSelfSignedTLSConfig(cfg), CheckModuleLiveness(cfg))
+}
+
+func GenSelfSignedTLSConfig(cfg *LivenessHookConfig) *pkg.HookConfig {
+	if cfg.IntervalInMinutes == 0 {
+		cfg.IntervalInMinutes = 1
+	}
+
+	return &pkg.HookConfig{
 		Schedule: []pkg.ScheduleConfig{
 			{
 				Name:    "moduleLivenessSchedule",
 				Crontab: fmt.Sprintf("*/%d * * * *", cfg.IntervalInMinutes),
 			},
 		},
-	}, checkModuleLiveness(cfg))
+	}
 }
 
-func checkModuleLiveness(cfg *LivenessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
+const (
+	conditionStatusIsReady = "IsReady"
+)
+
+func CheckModuleLiveness(cfg *LivenessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
 	return func(ctx context.Context, input *pkg.HookInput) error {
 		logger := input.Logger.With(slog.String("module", cfg.ModuleName))
-
 		logger.Info("check liveness")
 
 		k8sClient, err := input.DC.GetK8sClient()
@@ -70,7 +82,7 @@ func checkModuleLiveness(cfg *LivenessHookConfig) func(ctx context.Context, inpu
 			return fmt.Errorf("get k8s client: %w", err)
 		}
 
-		uModule, err := k8sClient.Dynamic().Resource(*getModuleGVK()).Get(ctx, cfg.ModuleName, metav1.GetOptions{})
+		uModule, err := k8sClient.Dynamic().Resource(*GetModuleGVK()).Get(ctx, cfg.ModuleName, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("get module resource: %w", err)
 		}
@@ -79,15 +91,15 @@ func checkModuleLiveness(cfg *LivenessHookConfig) func(ctx context.Context, inpu
 			return errors.New("unstructured object is nil")
 		}
 
-		probeStatus := "True"
-		probeMessage := "success"
-
-		err = cfg.ProbeFunc(ctx, input)
-		if err != nil {
-			probeStatus = "False"
+		// Run probe and get status
+		probeStatus := string(corev1.ConditionTrue)
+		probeMessage := "Module is ready"
+		if err := cfg.ProbeFunc(ctx, input); err != nil {
+			probeStatus = string(corev1.ConditionFalse)
 			probeMessage = fmt.Sprintf("probe failed: %s", err)
 		}
 
+		// Get conditions
 		uConditions, ok, err := unstructured.NestedSlice(uModule.Object, "status", "conditions")
 		if err != nil {
 			return fmt.Errorf("nested slice: %w", err)
@@ -97,24 +109,33 @@ func checkModuleLiveness(cfg *LivenessHookConfig) func(ctx context.Context, inpu
 			return errors.New("can't find status.conditions")
 		}
 
+		if len(uConditions) == 0 {
+			return errors.New("status.conditions is empty")
+		}
+
+		// Update IsReady condition
+		conditionUpdated := false
 		for idx, rawCond := range uConditions {
 			cond := rawCond.(map[string]interface{})
-			if cond["type"].(string) == "IsReady" {
+			if cond["type"].(string) == conditionStatusIsReady {
 				cond["status"] = probeStatus
 				cond["message"] = probeMessage
-
 				uConditions[idx] = cond
-
+				conditionUpdated = true
 				break
 			}
 		}
 
-		err = unstructured.SetNestedField(uModule.Object, uConditions, "status", "conditions")
-		if err != nil {
+		if !conditionUpdated {
+			return fmt.Errorf("condition %s not found", conditionStatusIsReady)
+		}
+
+		// Update module status
+		if err := unstructured.SetNestedSlice(uModule.Object, uConditions, "status", "conditions"); err != nil {
 			return fmt.Errorf("failed to change status.conditions: %w", err)
 		}
 
-		if _, err = k8sClient.Dynamic().Resource(*getModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
+		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
 			return fmt.Errorf("update module resource: %w", err)
 		}
 
