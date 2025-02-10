@@ -296,12 +296,12 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		if mustGenerate {
 			cert, err = generateNewSelfSignedTLS(SelfSignedCertValues{
-				CA: auth,
-				CN: cn,
+				CA:           auth,
+				CN:           cn,
 				KeyAlgorithm: keyAlgorithm,
-				KeySize: keySize,
-				SANs: sans,
-				Usages: usages,
+				KeySize:      keySize,
+				SANs:         sans,
+				Usages:       usages,
 			})
 
 			if err != nil {
