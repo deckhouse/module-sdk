@@ -248,11 +248,10 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
 
-				var commonCACanonicalName string
-				if len(conf.CommonCACanonicalName) == 0 {
+				commonCACanonicalName := conf.CommonCACanonicalName
+				
+                if len(commonCACanonicalName) == 0 {
 					commonCACanonicalName = conf.CN
-				} else {
-					commonCACanonicalName = conf.CommonCACanonicalName
 				}
 
 				auth, err = certificate.GenerateCA(
