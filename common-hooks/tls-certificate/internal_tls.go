@@ -204,19 +204,19 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		keySize = 256
 	}
 
+	// some fool-proof validation
+	keyReq := csr.KeyRequest{A: keyAlgorithm, S: keySize}
+	algo := keyReq.SigAlgo()
+	if algo == x509.UnknownSignatureAlgorithm {
+		panic(errors.New("unknown KeyAlgorithm"))
+	}
+
+	_, err := keyReq.Generate()
+	if err != nil {
+		panic(fmt.Errorf("bad KeySize/KeyAlgorithm combination: %w", err))
+	}
+
 	return func(_ context.Context, input *pkg.HookInput) error {
-		// some fool-proof validation
-		keyReq := csr.KeyRequest{A: keyAlgorithm, S: keySize}
-		algo := keyReq.SigAlgo()
-		if algo == x509.UnknownSignatureAlgorithm {
-			return errors.New("unknown KeyAlgorithm")
-		}
-
-		_, err := keyReq.Generate()
-		if err != nil {
-			return fmt.Errorf("bad KeySize/KeyAlgorithm combination: %w", err)
-		}
-
 		if conf.BeforeHookCheck != nil {
 			passed := conf.BeforeHookCheck(input)
 			if !passed {
@@ -249,8 +249,8 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			if err != nil {
 
 				commonCACanonicalName := conf.CommonCACanonicalName
-				
-                if len(commonCACanonicalName) == 0 {
+
+				if len(commonCACanonicalName) == 0 {
 					commonCACanonicalName = conf.CN
 				}
 
