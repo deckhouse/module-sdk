@@ -18,6 +18,7 @@ package tlscertificate
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -25,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudflare/cfssl/csr"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/utils/net"
 
@@ -203,6 +205,18 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 	}
 
 	return func(_ context.Context, input *pkg.HookInput) error {
+		// some fool-proof validation
+		keyReq := csr.KeyRequest{A: keyAlgorithm, S: keySize}
+		algo := keyReq.SigAlgo()
+		if algo == x509.UnknownSignatureAlgorithm {
+			return errors.New("unknown KeyAlgorithm")
+		}
+
+		_, err := keyReq.Generate()
+		if err != nil {
+			return fmt.Errorf("bad KeySize/KeyAlgorithm combination: %w", err)
+		}
+
 		if conf.BeforeHookCheck != nil {
 			passed := conf.BeforeHookCheck(input)
 			if !passed {
