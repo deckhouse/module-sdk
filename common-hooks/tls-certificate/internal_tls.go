@@ -201,19 +201,6 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 	if keySize < 128 {
 		keySize = 256
 	}
-	var keySize int
-
-	if len(conf.KeyAlgorithm) == 0 {
-		keyAlgorithm = "ecdsa"
-	} else {
-		keyAlgorithm = conf.KeyAlgorithm
-	}
-
-	if conf.KeySize < 128 {
-		keySize = 256
-	} else {
-		keySize = conf.KeySize
-	}
 
 	return func(_ context.Context, input *pkg.HookInput) error {
 		if conf.BeforeHookCheck != nil {
