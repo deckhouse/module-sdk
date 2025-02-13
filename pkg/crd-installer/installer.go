@@ -287,11 +287,16 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 		}
 
 		existCRD.Spec = crd.Spec
+		existCRD.Labels = crd.Labels
+		existCRD.Annotations = crd.Annotations
+
 		if len(existCRD.ObjectMeta.Labels) == 0 {
 			existCRD.ObjectMeta.Labels = make(map[string]string, 1)
 		}
 
-		existCRD.ObjectMeta.Labels[LabelHeritage] = cp.crdExtraLabels[LabelHeritage]
+		for crdExtraLabel := range cp.crdExtraLabels {
+			existCRD.ObjectMeta.Labels[crdExtraLabel] = cp.crdExtraLabels[crdExtraLabel]
+		}
 
 		ucrd, err := utils.ToUnstructured(existCRD)
 		if err != nil {
