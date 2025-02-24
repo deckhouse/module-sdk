@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/google/go-cmp/cmp"
@@ -274,6 +275,28 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 
 		if err != nil {
 			return fmt.Errorf("get crd from cluster: %w", err)
+		}
+
+		crVersions := make([]string, 0, len(crd.Spec.Versions))
+		for _, version := range crd.Spec.Versions {
+			crVersions = append(crVersions, version.Name)
+		}
+
+		if !slices.Equal(crVersions, existCRD.Status.StoredVersions) {
+			existCRD.Status.StoredVersions = crVersions
+			ucrd, err := utils.ToUnstructured(existCRD)
+			if err != nil {
+				return fmt.Errorf("crd to unstructured: %w", err)
+			}
+
+			resp, err := cp.k8sClient.Resource(crdGVR).Update(ctx, ucrd, apimachineryv1.UpdateOptions{}, "status")
+			if err != nil {
+				return fmt.Errorf("update existing crd status: %w", err)
+			}
+
+			if resp != nil {
+				existCRD.ObjectMeta.ResourceVersion = resp.GetResourceVersion()
+			}
 		}
 
 		if existCRD.Spec.Conversion != nil {
