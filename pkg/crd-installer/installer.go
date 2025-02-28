@@ -277,13 +277,20 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			return fmt.Errorf("get crd from cluster: %w", err)
 		}
 
-		crVersions := make([]string, 0, len(crd.Spec.Versions))
+		versionsFromNewSpec := make(map[string]struct{}, len(crd.Spec.Versions))
 		for _, version := range crd.Spec.Versions {
-			crVersions = append(crVersions, version.Name)
+			versionsFromNewSpec[version.Name] = struct{}{}
 		}
 
-		if !slices.Equal(crVersions, existCRD.Status.StoredVersions) {
-			existCRD.Status.StoredVersions = crVersions
+		newStoredVersions := make([]string, 0, len(versionsFromNewSpec))
+		for _, version := range existCRD.Status.StoredVersions {
+			if _, found := versionsFromNewSpec[version]; found {
+				newStoredVersions = append(newStoredVersions, version)
+			}
+		}
+
+		if !slices.Equal(newStoredVersions, existCRD.Status.StoredVersions) {
+			existCRD.Status.StoredVersions = newStoredVersions
 			ucrd, err := utils.ToUnstructured(existCRD)
 			if err != nil {
 				return fmt.Errorf("crd to unstructured: %w", err)
