@@ -2,6 +2,29 @@ package objectpatch
 
 import "github.com/deckhouse/module-sdk/pkg"
 
+type PatchOptionApplier interface {
+	WithSubresource(subresource string)
+	WithIgnoreMissingObjects(ignore bool)
+}
+
+type PatchOption func(optionsApplier PatchOptionApplier)
+
+func (opt PatchOption) Apply(o PatchOptionApplier) {
+	opt(o)
+}
+
+func WithSubresource(subresource string) PatchOption {
+	return func(optionsApplier PatchOptionApplier) {
+		optionsApplier.WithSubresource(subresource)
+	}
+}
+
+func WithIgnoreMissingObjects(ignore bool) PatchOption {
+	return func(optionsApplier PatchOptionApplier) {
+		optionsApplier.WithIgnoreMissingObjects(ignore)
+	}
+}
+
 type CreatePatchOption func(optionsApplier pkg.PatchCollectorCreateOptionApplier)
 
 func (opt CreatePatchOption) Apply(o pkg.PatchCollectorCreateOptionApplier) {
