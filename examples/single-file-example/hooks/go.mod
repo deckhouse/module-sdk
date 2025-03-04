@@ -3,7 +3,7 @@ module singlefileexample
 go 1.23.1
 
 require (
-	github.com/deckhouse/module-sdk v0.0.0-20241204110728-033d7dbefa79
+	github.com/deckhouse/module-sdk v0.0.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.35.1
 	k8s.io/apimachinery v0.31.3

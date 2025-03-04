@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
 	"github.com/deckhouse/module-sdk/internal/registry"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
@@ -35,16 +36,32 @@ type HookSender interface {
 	SendConfigValues() error
 }
 
-func NewHookController(fConfig *file.Config, logger *log.Logger) *HookController {
+func NewHookController(cfg *Config, logger *log.Logger) *HookController {
 	reg := registry.NewHookRegistry(logger)
 	reg.Add(outerRegistry.Registry().Hooks()...)
+
+	addReadinessHook(reg, cfg.ReadinessConfig)
 
 	return &HookController{
 		registry: reg,
 		dc:       dependency.NewDependencyContainer(),
-		fConfig:  fConfig,
+		fConfig:  cfg.GetFileConfig(),
 		logger:   logger,
 	}
+}
+
+func addReadinessHook(reg *registry.HookRegistry, cfg *ReadinessConfig) {
+	readinessConfig := &readiness.ReadinessHookConfig{
+		ModuleName:        cfg.ModuleName,
+		IntervalInSeconds: cfg.IntervalInSeconds,
+		ProbeFunc:         cfg.ProbeFunc,
+	}
+
+	config, f := readiness.NewReadinessHookEM(readinessConfig)
+	config.Metadata.Name = "readiness"
+	config.Metadata.Path = "common-hooks/readiness"
+
+	reg.Add(&pkg.Hook{Config: config, ReconcileFunc: f})
 }
 
 func (c *HookController) ListHooksMeta() []pkg.HookMetadata {

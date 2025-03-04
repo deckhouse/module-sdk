@@ -1,11 +1,14 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
 	env "github.com/caarlos0/env/v11"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/deckhouse/module-sdk/internal/controller"
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 type hookConfig struct {
@@ -28,8 +31,19 @@ func newHookConfig() *hookConfig {
 	return &hookConfig{}
 }
 
+type readinessConfig struct {
+	ModuleName        string
+	IntervalInSeconds int
+	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
+}
+
+func newreadinessConfig() *readinessConfig {
+	return &readinessConfig{}
+}
+
 type config struct {
-	HookConfig *hookConfig
+	HookConfig      *hookConfig
+	ReadinessConfig *readinessConfig
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
@@ -37,7 +51,8 @@ type config struct {
 
 func newConfig() *config {
 	return &config{
-		HookConfig: newHookConfig(),
+		HookConfig:      newHookConfig(),
+		ReadinessConfig: newreadinessConfig(),
 	}
 }
 
@@ -54,4 +69,26 @@ func (cfg *config) Parse() error {
 	cfg.LogLevel = log.LogLevelFromStr(cfg.LogLevelRaw)
 
 	return nil
+}
+func remapConfigToControllerConfig(input *config) *controller.Config {
+	return &controller.Config{
+		HookConfig: &controller.HookConfig{
+			BindingContextPath:    input.HookConfig.BindingContextPath,
+			ValuesPath:            input.HookConfig.ValuesPath,
+			ConfigValuesPath:      input.HookConfig.ConfigValuesPath,
+			HookConfigPath:        input.HookConfig.HookConfigPath,
+			MetricsPath:           input.HookConfig.MetricsPath,
+			KubernetesPath:        input.HookConfig.KubernetesPath,
+			ValuesJSONPath:        input.HookConfig.ValuesJSONPath,
+			ConfigValuesJSONPath:  input.HookConfig.ConfigValuesJSONPath,
+			CreateFilesByYourself: input.HookConfig.CreateFilesByYourself,
+		},
+		ReadinessConfig: &controller.ReadinessConfig{
+			ModuleName:        input.ReadinessConfig.ModuleName,
+			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
+			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
+		},
+		LogLevelRaw: input.LogLevelRaw,
+		LogLevel:    input.LogLevel,
+	}
 }
