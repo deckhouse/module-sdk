@@ -1,7 +1,24 @@
+/*
+Copyright 2024 Flant JSC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package tlscertificate
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cloudflare/cfssl/csr"
 	certificatesv1 "k8s.io/api/certificates/v1"
 	"k8s.io/utils/net"
 
@@ -24,9 +42,6 @@ const (
 	certExpiryDuration   = (24 * time.Hour) * 365 * 10 // 10 years
 	certOutdatedDuration = (24 * time.Hour) * 365 / 2  // 6 month, just enough to renew certificate
 
-	// certificate encryption algorithm
-	keyAlgorithm           = "ecdsa"
-	keySize                = 256
 	InternalTLSSnapshotKey = "secret"
 )
 
@@ -49,6 +64,16 @@ type GenSelfSignedTLSHookConf struct {
 	// See: https://tools.ietf.org/html/rfc5280#section-4.2.1.3
 	//      https://tools.ietf.org/html/rfc5280#section-4.2.1.12
 	Usages []certificatesv1.KeyUsage
+
+	// certificate encryption algorithm
+	// Can be one of: "rsa", "ecdsa", "ed25519"
+	// Default: "ecdsa"
+	KeyAlgorithm string
+
+	// certificate encryption algorith key size
+	// The KeySize must match the KeyAlgorithm (more info: https://github.com/cloudflare/cfssl/blob/cb0a0a3b9daf7ba477e106f2f013dd68267f0190/csr/csr.go#L108)
+	// Default: 256 bit
+	KeySize int
 
 	// FullValuesPathPrefix - prefix full path to store CA certificate TLS private key and cert
 	// full paths will be
@@ -79,6 +104,9 @@ type GenSelfSignedTLSHookConf struct {
 	// Data in values store as plain text
 	// In helm templates you need use `b64enc` function to encode
 	CommonCAValuesPath string
+	// Canonical name (CN) of common CA certificate.
+	// If not specified (empty), then (if no CA cert already generated) using CN property of this struct
+	CommonCACanonicalName string
 }
 
 func (gss GenSelfSignedTLSHookConf) Path() string {
@@ -141,6 +169,15 @@ func GenSelfSignedTLSConfig(conf GenSelfSignedTLSHookConf) *pkg.HookConfig {
 	}
 }
 
+type SelfSignedCertValues struct {
+	CA           *certificate.Authority
+	CN           string
+	KeyAlgorithm string
+	KeySize      int
+	SANs         []string
+	Usages       []string
+}
+
 func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
 	var usages []string
 
@@ -154,6 +191,29 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		for _, v := range conf.Usages {
 			usages = append(usages, string(v))
 		}
+	}
+
+	keyAlgorithm := conf.KeyAlgorithm
+	keySize := conf.KeySize
+
+	if len(keyAlgorithm) == 0 {
+		keyAlgorithm = "ecdsa"
+	}
+
+	if keySize < 128 {
+		keySize = 256
+	}
+
+	// some fool-proof validation
+	keyReq := csr.KeyRequest{A: keyAlgorithm, S: keySize}
+	algo := keyReq.SigAlgo()
+	if algo == x509.UnknownSignatureAlgorithm {
+		panic(errors.New("unknown KeyAlgorithm"))
+	}
+
+	_, err := keyReq.Generate()
+	if err != nil {
+		panic(fmt.Errorf("bad KeySize/KeyAlgorithm combination: %w", err))
 	}
 
 	return func(_ context.Context, input *pkg.HookInput) error {
@@ -187,8 +247,15 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		if useCommonCA {
 			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
+
+				commonCACanonicalName := conf.CommonCACanonicalName
+
+				if len(commonCACanonicalName) == 0 {
+					commonCACanonicalName = conf.CN
+				}
+
 				auth, err = certificate.GenerateCA(
-					cn,
+					commonCACanonicalName,
 					certificate.WithKeyAlgo(keyAlgorithm),
 					certificate.WithKeySize(keySize),
 					certificate.WithCAExpiry(caExpiryDurationStr))
@@ -241,7 +308,15 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		}
 
 		if mustGenerate {
-			cert, err = generateNewSelfSignedTLS(cn, auth, sans, usages)
+			cert, err = generateNewSelfSignedTLS(SelfSignedCertValues{
+				CA:           auth,
+				CN:           cn,
+				KeyAlgorithm: keyAlgorithm,
+				KeySize:      keySize,
+				SANs:         sans,
+				Usages:       usages,
+			})
+
 			if err != nil {
 				return fmt.Errorf("generate new self signed tls: %w", err)
 			}
@@ -303,14 +378,14 @@ func getCommonCA(input *pkg.HookInput, valKey string) (*certificate.Authority, e
 //
 // if you pass ca - it will be used to sign new certificate
 // if pass nil ca - it will be generate to sign new certificate
-func generateNewSelfSignedTLS(cn string, ca *certificate.Authority, sans, usages []string) (*certificate.Certificate, error) {
-	if ca == nil {
+func generateNewSelfSignedTLS(input SelfSignedCertValues) (*certificate.Certificate, error) {
+	if input.CA == nil {
 		var err error
 
-		ca, err = certificate.GenerateCA(
-			cn,
-			certificate.WithKeyAlgo(keyAlgorithm),
-			certificate.WithKeySize(keySize),
+		input.CA, err = certificate.GenerateCA(
+			input.CN,
+			certificate.WithKeyAlgo(input.KeyAlgorithm),
+			certificate.WithKeySize(input.KeySize),
 			certificate.WithCAExpiry(caExpiryDurationStr))
 		if err != nil {
 			return nil, fmt.Errorf("generate ca: %w", err)
@@ -318,13 +393,13 @@ func generateNewSelfSignedTLS(cn string, ca *certificate.Authority, sans, usages
 	}
 
 	cert, err := certificate.GenerateSelfSignedCert(
-		cn,
-		ca,
-		certificate.WithSANs(sans...),
-		certificate.WithKeyAlgo(keyAlgorithm),
-		certificate.WithKeySize(keySize),
+		input.CN,
+		input.CA,
+		certificate.WithSANs(input.SANs...),
+		certificate.WithKeyAlgo(input.KeyAlgorithm),
+		certificate.WithKeySize(input.KeySize),
 		certificate.WithSigningDefaultExpiry(certExpiryDuration),
-		certificate.WithSigningDefaultUsage(usages),
+		certificate.WithSigningDefaultUsage(input.Usages),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("generate ca: %w", err)
