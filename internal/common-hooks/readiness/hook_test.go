@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package liveness_test
+package readiness_test
 
 import (
 	"context"
@@ -22,7 +22,7 @@ import (
 	"testing"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/common-hooks/liveness"
+	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
 	"github.com/deckhouse/module-sdk/pkg"
 	mock "github.com/deckhouse/module-sdk/testing/mock"
 	"github.com/gojuno/minimock/v3"
@@ -31,13 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-func Test_LivenessHookConfig(t *testing.T) {
+func Test_ReadinessHookConfig(t *testing.T) {
 	t.Run("config is valid", func(t *testing.T) {
-		assert.NoError(t, liveness.GenSelfSignedTLSConfig(&liveness.LivenessHookConfig{}).Validate())
+		assert.NoError(t, readiness.NewReadinessConfig(&readiness.ReadinessHookConfig{}).Validate())
 	})
 }
 
-func Test_CheckModuleLiveness(t *testing.T) {
+func Test_CheckModuleReadiness(t *testing.T) {
 	t.Run("successfull check", func(t *testing.T) {
 		mc := minimock.NewController(t)
 		defer mc.Cleanup(func() {})
@@ -82,7 +82,7 @@ func Test_CheckModuleLiveness(t *testing.T) {
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
-			Expect(*liveness.GetModuleGVK()).
+			Expect(*readiness.GetModuleGVK()).
 			Return(resourceMock)
 
 		k8sClientMock := mock.NewKubernetesClientMock(mc)
@@ -98,15 +98,15 @@ func Test_CheckModuleLiveness(t *testing.T) {
 			Logger: log.NewNop(),
 		}
 
-		config := &liveness.LivenessHookConfig{
+		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
-			IntervalInMinutes: 10,
+			IntervalInSeconds: 10,
 			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
 				return nil
 			},
 		}
 
-		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
 		assert.NoError(t, err)
 	})
 
@@ -124,15 +124,15 @@ func Test_CheckModuleLiveness(t *testing.T) {
 			Logger: log.NewNop(),
 		}
 
-		config := &liveness.LivenessHookConfig{
+		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
-			IntervalInMinutes: 10,
+			IntervalInSeconds: 10,
 			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
 				return nil
 			},
 		}
 
-		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "k8s client error")
 	})
@@ -150,7 +150,7 @@ func Test_CheckModuleLiveness(t *testing.T) {
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
-			Expect(*liveness.GetModuleGVK()).
+			Expect(*readiness.GetModuleGVK()).
 			Return(resourceMock)
 
 		k8sClientMock := mock.NewKubernetesClientMock(mc)
@@ -166,15 +166,15 @@ func Test_CheckModuleLiveness(t *testing.T) {
 			Logger: log.NewNop(),
 		}
 
-		config := &liveness.LivenessHookConfig{
+		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
-			IntervalInMinutes: 10,
+			IntervalInSeconds: 10,
 			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
 				return nil
 			},
 		}
 
-		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "get error")
 	})
@@ -223,7 +223,7 @@ func Test_CheckModuleLiveness(t *testing.T) {
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
-			Expect(*liveness.GetModuleGVK()).
+			Expect(*readiness.GetModuleGVK()).
 			Return(resourceMock)
 
 		k8sClientMock := mock.NewKubernetesClientMock(mc)
@@ -239,15 +239,15 @@ func Test_CheckModuleLiveness(t *testing.T) {
 			Logger: log.NewNop(),
 		}
 
-		config := &liveness.LivenessHookConfig{
+		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
-			IntervalInMinutes: 10,
+			IntervalInSeconds: 10,
 			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
 				return nil
 			},
 		}
 
-		err := liveness.CheckModuleLiveness(config)(context.Background(), input)
+		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "update error")
 	})

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package liveness
+package readiness
 
 import (
 	"context"
@@ -23,7 +23,6 @@ import (
 	"log/slog"
 
 	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/pkg/registry"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -39,30 +38,30 @@ func GetModuleGVK() *schema.GroupVersionResource {
 	}
 }
 
-type LivenessHookConfig struct {
+type ReadinessHookConfig struct {
 	ModuleName        string
-	IntervalInMinutes int
+	IntervalInSeconds int
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
-func RegisterLivenessHookEM(cfg *LivenessHookConfig) bool {
+func NewReadinessHookEM(cfg *ReadinessHookConfig) (*pkg.HookConfig, pkg.ReconcileFunc) {
 	if cfg == nil {
 		panic("empty config")
 	}
 
-	return registry.RegisterFunc(GenSelfSignedTLSConfig(cfg), CheckModuleLiveness(cfg))
+	return NewReadinessConfig(cfg), CheckModuleReadiness(cfg)
 }
 
-func GenSelfSignedTLSConfig(cfg *LivenessHookConfig) *pkg.HookConfig {
-	if cfg.IntervalInMinutes == 0 {
-		cfg.IntervalInMinutes = 1
+func NewReadinessConfig(cfg *ReadinessHookConfig) *pkg.HookConfig {
+	if cfg.IntervalInSeconds == 0 {
+		cfg.IntervalInSeconds = 1
 	}
 
 	return &pkg.HookConfig{
 		Schedule: []pkg.ScheduleConfig{
 			{
-				Name:    "moduleLivenessSchedule",
-				Crontab: fmt.Sprintf("*/%d * * * *", cfg.IntervalInMinutes),
+				Name:    "moduleReadinessSchedule",
+				Crontab: fmt.Sprintf("*/%d * * * * *", cfg.IntervalInSeconds),
 			},
 		},
 	}
@@ -72,10 +71,10 @@ const (
 	conditionStatusIsReady = "IsReady"
 )
 
-func CheckModuleLiveness(cfg *LivenessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
+func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
 	return func(ctx context.Context, input *pkg.HookInput) error {
 		logger := input.Logger.With(slog.String("module", cfg.ModuleName))
-		logger.Info("check liveness")
+		logger.Info("check readiness")
 
 		k8sClient, err := input.DC.GetK8sClient()
 		if err != nil {
