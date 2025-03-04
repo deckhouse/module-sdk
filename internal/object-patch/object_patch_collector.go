@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io"
 
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
 	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/utils"
@@ -29,41 +27,36 @@ func (c *ObjectPatchCollector) collect(payload Patch) {
 	c.dataStorage = append(c.dataStorage, payload)
 }
 
-func (c *ObjectPatchCollector) Create(data any) {
-	processed, err := utils.ToUnstructured(data)
+func (c *ObjectPatchCollector) Create(obj any, opts ...pkg.PatchCollectorCreateOption) {
+	c.create(Create, obj)
+}
+
+func (c *ObjectPatchCollector) CreateOrUpdate(obj any, opts ...pkg.PatchCollectorCreateOption) {
+	c.create(CreateOrUpdate, obj)
+}
+
+func (c *ObjectPatchCollector) CreateIfNotExists(obj any, opts ...pkg.PatchCollectorCreateOption) {
+	c.create(CreateIfNotExists, obj)
+}
+
+func (c *ObjectPatchCollector) create(operation CreateOperation, obj any, opts ...pkg.PatchCollectorCreateOption) {
+	processed, err := utils.ToUnstructured(obj)
 	if err != nil {
 		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
 
 		return
 	}
 
-	c.create(Create, processed)
-}
-
-func (c *ObjectPatchCollector) CreateOrUpdate(data any) {
-	processed, err := utils.ToUnstructured(data)
-	if err != nil {
-		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
-
-		return
+	op := Patch{
+		"operation": operation,
+		"object":    processed,
 	}
 
-	c.create(CreateOrUpdate, processed)
-}
-
-func (c *ObjectPatchCollector) CreateIfNotExists(data any) {
-	processed, err := utils.ToUnstructured(data)
-	if err != nil {
-		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
-
-		return
+	for _, opt := range opts {
+		opt.Apply(op)
 	}
 
-	c.create(CreateIfNotExists, processed)
-}
-
-func (c *ObjectPatchCollector) create(operation CreateOperation, obj *unstructured.Unstructured) {
-	c.collect(Patch{"operation": operation, "object": obj})
+	c.collect(op)
 }
 
 func (c *ObjectPatchCollector) Delete(apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorDeleteOption) {

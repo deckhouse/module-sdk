@@ -9,9 +9,9 @@ import (
 type PatchCollector interface {
 	Outputer
 
-	Create(data any)
-	CreateIfNotExists(data any)
-	CreateOrUpdate(data any)
+	Create(data any, opts ...PatchCollectorCreateOption)
+	CreateIfNotExists(data any, opts ...PatchCollectorCreateOption)
+	CreateOrUpdate(data any, opts ...PatchCollectorCreateOption)
 
 	Delete(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
 	DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
@@ -20,6 +20,14 @@ type PatchCollector interface {
 	JQPatch(filter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
 	MergePatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
 	JSONPatch(patch []any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+}
+
+type PatchCollectorCreateOption interface {
+	Apply(optsApplier PatchCollectorCreateOptionApplier)
+}
+
+type PatchCollectorCreateOptionApplier interface {
+	WithSubresource(subresource string)
 }
 
 type PatchCollectorDeleteOption interface {
