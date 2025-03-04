@@ -113,7 +113,7 @@ func (h *Hook) Execute(ctx context.Context, req HookRequest) (*HookResult, error
 	}
 
 	metricsCollector := metric.NewCollector()
-	objectPatchCollector := objectpatch.NewObjectPatchCollector()
+	objectPatchCollector := objectpatch.NewObjectPatchCollector(h.logger.Named("object-patch-collector"))
 
 	err = h.Run(ctx, &pkg.HookInput{
 		Snapshots:        formattedSnapshots,

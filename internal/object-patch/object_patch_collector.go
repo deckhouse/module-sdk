@@ -6,19 +6,22 @@ import (
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
+	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/deckhouse/module-sdk/pkg"
-	service "github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
-var _ service.PatchCollector = (*ObjectPatchCollector)(nil)
+var _ pkg.PatchCollector = (*ObjectPatchCollector)(nil)
 
 type ObjectPatchCollector struct {
 	dataStorage []Patch
+	logger      *log.Logger
 }
 
-func NewObjectPatchCollector() *ObjectPatchCollector {
+func NewObjectPatchCollector(logger *log.Logger) *ObjectPatchCollector {
 	return &ObjectPatchCollector{
 		dataStorage: make([]Patch, 0),
+		logger:      logger,
 	}
 }
 
@@ -26,16 +29,37 @@ func (c *ObjectPatchCollector) collect(payload Patch) {
 	c.dataStorage = append(c.dataStorage, payload)
 }
 
-func (c *ObjectPatchCollector) Create(data *unstructured.Unstructured) {
-	c.create(Create, data)
+func (c *ObjectPatchCollector) Create(data any) {
+	processed, err := utils.ToUnstructured(data)
+	if err != nil {
+		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
+
+		return
+	}
+
+	c.create(Create, processed)
 }
 
-func (c *ObjectPatchCollector) CreateOrUpdate(data *unstructured.Unstructured) {
-	c.create(CreateOrUpdate, data)
+func (c *ObjectPatchCollector) CreateOrUpdate(data any) {
+	processed, err := utils.ToUnstructured(data)
+	if err != nil {
+		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
+
+		return
+	}
+
+	c.create(CreateOrUpdate, processed)
 }
 
-func (c *ObjectPatchCollector) CreateIfNotExists(data *unstructured.Unstructured) {
-	c.create(CreateIfNotExists, data)
+func (c *ObjectPatchCollector) CreateIfNotExists(data any) {
+	processed, err := utils.ToUnstructured(data)
+	if err != nil {
+		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
+
+		return
+	}
+
+	c.create(CreateIfNotExists, processed)
 }
 
 func (c *ObjectPatchCollector) create(operation CreateOperation, obj *unstructured.Unstructured) {

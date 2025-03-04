@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"github.com/tidwall/gjson"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
@@ -10,9 +9,9 @@ import (
 type PatchCollector interface {
 	Outputer
 
-	Create(data *unstructured.Unstructured)
-	CreateIfNotExists(data *unstructured.Unstructured)
-	CreateOrUpdate(data *unstructured.Unstructured)
+	Create(data any)
+	CreateIfNotExists(data any)
+	CreateOrUpdate(data any)
 
 	Delete(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
 	DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
