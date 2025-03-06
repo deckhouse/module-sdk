@@ -28,6 +28,15 @@ type PatchCollector interface {
 	Operations() []PatchCollectorOperation
 }
 
+// There are 4 types of operations:
+//
+// - createOperation to create or update object via Create and Update API calls. Unstructured, map[string]any or runtime.Object is required.
+//
+// - deleteOperation to delete object via Delete API call
+//
+// - patchOperation to modify object via Patch API call
+//
+// - filterOperation to modify object via Get-filter-Update process
 type PatchCollectorOperation interface {
 	Description() string
 }
@@ -38,8 +47,6 @@ type PatchCollectorCreateOption interface {
 
 type PatchCollectorCreateOptionApplier interface {
 	WithSubresource(subresource string)
-	WithIgnoreIfExists(ignore bool)
-	WithUpdateIfExists(update bool)
 }
 
 type CreateOption func(o PatchCollectorCreateOptionApplier)
@@ -51,18 +58,6 @@ func (opt CreateOption) Apply(o PatchCollectorCreateOptionApplier) {
 func CreateWithSubresource(subresource string) CreateOption {
 	return func(o PatchCollectorCreateOptionApplier) {
 		o.WithSubresource(subresource)
-	}
-}
-
-func CreateWithIgnoreIfExists(ignore bool) CreateOption {
-	return func(o PatchCollectorCreateOptionApplier) {
-		o.WithIgnoreIfExists(ignore)
-	}
-}
-
-func CreateWithUpdateIfExists(ignore bool) CreateOption {
-	return func(o PatchCollectorCreateOptionApplier) {
-		o.WithUpdateIfExists(ignore)
 	}
 }
 

@@ -26,11 +26,3 @@ func (p *Patch) WithIgnoreMissingObject(ignore bool) {
 func (p *Patch) WithIgnoreHookError(ignore bool) {
 	p.patchValues["ignoreHookError"] = ignore
 }
-
-func (p *Patch) WithIgnoreIfExists(ignore bool) {
-	p.patchValues["ignoreIfExists"] = ignore
-}
-
-func (p *Patch) WithUpdateIfExists(update bool) {
-	p.patchValues["updateIfExists"] = update
-}
