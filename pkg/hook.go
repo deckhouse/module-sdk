@@ -23,7 +23,7 @@ type HookInput struct {
 
 	Values           PatchableValuesCollector
 	ConfigValues     PatchableValuesCollector
-	PatchCollector   PatchCollector
+	PatchCollector   EMPatchCollector
 	MetricsCollector MetricsCollector
 
 	DC DependencyContainer

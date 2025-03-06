@@ -147,6 +147,6 @@ func (h *Hook) Run(ctx context.Context, input *pkg.HookInput) error {
 type HookResult struct {
 	Patches map[utils.ValuesPatchType]pkg.PatchableValuesCollector
 
-	ObjectPatcherOperations pkg.PatchCollector
+	ObjectPatcherOperations pkg.EMPatchCollector
 	Metrics                 pkg.MetricsCollector
 }

@@ -6,75 +6,152 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
-type PatchCollector interface {
+type EMPatchCollector interface {
+	PatchCollector
 	Outputer
+}
 
-	Create(data any, opts ...PatchCollectorCreateOption)
-	CreateIfNotExists(data any, opts ...PatchCollectorCreateOption)
-	CreateOrUpdate(data any, opts ...PatchCollectorCreateOption)
+type PatchCollector interface {
+	Create(object any, opts ...PatchCollectorCreateOption)
+	CreateIfNotExists(object any, opts ...PatchCollectorCreateOption)
+	CreateOrUpdate(object any, opts ...PatchCollectorCreateOption)
 
 	Delete(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
 	DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
 	DeleteNonCascading(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
 
-	JQPatch(filter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
-	MergePatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
-	JSONPatch(patch []any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+	JQFilter(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorFilterOption)
+
+	JSONPatch(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+	MergePatch(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+
+	Operations() []PatchCollectorOperation
+}
+
+type PatchCollectorOperation interface {
+	Description() string
 }
 
 type PatchCollectorCreateOption interface {
-	ApplyToCreate(*PatchCollectorCreateOptions)
+	Apply(PatchCollectorCreateOptionApplier)
 }
 
-type PatchCollectorCreateOptions struct {
-	Subresource string
+type PatchCollectorCreateOptionApplier interface {
+	WithSubresource(subresource string)
+	WithIgnoreIfExists(ignore bool)
+	WithUpdateIfExists(update bool)
 }
 
-// ApplyOptions applies the given list options on these options,
-// and then returns itself (for convenient chaining).
-func (o *PatchCollectorCreateOptions) ApplyOptions(opts []PatchCollectorCreateOption) *PatchCollectorCreateOptions {
-	for _, opt := range opts {
-		opt.ApplyToCreate(o)
+type CreateOption func(o PatchCollectorCreateOptionApplier)
+
+func (opt CreateOption) Apply(o PatchCollectorCreateOptionApplier) {
+	opt(o)
+}
+
+func CreateWithSubresource(subresource string) CreateOption {
+	return func(o PatchCollectorCreateOptionApplier) {
+		o.WithSubresource(subresource)
 	}
+}
 
-	return o
+func CreateWithIgnoreIfExists(ignore bool) CreateOption {
+	return func(o PatchCollectorCreateOptionApplier) {
+		o.WithIgnoreIfExists(ignore)
+	}
+}
+
+func CreateWithUpdateIfExists(ignore bool) CreateOption {
+	return func(o PatchCollectorCreateOptionApplier) {
+		o.WithUpdateIfExists(ignore)
+	}
 }
 
 type PatchCollectorDeleteOption interface {
-	ApplyToDelete(*PatchCollectorDeleteOptions)
+	Apply(PatchCollectorDeleteOptionApplier)
 }
 
-type PatchCollectorDeleteOptions struct {
-	Subresource string
+type PatchCollectorDeleteOptionApplier interface {
+	WithSubresource(subresource string)
 }
 
-// ApplyOptions applies the given list options on these options,
-// and then returns itself (for convenient chaining).
-func (o *PatchCollectorDeleteOptions) ApplyOptions(opts []PatchCollectorDeleteOption) *PatchCollectorDeleteOptions {
-	for _, opt := range opts {
-		opt.ApplyToDelete(o)
+type DeleteOption func(o PatchCollectorDeleteOptionApplier)
+
+func (opt DeleteOption) Apply(o PatchCollectorDeleteOptionApplier) {
+	opt(o)
+}
+
+func DeleteWithSubresource(subresource string) DeleteOption {
+	return func(o PatchCollectorDeleteOptionApplier) {
+		o.WithSubresource(subresource)
 	}
-
-	return o
 }
 
 type PatchCollectorPatchOption interface {
-	ApplyToPatch(*PatchCollectorPatchOptions)
+	Apply(PatchCollectorPatchOptionApplier)
 }
 
-type PatchCollectorPatchOptions struct {
-	Subresource          string
-	IgnoreMissingObjects bool
+type PatchCollectorPatchOptionApplier interface {
+	WithSubresource(subresource string)
+	WithIgnoreMissingObject(ignore bool)
+	WithIgnoreHookError(update bool)
 }
 
-// ApplyOptions applies the given list options on these options,
-// and then returns itself (for convenient chaining).
-func (o *PatchCollectorPatchOptions) ApplyOptions(opts []PatchCollectorPatchOption) *PatchCollectorPatchOptions {
-	for _, opt := range opts {
-		opt.ApplyToPatch(o)
+type PatchOption func(o PatchCollectorPatchOptionApplier)
+
+func (opt PatchOption) Apply(o PatchCollectorPatchOptionApplier) {
+	opt(o)
+}
+
+func PatchWithSubresource(subresource string) PatchOption {
+	return func(o PatchCollectorPatchOptionApplier) {
+		o.WithSubresource(subresource)
 	}
+}
 
-	return o
+func PatchWithIgnoreMissingObject(ignore bool) PatchOption {
+	return func(o PatchCollectorPatchOptionApplier) {
+		o.WithIgnoreMissingObject(ignore)
+	}
+}
+
+func PatchWithIgnoreHookError(ignore bool) PatchOption {
+	return func(o PatchCollectorPatchOptionApplier) {
+		o.WithIgnoreHookError(ignore)
+	}
+}
+
+type PatchCollectorFilterOption interface {
+	Apply(PatchCollectorFilterOptionApplier)
+}
+
+type PatchCollectorFilterOptionApplier interface {
+	WithSubresource(subresource string)
+	WithIgnoreMissingObject(ignore bool)
+	WithIgnoreHookError(update bool)
+}
+
+type FilterOption func(o PatchCollectorFilterOptionApplier)
+
+func (opt FilterOption) Apply(o PatchCollectorFilterOptionApplier) {
+	opt(o)
+}
+
+func FilterWithSubresource(subresource string) FilterOption {
+	return func(o PatchCollectorFilterOptionApplier) {
+		o.WithSubresource(subresource)
+	}
+}
+
+func FilterWithIgnoreMissingObject(ignore bool) FilterOption {
+	return func(o PatchCollectorFilterOptionApplier) {
+		o.WithIgnoreMissingObject(ignore)
+	}
+}
+
+func FilterWithIgnoreHookError(ignore bool) FilterOption {
+	return func(o PatchCollectorFilterOptionApplier) {
+		o.WithIgnoreHookError(ignore)
+	}
 }
 
 type PatchableValuesCollector interface {

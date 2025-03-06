@@ -22,9 +22,9 @@ type MetricsCollectorOptionApplier interface {
 }
 
 type Option interface {
-	Apply(op Operation)
+	Apply(op MetricCollectorOperation)
 }
 
-type Operation interface {
+type MetricCollectorOperation interface {
 	WithGroup(group string)
 }

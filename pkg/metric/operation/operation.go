@@ -13,19 +13,19 @@ import (
 
 var _ pkg.Option = (Option)(nil)
 
-type Option func(o pkg.Operation)
+type Option func(o pkg.MetricCollectorOperation)
 
-func (opt Option) Apply(o pkg.Operation) {
+func (opt Option) Apply(o pkg.MetricCollectorOperation) {
 	opt(o)
 }
 
 func WithGroup(group string) Option {
-	return func(o pkg.Operation) {
+	return func(o pkg.MetricCollectorOperation) {
 		o.WithGroup(group)
 	}
 }
 
-var _ pkg.Operation = (*Operation)(nil)
+var _ pkg.MetricCollectorOperation = (*Operation)(nil)
 
 type Operation struct {
 	Name    string            `json:"name"`

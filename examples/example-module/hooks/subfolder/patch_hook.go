@@ -29,7 +29,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 			Phase: corev1.PodRunning,
 		},
 	}
-	input.PatchCollector.Create(firstPod, objectpatch.WithSubresource("/status"))
+	input.PatchCollector.Create(firstPod, objectpatch.CreateWithSubresource("/status"))
 
 	secondPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -40,7 +40,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 			Phase: corev1.PodRunning,
 		},
 	}
-	input.PatchCollector.CreateOrUpdate(secondPod, objectpatch.WithSubresource("/status"))
+	input.PatchCollector.CreateOrUpdate(secondPod, objectpatch.CreateWithSubresource("/status"))
 
 	thirdPod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -51,7 +51,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 			Phase: corev1.PodRunning,
 		},
 	}
-	input.PatchCollector.CreateIfNotExists(thirdPod, objectpatch.WithSubresource("/status"))
+	input.PatchCollector.CreateIfNotExists(thirdPod, objectpatch.CreateWithSubresource("/status"))
 
 	// DELETE
 	input.PatchCollector.Delete(
@@ -59,7 +59,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 		firstPod.Kind,
 		firstPod.Namespace,
 		firstPod.Name,
-		objectpatch.WithSubresource("/status"),
+		objectpatch.DeleteWithSubresource("/status"),
 	)
 
 	input.PatchCollector.DeleteInBackground(
@@ -67,7 +67,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 		secondPod.Kind,
 		secondPod.Namespace,
 		secondPod.Name,
-		objectpatch.WithSubresource("/status"),
+		objectpatch.DeleteWithSubresource("/status"),
 	)
 
 	input.PatchCollector.DeleteNonCascading(
@@ -75,7 +75,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 		thirdPod.Kind,
 		thirdPod.Namespace,
 		thirdPod.Name,
-		objectpatch.WithSubresource("/status"),
+		objectpatch.DeleteWithSubresource("/status"),
 	)
 
 	// PATCH
@@ -89,8 +89,8 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 		thirdPod.Kind,
 		thirdPod.Namespace,
 		thirdPod.Name,
-		objectpatch.WithSubresource("/status"),
-		objectpatch.WithIgnoreMissingObject(true),
+		objectpatch.PatchWithSubresource("/status"),
+		objectpatch.PatchWithIgnoreMissingObject(true),
 	)
 
 	return nil

@@ -58,10 +58,9 @@ func (c *ObjectPatchCollector) create(operation CreateOperation, obj any, opts .
 		},
 	}
 
-	createOpts := &pkg.PatchCollectorCreateOptions{}
-	createOpts.ApplyOptions(opts)
-
-	p.ApplyCreateOptions(createOpts)
+	for _, opt := range opts {
+		opt.Apply(p)
+	}
 
 	c.collect(p)
 }
@@ -89,23 +88,18 @@ func (c *ObjectPatchCollector) delete(operation DeleteOperation, apiVersion stri
 		},
 	}
 
-	deleteOpts := &pkg.PatchCollectorDeleteOptions{}
-	deleteOpts.ApplyOptions(opts)
-
-	p.ApplyDeleteOptions(deleteOpts)
+	for _, opt := range opts {
+		opt.Apply(p)
+	}
 
 	c.collect(p)
-}
-
-func (c *ObjectPatchCollector) JQPatch(filter string, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
-	c.patch(JQPatch, filter, apiVersion, kind, namespace, name, opts...)
 }
 
 func (c *ObjectPatchCollector) MergePatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
 	c.patch(MergePatch, patch, apiVersion, kind, namespace, name, opts...)
 }
 
-func (c *ObjectPatchCollector) JSONPatch(patch []any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
+func (c *ObjectPatchCollector) JSONPatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
 	c.patch(JSONPatch, patch, apiVersion, kind, namespace, name, opts...)
 }
 
@@ -122,9 +116,7 @@ func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVer
 
 	switch operation {
 	case JQPatch:
-		{
-			p.patchValues["jqFilter"] = patch
-		}
+		panic("filter jq operation in patch method")
 	case MergePatch:
 		{
 			p.patchValues["mergePatch"] = patch
@@ -137,17 +129,45 @@ func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVer
 		panic("not known operation")
 	}
 
-	patchOpts := &pkg.PatchCollectorPatchOptions{}
-	patchOpts.ApplyOptions(opts)
+	for _, opt := range opts {
+		opt.Apply(p)
+	}
 
-	p.ApplyPatchOptions(patchOpts)
+	c.collect(p)
+}
+
+func (c *ObjectPatchCollector) JQFilter(filter string, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorFilterOption) {
+	c.filter(filter, apiVersion, kind, namespace, name, opts...)
+}
+
+func (c *ObjectPatchCollector) filter(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorFilterOption) {
+	p := &Patch{
+		patchValues: map[string]any{
+			"operation":  JQPatch,
+			"apiVersion": apiVersion,
+			"kind":       kind,
+			"name":       name,
+			"namespace":  namespace,
+			"jqFilter":   patch,
+		},
+	}
+
+	for _, opt := range opts {
+		opt.Apply(p)
+	}
 
 	c.collect(p)
 }
 
 // Operations returns all collected operations
-func (c *ObjectPatchCollector) Operations() []Patch {
-	return c.dataStorage
+func (c *ObjectPatchCollector) Operations() []pkg.PatchCollectorOperation {
+	operations := make([]pkg.PatchCollectorOperation, 0, len(c.dataStorage))
+
+	for _, object := range c.dataStorage {
+		operations = append(operations, &object)
+	}
+
+	return operations
 }
 
 func (c *ObjectPatchCollector) WriteOutput(w io.Writer) error {
