@@ -1,45 +1,39 @@
 package objectpatch
 
-import "github.com/deckhouse/module-sdk/pkg"
+import (
+	"github.com/deckhouse/module-sdk/pkg"
+)
 
-type CreatePatchOption func(optionsApplier pkg.PatchCollectorCreateOptionApplier)
-
-func (opt CreatePatchOption) Apply(o pkg.PatchCollectorCreateOptionApplier) {
-	opt(o)
+func WithSubresource(str string) Subresource {
+	return Subresource(str)
 }
 
-func CreateWithSubresource(subresource string) CreatePatchOption {
-	return func(optionsApplier pkg.PatchCollectorCreateOptionApplier) {
-		optionsApplier.WithSubresource(subresource)
-	}
+// Subresource is a configuration option for specifying a subresource.
+type Subresource string
+
+// ApplyToCreate applies this configuration to the given list options.
+func (m Subresource) ApplyToCreate(opts *pkg.PatchCollectorCreateOptions) {
+	opts.Subresource = string(m)
 }
 
-type DeletePatchOption func(optionsApplier pkg.PatchCollectorDeleteOptionApplier)
-
-func (opt DeletePatchOption) Apply(o pkg.PatchCollectorDeleteOptionApplier) {
-	opt(o)
+// ApplyToDelete applies this configuration to the given list options.
+func (m Subresource) ApplyToDelete(opts *pkg.PatchCollectorDeleteOptions) {
+	opts.Subresource = string(m)
 }
 
-func DeleteWithSubresource(subresource string) DeletePatchOption {
-	return func(optionsApplier pkg.PatchCollectorDeleteOptionApplier) {
-		optionsApplier.WithSubresource(subresource)
-	}
+// ApplyToPatch applies this configuration to the given list options.
+func (m Subresource) ApplyToPatch(opts *pkg.PatchCollectorPatchOptions) {
+	opts.Subresource = string(m)
 }
 
-type PatchPatchOption func(optionsApplier pkg.PatchCollectorPatchOptionApplier)
-
-func (opt PatchPatchOption) Apply(o pkg.PatchCollectorPatchOptionApplier) {
-	opt(o)
+func WithIgnoreMissingObject(ignore bool) IgnoreMissingObjects {
+	return IgnoreMissingObjects(ignore)
 }
 
-func PatchWithSubresource(subresource string) PatchPatchOption {
-	return func(optionsApplier pkg.PatchCollectorPatchOptionApplier) {
-		optionsApplier.WithSubresource(subresource)
-	}
-}
+// Subresource is a configuration option for specifying a subresource.
+type IgnoreMissingObjects bool
 
-func PatchWithIgnoreMissingObjects(ignore bool) PatchPatchOption {
-	return func(optionsApplier pkg.PatchCollectorPatchOptionApplier) {
-		optionsApplier.WithIgnoreMissingObjects(ignore)
-	}
+// ApplyToPatch applies this configuration to the given list options.
+func (m IgnoreMissingObjects) ApplyToPatch(opts *pkg.PatchCollectorPatchOptions) {
+	opts.IgnoreMissingObjects = bool(m)
 }

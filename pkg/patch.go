@@ -23,28 +23,58 @@ type PatchCollector interface {
 }
 
 type PatchCollectorCreateOption interface {
-	Apply(optsApplier PatchCollectorCreateOptionApplier)
+	ApplyToCreate(*PatchCollectorCreateOptions)
 }
 
-type PatchCollectorCreateOptionApplier interface {
-	WithSubresource(subresource string)
+type PatchCollectorCreateOptions struct {
+	Subresource string
+}
+
+// ApplyOptions applies the given list options on these options,
+// and then returns itself (for convenient chaining).
+func (o *PatchCollectorCreateOptions) ApplyOptions(opts []PatchCollectorCreateOption) *PatchCollectorCreateOptions {
+	for _, opt := range opts {
+		opt.ApplyToCreate(o)
+	}
+
+	return o
 }
 
 type PatchCollectorDeleteOption interface {
-	Apply(optsApplier PatchCollectorDeleteOptionApplier)
+	ApplyToDelete(*PatchCollectorDeleteOptions)
 }
 
-type PatchCollectorDeleteOptionApplier interface {
-	WithSubresource(subresource string)
+type PatchCollectorDeleteOptions struct {
+	Subresource string
+}
+
+// ApplyOptions applies the given list options on these options,
+// and then returns itself (for convenient chaining).
+func (o *PatchCollectorDeleteOptions) ApplyOptions(opts []PatchCollectorDeleteOption) *PatchCollectorDeleteOptions {
+	for _, opt := range opts {
+		opt.ApplyToDelete(o)
+	}
+
+	return o
 }
 
 type PatchCollectorPatchOption interface {
-	Apply(optsApplier PatchCollectorPatchOptionApplier)
+	ApplyToPatch(*PatchCollectorPatchOptions)
 }
 
-type PatchCollectorPatchOptionApplier interface {
-	WithSubresource(subresource string)
-	WithIgnoreMissingObjects(ignore bool)
+type PatchCollectorPatchOptions struct {
+	Subresource          string
+	IgnoreMissingObjects bool
+}
+
+// ApplyOptions applies the given list options on these options,
+// and then returns itself (for convenient chaining).
+func (o *PatchCollectorPatchOptions) ApplyOptions(opts []PatchCollectorPatchOption) *PatchCollectorPatchOptions {
+	for _, opt := range opts {
+		opt.ApplyToPatch(o)
+	}
+
+	return o
 }
 
 type PatchableValuesCollector interface {
