@@ -19,51 +19,51 @@ type PatchCollectorMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcCreate          func(object any, opts ...mm_pkg.PatchCollectorCreateOption)
+	funcCreate          func(object any)
 	funcCreateOrigin    string
-	inspectFuncCreate   func(object any, opts ...mm_pkg.PatchCollectorCreateOption)
+	inspectFuncCreate   func(object any)
 	afterCreateCounter  uint64
 	beforeCreateCounter uint64
 	CreateMock          mPatchCollectorMockCreate
 
-	funcCreateIfNotExists          func(object any, opts ...mm_pkg.PatchCollectorCreateOption)
+	funcCreateIfNotExists          func(object any)
 	funcCreateIfNotExistsOrigin    string
-	inspectFuncCreateIfNotExists   func(object any, opts ...mm_pkg.PatchCollectorCreateOption)
+	inspectFuncCreateIfNotExists   func(object any)
 	afterCreateIfNotExistsCounter  uint64
 	beforeCreateIfNotExistsCounter uint64
 	CreateIfNotExistsMock          mPatchCollectorMockCreateIfNotExists
 
-	funcCreateOrUpdate          func(object any, opts ...mm_pkg.PatchCollectorCreateOption)
+	funcCreateOrUpdate          func(object any)
 	funcCreateOrUpdateOrigin    string
-	inspectFuncCreateOrUpdate   func(object any, opts ...mm_pkg.PatchCollectorCreateOption)
+	inspectFuncCreateOrUpdate   func(object any)
 	afterCreateOrUpdateCounter  uint64
 	beforeCreateOrUpdateCounter uint64
 	CreateOrUpdateMock          mPatchCollectorMockCreateOrUpdate
 
-	funcDelete          func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)
+	funcDelete          func(apiVersion string, kind string, namespace string, name string)
 	funcDeleteOrigin    string
-	inspectFuncDelete   func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)
+	inspectFuncDelete   func(apiVersion string, kind string, namespace string, name string)
 	afterDeleteCounter  uint64
 	beforeDeleteCounter uint64
 	DeleteMock          mPatchCollectorMockDelete
 
-	funcDeleteInBackground          func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)
+	funcDeleteInBackground          func(apiVersion string, kind string, namespace string, name string)
 	funcDeleteInBackgroundOrigin    string
-	inspectFuncDeleteInBackground   func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)
+	inspectFuncDeleteInBackground   func(apiVersion string, kind string, namespace string, name string)
 	afterDeleteInBackgroundCounter  uint64
 	beforeDeleteInBackgroundCounter uint64
 	DeleteInBackgroundMock          mPatchCollectorMockDeleteInBackground
 
-	funcDeleteNonCascading          func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)
+	funcDeleteNonCascading          func(apiVersion string, kind string, namespace string, name string)
 	funcDeleteNonCascadingOrigin    string
-	inspectFuncDeleteNonCascading   func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)
+	inspectFuncDeleteNonCascading   func(apiVersion string, kind string, namespace string, name string)
 	afterDeleteNonCascadingCounter  uint64
 	beforeDeleteNonCascadingCounter uint64
 	DeleteNonCascadingMock          mPatchCollectorMockDeleteNonCascading
 
-	funcJQFilter          func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption)
+	funcJQFilter          func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
 	funcJQFilterOrigin    string
-	inspectFuncJQFilter   func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption)
+	inspectFuncJQFilter   func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
 	afterJQFilterCounter  uint64
 	beforeJQFilterCounter uint64
 	JQFilterMock          mPatchCollectorMockJQFilter
@@ -88,6 +88,27 @@ type PatchCollectorMock struct {
 	afterOperationsCounter  uint64
 	beforeOperationsCounter uint64
 	OperationsMock          mPatchCollectorMockOperations
+
+	funcPatchWithJQ          func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
+	funcPatchWithJQOrigin    string
+	inspectFuncPatchWithJQ   func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
+	afterPatchWithJQCounter  uint64
+	beforePatchWithJQCounter uint64
+	PatchWithJQMock          mPatchCollectorMockPatchWithJQ
+
+	funcPatchWithJSON          func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
+	funcPatchWithJSONOrigin    string
+	inspectFuncPatchWithJSON   func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
+	afterPatchWithJSONCounter  uint64
+	beforePatchWithJSONCounter uint64
+	PatchWithJSONMock          mPatchCollectorMockPatchWithJSON
+
+	funcPatchWithMerge          func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
+	funcPatchWithMergeOrigin    string
+	inspectFuncPatchWithMerge   func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
+	afterPatchWithMergeCounter  uint64
+	beforePatchWithMergeCounter uint64
+	PatchWithMergeMock          mPatchCollectorMockPatchWithMerge
 
 	funcWriteOutput          func(writer io.Writer) (err error)
 	funcWriteOutputOrigin    string
@@ -134,6 +155,15 @@ func NewPatchCollectorMock(t minimock.Tester) *PatchCollectorMock {
 
 	m.OperationsMock = mPatchCollectorMockOperations{mock: m}
 
+	m.PatchWithJQMock = mPatchCollectorMockPatchWithJQ{mock: m}
+	m.PatchWithJQMock.callArgs = []*PatchCollectorMockPatchWithJQParams{}
+
+	m.PatchWithJSONMock = mPatchCollectorMockPatchWithJSON{mock: m}
+	m.PatchWithJSONMock.callArgs = []*PatchCollectorMockPatchWithJSONParams{}
+
+	m.PatchWithMergeMock = mPatchCollectorMockPatchWithMerge{mock: m}
+	m.PatchWithMergeMock.callArgs = []*PatchCollectorMockPatchWithMergeParams{}
+
 	m.WriteOutputMock = mPatchCollectorMockWriteOutput{mock: m}
 	m.WriteOutputMock.callArgs = []*PatchCollectorMockWriteOutputParams{}
 
@@ -169,20 +199,17 @@ type PatchCollectorMockCreateExpectation struct {
 // PatchCollectorMockCreateParams contains parameters of the EMPatchCollector.Create
 type PatchCollectorMockCreateParams struct {
 	object any
-	opts   []mm_pkg.PatchCollectorCreateOption
 }
 
 // PatchCollectorMockCreateParamPtrs contains pointers to parameters of the EMPatchCollector.Create
 type PatchCollectorMockCreateParamPtrs struct {
 	object *any
-	opts   *[]mm_pkg.PatchCollectorCreateOption
 }
 
 // PatchCollectorMockCreateOrigins contains origins of expectations of the EMPatchCollector.Create
 type PatchCollectorMockCreateExpectationOrigins struct {
 	origin       string
 	originObject string
-	originOpts   string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -196,7 +223,7 @@ func (mmCreate *mPatchCollectorMockCreate) Optional() *mPatchCollectorMockCreate
 }
 
 // Expect sets up expected params for EMPatchCollector.Create
-func (mmCreate *mPatchCollectorMockCreate) Expect(object any, opts ...mm_pkg.PatchCollectorCreateOption) *mPatchCollectorMockCreate {
+func (mmCreate *mPatchCollectorMockCreate) Expect(object any) *mPatchCollectorMockCreate {
 	if mmCreate.mock.funcCreate != nil {
 		mmCreate.mock.t.Fatalf("PatchCollectorMock.Create mock is already set by Set")
 	}
@@ -209,7 +236,7 @@ func (mmCreate *mPatchCollectorMockCreate) Expect(object any, opts ...mm_pkg.Pat
 		mmCreate.mock.t.Fatalf("PatchCollectorMock.Create mock is already set by ExpectParams functions")
 	}
 
-	mmCreate.defaultExpectation.params = &PatchCollectorMockCreateParams{object, opts}
+	mmCreate.defaultExpectation.params = &PatchCollectorMockCreateParams{object}
 	mmCreate.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmCreate.expectations {
 		if minimock.Equal(e.params, mmCreate.defaultExpectation.params) {
@@ -243,31 +270,8 @@ func (mmCreate *mPatchCollectorMockCreate) ExpectObjectParam1(object any) *mPatc
 	return mmCreate
 }
 
-// ExpectOptsParam2 sets up expected param opts for EMPatchCollector.Create
-func (mmCreate *mPatchCollectorMockCreate) ExpectOptsParam2(opts ...mm_pkg.PatchCollectorCreateOption) *mPatchCollectorMockCreate {
-	if mmCreate.mock.funcCreate != nil {
-		mmCreate.mock.t.Fatalf("PatchCollectorMock.Create mock is already set by Set")
-	}
-
-	if mmCreate.defaultExpectation == nil {
-		mmCreate.defaultExpectation = &PatchCollectorMockCreateExpectation{}
-	}
-
-	if mmCreate.defaultExpectation.params != nil {
-		mmCreate.mock.t.Fatalf("PatchCollectorMock.Create mock is already set by Expect")
-	}
-
-	if mmCreate.defaultExpectation.paramPtrs == nil {
-		mmCreate.defaultExpectation.paramPtrs = &PatchCollectorMockCreateParamPtrs{}
-	}
-	mmCreate.defaultExpectation.paramPtrs.opts = &opts
-	mmCreate.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
-
-	return mmCreate
-}
-
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.Create
-func (mmCreate *mPatchCollectorMockCreate) Inspect(f func(object any, opts ...mm_pkg.PatchCollectorCreateOption)) *mPatchCollectorMockCreate {
+func (mmCreate *mPatchCollectorMockCreate) Inspect(f func(object any)) *mPatchCollectorMockCreate {
 	if mmCreate.mock.inspectFuncCreate != nil {
 		mmCreate.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.Create")
 	}
@@ -292,7 +296,7 @@ func (mmCreate *mPatchCollectorMockCreate) Return() *PatchCollectorMock {
 }
 
 // Set uses given function f to mock the EMPatchCollector.Create method
-func (mmCreate *mPatchCollectorMockCreate) Set(f func(object any, opts ...mm_pkg.PatchCollectorCreateOption)) *PatchCollectorMock {
+func (mmCreate *mPatchCollectorMockCreate) Set(f func(object any)) *PatchCollectorMock {
 	if mmCreate.defaultExpectation != nil {
 		mmCreate.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.Create method")
 	}
@@ -308,14 +312,14 @@ func (mmCreate *mPatchCollectorMockCreate) Set(f func(object any, opts ...mm_pkg
 
 // When sets expectation for the EMPatchCollector.Create which will trigger the result defined by the following
 // Then helper
-func (mmCreate *mPatchCollectorMockCreate) When(object any, opts ...mm_pkg.PatchCollectorCreateOption) *PatchCollectorMockCreateExpectation {
+func (mmCreate *mPatchCollectorMockCreate) When(object any) *PatchCollectorMockCreateExpectation {
 	if mmCreate.mock.funcCreate != nil {
 		mmCreate.mock.t.Fatalf("PatchCollectorMock.Create mock is already set by Set")
 	}
 
 	expectation := &PatchCollectorMockCreateExpectation{
 		mock:               mmCreate.mock,
-		params:             &PatchCollectorMockCreateParams{object, opts},
+		params:             &PatchCollectorMockCreateParams{object},
 		expectationOrigins: PatchCollectorMockCreateExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmCreate.expectations = append(mmCreate.expectations, expectation)
@@ -350,17 +354,17 @@ func (mmCreate *mPatchCollectorMockCreate) invocationsDone() bool {
 }
 
 // Create implements mm_pkg.EMPatchCollector
-func (mmCreate *PatchCollectorMock) Create(object any, opts ...mm_pkg.PatchCollectorCreateOption) {
+func (mmCreate *PatchCollectorMock) Create(object any) {
 	mm_atomic.AddUint64(&mmCreate.beforeCreateCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreate.afterCreateCounter, 1)
 
 	mmCreate.t.Helper()
 
 	if mmCreate.inspectFuncCreate != nil {
-		mmCreate.inspectFuncCreate(object, opts...)
+		mmCreate.inspectFuncCreate(object)
 	}
 
-	mm_params := PatchCollectorMockCreateParams{object, opts}
+	mm_params := PatchCollectorMockCreateParams{object}
 
 	// Record call args
 	mmCreate.CreateMock.mutex.Lock()
@@ -379,18 +383,13 @@ func (mmCreate *PatchCollectorMock) Create(object any, opts ...mm_pkg.PatchColle
 		mm_want := mmCreate.CreateMock.defaultExpectation.params
 		mm_want_ptrs := mmCreate.CreateMock.defaultExpectation.paramPtrs
 
-		mm_got := PatchCollectorMockCreateParams{object, opts}
+		mm_got := PatchCollectorMockCreateParams{object}
 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.object != nil && !minimock.Equal(*mm_want_ptrs.object, mm_got.object) {
 				mmCreate.t.Errorf("PatchCollectorMock.Create got unexpected parameter object, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
 					mmCreate.CreateMock.defaultExpectation.expectationOrigins.originObject, *mm_want_ptrs.object, mm_got.object, minimock.Diff(*mm_want_ptrs.object, mm_got.object))
-			}
-
-			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
-				mmCreate.t.Errorf("PatchCollectorMock.Create got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmCreate.CreateMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -402,10 +401,10 @@ func (mmCreate *PatchCollectorMock) Create(object any, opts ...mm_pkg.PatchColle
 
 	}
 	if mmCreate.funcCreate != nil {
-		mmCreate.funcCreate(object, opts...)
+		mmCreate.funcCreate(object)
 		return
 	}
-	mmCreate.t.Fatalf("Unexpected call to PatchCollectorMock.Create. %v %v", object, opts)
+	mmCreate.t.Fatalf("Unexpected call to PatchCollectorMock.Create. %v", object)
 
 }
 
@@ -504,20 +503,17 @@ type PatchCollectorMockCreateIfNotExistsExpectation struct {
 // PatchCollectorMockCreateIfNotExistsParams contains parameters of the EMPatchCollector.CreateIfNotExists
 type PatchCollectorMockCreateIfNotExistsParams struct {
 	object any
-	opts   []mm_pkg.PatchCollectorCreateOption
 }
 
 // PatchCollectorMockCreateIfNotExistsParamPtrs contains pointers to parameters of the EMPatchCollector.CreateIfNotExists
 type PatchCollectorMockCreateIfNotExistsParamPtrs struct {
 	object *any
-	opts   *[]mm_pkg.PatchCollectorCreateOption
 }
 
 // PatchCollectorMockCreateIfNotExistsOrigins contains origins of expectations of the EMPatchCollector.CreateIfNotExists
 type PatchCollectorMockCreateIfNotExistsExpectationOrigins struct {
 	origin       string
 	originObject string
-	originOpts   string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -531,7 +527,7 @@ func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Optional() *mPa
 }
 
 // Expect sets up expected params for EMPatchCollector.CreateIfNotExists
-func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Expect(object any, opts ...mm_pkg.PatchCollectorCreateOption) *mPatchCollectorMockCreateIfNotExists {
+func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Expect(object any) *mPatchCollectorMockCreateIfNotExists {
 	if mmCreateIfNotExists.mock.funcCreateIfNotExists != nil {
 		mmCreateIfNotExists.mock.t.Fatalf("PatchCollectorMock.CreateIfNotExists mock is already set by Set")
 	}
@@ -544,7 +540,7 @@ func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Expect(object a
 		mmCreateIfNotExists.mock.t.Fatalf("PatchCollectorMock.CreateIfNotExists mock is already set by ExpectParams functions")
 	}
 
-	mmCreateIfNotExists.defaultExpectation.params = &PatchCollectorMockCreateIfNotExistsParams{object, opts}
+	mmCreateIfNotExists.defaultExpectation.params = &PatchCollectorMockCreateIfNotExistsParams{object}
 	mmCreateIfNotExists.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmCreateIfNotExists.expectations {
 		if minimock.Equal(e.params, mmCreateIfNotExists.defaultExpectation.params) {
@@ -578,31 +574,8 @@ func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) ExpectObjectPar
 	return mmCreateIfNotExists
 }
 
-// ExpectOptsParam2 sets up expected param opts for EMPatchCollector.CreateIfNotExists
-func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) ExpectOptsParam2(opts ...mm_pkg.PatchCollectorCreateOption) *mPatchCollectorMockCreateIfNotExists {
-	if mmCreateIfNotExists.mock.funcCreateIfNotExists != nil {
-		mmCreateIfNotExists.mock.t.Fatalf("PatchCollectorMock.CreateIfNotExists mock is already set by Set")
-	}
-
-	if mmCreateIfNotExists.defaultExpectation == nil {
-		mmCreateIfNotExists.defaultExpectation = &PatchCollectorMockCreateIfNotExistsExpectation{}
-	}
-
-	if mmCreateIfNotExists.defaultExpectation.params != nil {
-		mmCreateIfNotExists.mock.t.Fatalf("PatchCollectorMock.CreateIfNotExists mock is already set by Expect")
-	}
-
-	if mmCreateIfNotExists.defaultExpectation.paramPtrs == nil {
-		mmCreateIfNotExists.defaultExpectation.paramPtrs = &PatchCollectorMockCreateIfNotExistsParamPtrs{}
-	}
-	mmCreateIfNotExists.defaultExpectation.paramPtrs.opts = &opts
-	mmCreateIfNotExists.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
-
-	return mmCreateIfNotExists
-}
-
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.CreateIfNotExists
-func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Inspect(f func(object any, opts ...mm_pkg.PatchCollectorCreateOption)) *mPatchCollectorMockCreateIfNotExists {
+func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Inspect(f func(object any)) *mPatchCollectorMockCreateIfNotExists {
 	if mmCreateIfNotExists.mock.inspectFuncCreateIfNotExists != nil {
 		mmCreateIfNotExists.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.CreateIfNotExists")
 	}
@@ -627,7 +600,7 @@ func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Return() *Patch
 }
 
 // Set uses given function f to mock the EMPatchCollector.CreateIfNotExists method
-func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Set(f func(object any, opts ...mm_pkg.PatchCollectorCreateOption)) *PatchCollectorMock {
+func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Set(f func(object any)) *PatchCollectorMock {
 	if mmCreateIfNotExists.defaultExpectation != nil {
 		mmCreateIfNotExists.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.CreateIfNotExists method")
 	}
@@ -643,14 +616,14 @@ func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) Set(f func(obje
 
 // When sets expectation for the EMPatchCollector.CreateIfNotExists which will trigger the result defined by the following
 // Then helper
-func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) When(object any, opts ...mm_pkg.PatchCollectorCreateOption) *PatchCollectorMockCreateIfNotExistsExpectation {
+func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) When(object any) *PatchCollectorMockCreateIfNotExistsExpectation {
 	if mmCreateIfNotExists.mock.funcCreateIfNotExists != nil {
 		mmCreateIfNotExists.mock.t.Fatalf("PatchCollectorMock.CreateIfNotExists mock is already set by Set")
 	}
 
 	expectation := &PatchCollectorMockCreateIfNotExistsExpectation{
 		mock:               mmCreateIfNotExists.mock,
-		params:             &PatchCollectorMockCreateIfNotExistsParams{object, opts},
+		params:             &PatchCollectorMockCreateIfNotExistsParams{object},
 		expectationOrigins: PatchCollectorMockCreateIfNotExistsExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmCreateIfNotExists.expectations = append(mmCreateIfNotExists.expectations, expectation)
@@ -685,17 +658,17 @@ func (mmCreateIfNotExists *mPatchCollectorMockCreateIfNotExists) invocationsDone
 }
 
 // CreateIfNotExists implements mm_pkg.EMPatchCollector
-func (mmCreateIfNotExists *PatchCollectorMock) CreateIfNotExists(object any, opts ...mm_pkg.PatchCollectorCreateOption) {
+func (mmCreateIfNotExists *PatchCollectorMock) CreateIfNotExists(object any) {
 	mm_atomic.AddUint64(&mmCreateIfNotExists.beforeCreateIfNotExistsCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreateIfNotExists.afterCreateIfNotExistsCounter, 1)
 
 	mmCreateIfNotExists.t.Helper()
 
 	if mmCreateIfNotExists.inspectFuncCreateIfNotExists != nil {
-		mmCreateIfNotExists.inspectFuncCreateIfNotExists(object, opts...)
+		mmCreateIfNotExists.inspectFuncCreateIfNotExists(object)
 	}
 
-	mm_params := PatchCollectorMockCreateIfNotExistsParams{object, opts}
+	mm_params := PatchCollectorMockCreateIfNotExistsParams{object}
 
 	// Record call args
 	mmCreateIfNotExists.CreateIfNotExistsMock.mutex.Lock()
@@ -714,18 +687,13 @@ func (mmCreateIfNotExists *PatchCollectorMock) CreateIfNotExists(object any, opt
 		mm_want := mmCreateIfNotExists.CreateIfNotExistsMock.defaultExpectation.params
 		mm_want_ptrs := mmCreateIfNotExists.CreateIfNotExistsMock.defaultExpectation.paramPtrs
 
-		mm_got := PatchCollectorMockCreateIfNotExistsParams{object, opts}
+		mm_got := PatchCollectorMockCreateIfNotExistsParams{object}
 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.object != nil && !minimock.Equal(*mm_want_ptrs.object, mm_got.object) {
 				mmCreateIfNotExists.t.Errorf("PatchCollectorMock.CreateIfNotExists got unexpected parameter object, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
 					mmCreateIfNotExists.CreateIfNotExistsMock.defaultExpectation.expectationOrigins.originObject, *mm_want_ptrs.object, mm_got.object, minimock.Diff(*mm_want_ptrs.object, mm_got.object))
-			}
-
-			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
-				mmCreateIfNotExists.t.Errorf("PatchCollectorMock.CreateIfNotExists got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmCreateIfNotExists.CreateIfNotExistsMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -737,10 +705,10 @@ func (mmCreateIfNotExists *PatchCollectorMock) CreateIfNotExists(object any, opt
 
 	}
 	if mmCreateIfNotExists.funcCreateIfNotExists != nil {
-		mmCreateIfNotExists.funcCreateIfNotExists(object, opts...)
+		mmCreateIfNotExists.funcCreateIfNotExists(object)
 		return
 	}
-	mmCreateIfNotExists.t.Fatalf("Unexpected call to PatchCollectorMock.CreateIfNotExists. %v %v", object, opts)
+	mmCreateIfNotExists.t.Fatalf("Unexpected call to PatchCollectorMock.CreateIfNotExists. %v", object)
 
 }
 
@@ -839,20 +807,17 @@ type PatchCollectorMockCreateOrUpdateExpectation struct {
 // PatchCollectorMockCreateOrUpdateParams contains parameters of the EMPatchCollector.CreateOrUpdate
 type PatchCollectorMockCreateOrUpdateParams struct {
 	object any
-	opts   []mm_pkg.PatchCollectorCreateOption
 }
 
 // PatchCollectorMockCreateOrUpdateParamPtrs contains pointers to parameters of the EMPatchCollector.CreateOrUpdate
 type PatchCollectorMockCreateOrUpdateParamPtrs struct {
 	object *any
-	opts   *[]mm_pkg.PatchCollectorCreateOption
 }
 
 // PatchCollectorMockCreateOrUpdateOrigins contains origins of expectations of the EMPatchCollector.CreateOrUpdate
 type PatchCollectorMockCreateOrUpdateExpectationOrigins struct {
 	origin       string
 	originObject string
-	originOpts   string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -866,7 +831,7 @@ func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Optional() *mPatchCol
 }
 
 // Expect sets up expected params for EMPatchCollector.CreateOrUpdate
-func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Expect(object any, opts ...mm_pkg.PatchCollectorCreateOption) *mPatchCollectorMockCreateOrUpdate {
+func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Expect(object any) *mPatchCollectorMockCreateOrUpdate {
 	if mmCreateOrUpdate.mock.funcCreateOrUpdate != nil {
 		mmCreateOrUpdate.mock.t.Fatalf("PatchCollectorMock.CreateOrUpdate mock is already set by Set")
 	}
@@ -879,7 +844,7 @@ func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Expect(object any, op
 		mmCreateOrUpdate.mock.t.Fatalf("PatchCollectorMock.CreateOrUpdate mock is already set by ExpectParams functions")
 	}
 
-	mmCreateOrUpdate.defaultExpectation.params = &PatchCollectorMockCreateOrUpdateParams{object, opts}
+	mmCreateOrUpdate.defaultExpectation.params = &PatchCollectorMockCreateOrUpdateParams{object}
 	mmCreateOrUpdate.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmCreateOrUpdate.expectations {
 		if minimock.Equal(e.params, mmCreateOrUpdate.defaultExpectation.params) {
@@ -913,31 +878,8 @@ func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) ExpectObjectParam1(ob
 	return mmCreateOrUpdate
 }
 
-// ExpectOptsParam2 sets up expected param opts for EMPatchCollector.CreateOrUpdate
-func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) ExpectOptsParam2(opts ...mm_pkg.PatchCollectorCreateOption) *mPatchCollectorMockCreateOrUpdate {
-	if mmCreateOrUpdate.mock.funcCreateOrUpdate != nil {
-		mmCreateOrUpdate.mock.t.Fatalf("PatchCollectorMock.CreateOrUpdate mock is already set by Set")
-	}
-
-	if mmCreateOrUpdate.defaultExpectation == nil {
-		mmCreateOrUpdate.defaultExpectation = &PatchCollectorMockCreateOrUpdateExpectation{}
-	}
-
-	if mmCreateOrUpdate.defaultExpectation.params != nil {
-		mmCreateOrUpdate.mock.t.Fatalf("PatchCollectorMock.CreateOrUpdate mock is already set by Expect")
-	}
-
-	if mmCreateOrUpdate.defaultExpectation.paramPtrs == nil {
-		mmCreateOrUpdate.defaultExpectation.paramPtrs = &PatchCollectorMockCreateOrUpdateParamPtrs{}
-	}
-	mmCreateOrUpdate.defaultExpectation.paramPtrs.opts = &opts
-	mmCreateOrUpdate.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
-
-	return mmCreateOrUpdate
-}
-
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.CreateOrUpdate
-func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Inspect(f func(object any, opts ...mm_pkg.PatchCollectorCreateOption)) *mPatchCollectorMockCreateOrUpdate {
+func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Inspect(f func(object any)) *mPatchCollectorMockCreateOrUpdate {
 	if mmCreateOrUpdate.mock.inspectFuncCreateOrUpdate != nil {
 		mmCreateOrUpdate.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.CreateOrUpdate")
 	}
@@ -962,7 +904,7 @@ func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Return() *PatchCollec
 }
 
 // Set uses given function f to mock the EMPatchCollector.CreateOrUpdate method
-func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Set(f func(object any, opts ...mm_pkg.PatchCollectorCreateOption)) *PatchCollectorMock {
+func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Set(f func(object any)) *PatchCollectorMock {
 	if mmCreateOrUpdate.defaultExpectation != nil {
 		mmCreateOrUpdate.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.CreateOrUpdate method")
 	}
@@ -978,14 +920,14 @@ func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) Set(f func(object any
 
 // When sets expectation for the EMPatchCollector.CreateOrUpdate which will trigger the result defined by the following
 // Then helper
-func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) When(object any, opts ...mm_pkg.PatchCollectorCreateOption) *PatchCollectorMockCreateOrUpdateExpectation {
+func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) When(object any) *PatchCollectorMockCreateOrUpdateExpectation {
 	if mmCreateOrUpdate.mock.funcCreateOrUpdate != nil {
 		mmCreateOrUpdate.mock.t.Fatalf("PatchCollectorMock.CreateOrUpdate mock is already set by Set")
 	}
 
 	expectation := &PatchCollectorMockCreateOrUpdateExpectation{
 		mock:               mmCreateOrUpdate.mock,
-		params:             &PatchCollectorMockCreateOrUpdateParams{object, opts},
+		params:             &PatchCollectorMockCreateOrUpdateParams{object},
 		expectationOrigins: PatchCollectorMockCreateOrUpdateExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmCreateOrUpdate.expectations = append(mmCreateOrUpdate.expectations, expectation)
@@ -1020,17 +962,17 @@ func (mmCreateOrUpdate *mPatchCollectorMockCreateOrUpdate) invocationsDone() boo
 }
 
 // CreateOrUpdate implements mm_pkg.EMPatchCollector
-func (mmCreateOrUpdate *PatchCollectorMock) CreateOrUpdate(object any, opts ...mm_pkg.PatchCollectorCreateOption) {
+func (mmCreateOrUpdate *PatchCollectorMock) CreateOrUpdate(object any) {
 	mm_atomic.AddUint64(&mmCreateOrUpdate.beforeCreateOrUpdateCounter, 1)
 	defer mm_atomic.AddUint64(&mmCreateOrUpdate.afterCreateOrUpdateCounter, 1)
 
 	mmCreateOrUpdate.t.Helper()
 
 	if mmCreateOrUpdate.inspectFuncCreateOrUpdate != nil {
-		mmCreateOrUpdate.inspectFuncCreateOrUpdate(object, opts...)
+		mmCreateOrUpdate.inspectFuncCreateOrUpdate(object)
 	}
 
-	mm_params := PatchCollectorMockCreateOrUpdateParams{object, opts}
+	mm_params := PatchCollectorMockCreateOrUpdateParams{object}
 
 	// Record call args
 	mmCreateOrUpdate.CreateOrUpdateMock.mutex.Lock()
@@ -1049,18 +991,13 @@ func (mmCreateOrUpdate *PatchCollectorMock) CreateOrUpdate(object any, opts ...m
 		mm_want := mmCreateOrUpdate.CreateOrUpdateMock.defaultExpectation.params
 		mm_want_ptrs := mmCreateOrUpdate.CreateOrUpdateMock.defaultExpectation.paramPtrs
 
-		mm_got := PatchCollectorMockCreateOrUpdateParams{object, opts}
+		mm_got := PatchCollectorMockCreateOrUpdateParams{object}
 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.object != nil && !minimock.Equal(*mm_want_ptrs.object, mm_got.object) {
 				mmCreateOrUpdate.t.Errorf("PatchCollectorMock.CreateOrUpdate got unexpected parameter object, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
 					mmCreateOrUpdate.CreateOrUpdateMock.defaultExpectation.expectationOrigins.originObject, *mm_want_ptrs.object, mm_got.object, minimock.Diff(*mm_want_ptrs.object, mm_got.object))
-			}
-
-			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
-				mmCreateOrUpdate.t.Errorf("PatchCollectorMock.CreateOrUpdate got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmCreateOrUpdate.CreateOrUpdateMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
@@ -1072,10 +1009,10 @@ func (mmCreateOrUpdate *PatchCollectorMock) CreateOrUpdate(object any, opts ...m
 
 	}
 	if mmCreateOrUpdate.funcCreateOrUpdate != nil {
-		mmCreateOrUpdate.funcCreateOrUpdate(object, opts...)
+		mmCreateOrUpdate.funcCreateOrUpdate(object)
 		return
 	}
-	mmCreateOrUpdate.t.Fatalf("Unexpected call to PatchCollectorMock.CreateOrUpdate. %v %v", object, opts)
+	mmCreateOrUpdate.t.Fatalf("Unexpected call to PatchCollectorMock.CreateOrUpdate. %v", object)
 
 }
 
@@ -1177,7 +1114,6 @@ type PatchCollectorMockDeleteParams struct {
 	kind       string
 	namespace  string
 	name       string
-	opts       []mm_pkg.PatchCollectorDeleteOption
 }
 
 // PatchCollectorMockDeleteParamPtrs contains pointers to parameters of the EMPatchCollector.Delete
@@ -1186,7 +1122,6 @@ type PatchCollectorMockDeleteParamPtrs struct {
 	kind       *string
 	namespace  *string
 	name       *string
-	opts       *[]mm_pkg.PatchCollectorDeleteOption
 }
 
 // PatchCollectorMockDeleteOrigins contains origins of expectations of the EMPatchCollector.Delete
@@ -1196,7 +1131,6 @@ type PatchCollectorMockDeleteExpectationOrigins struct {
 	originKind       string
 	originNamespace  string
 	originName       string
-	originOpts       string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1210,7 +1144,7 @@ func (mmDelete *mPatchCollectorMockDelete) Optional() *mPatchCollectorMockDelete
 }
 
 // Expect sets up expected params for EMPatchCollector.Delete
-func (mmDelete *mPatchCollectorMockDelete) Expect(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) *mPatchCollectorMockDelete {
+func (mmDelete *mPatchCollectorMockDelete) Expect(apiVersion string, kind string, namespace string, name string) *mPatchCollectorMockDelete {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("PatchCollectorMock.Delete mock is already set by Set")
 	}
@@ -1223,7 +1157,7 @@ func (mmDelete *mPatchCollectorMockDelete) Expect(apiVersion string, kind string
 		mmDelete.mock.t.Fatalf("PatchCollectorMock.Delete mock is already set by ExpectParams functions")
 	}
 
-	mmDelete.defaultExpectation.params = &PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name, opts}
+	mmDelete.defaultExpectation.params = &PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name}
 	mmDelete.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmDelete.expectations {
 		if minimock.Equal(e.params, mmDelete.defaultExpectation.params) {
@@ -1326,31 +1260,8 @@ func (mmDelete *mPatchCollectorMockDelete) ExpectNameParam4(name string) *mPatch
 	return mmDelete
 }
 
-// ExpectOptsParam5 sets up expected param opts for EMPatchCollector.Delete
-func (mmDelete *mPatchCollectorMockDelete) ExpectOptsParam5(opts ...mm_pkg.PatchCollectorDeleteOption) *mPatchCollectorMockDelete {
-	if mmDelete.mock.funcDelete != nil {
-		mmDelete.mock.t.Fatalf("PatchCollectorMock.Delete mock is already set by Set")
-	}
-
-	if mmDelete.defaultExpectation == nil {
-		mmDelete.defaultExpectation = &PatchCollectorMockDeleteExpectation{}
-	}
-
-	if mmDelete.defaultExpectation.params != nil {
-		mmDelete.mock.t.Fatalf("PatchCollectorMock.Delete mock is already set by Expect")
-	}
-
-	if mmDelete.defaultExpectation.paramPtrs == nil {
-		mmDelete.defaultExpectation.paramPtrs = &PatchCollectorMockDeleteParamPtrs{}
-	}
-	mmDelete.defaultExpectation.paramPtrs.opts = &opts
-	mmDelete.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
-
-	return mmDelete
-}
-
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.Delete
-func (mmDelete *mPatchCollectorMockDelete) Inspect(f func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)) *mPatchCollectorMockDelete {
+func (mmDelete *mPatchCollectorMockDelete) Inspect(f func(apiVersion string, kind string, namespace string, name string)) *mPatchCollectorMockDelete {
 	if mmDelete.mock.inspectFuncDelete != nil {
 		mmDelete.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.Delete")
 	}
@@ -1375,7 +1286,7 @@ func (mmDelete *mPatchCollectorMockDelete) Return() *PatchCollectorMock {
 }
 
 // Set uses given function f to mock the EMPatchCollector.Delete method
-func (mmDelete *mPatchCollectorMockDelete) Set(f func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)) *PatchCollectorMock {
+func (mmDelete *mPatchCollectorMockDelete) Set(f func(apiVersion string, kind string, namespace string, name string)) *PatchCollectorMock {
 	if mmDelete.defaultExpectation != nil {
 		mmDelete.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.Delete method")
 	}
@@ -1391,14 +1302,14 @@ func (mmDelete *mPatchCollectorMockDelete) Set(f func(apiVersion string, kind st
 
 // When sets expectation for the EMPatchCollector.Delete which will trigger the result defined by the following
 // Then helper
-func (mmDelete *mPatchCollectorMockDelete) When(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) *PatchCollectorMockDeleteExpectation {
+func (mmDelete *mPatchCollectorMockDelete) When(apiVersion string, kind string, namespace string, name string) *PatchCollectorMockDeleteExpectation {
 	if mmDelete.mock.funcDelete != nil {
 		mmDelete.mock.t.Fatalf("PatchCollectorMock.Delete mock is already set by Set")
 	}
 
 	expectation := &PatchCollectorMockDeleteExpectation{
 		mock:               mmDelete.mock,
-		params:             &PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name, opts},
+		params:             &PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name},
 		expectationOrigins: PatchCollectorMockDeleteExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmDelete.expectations = append(mmDelete.expectations, expectation)
@@ -1433,17 +1344,17 @@ func (mmDelete *mPatchCollectorMockDelete) invocationsDone() bool {
 }
 
 // Delete implements mm_pkg.EMPatchCollector
-func (mmDelete *PatchCollectorMock) Delete(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) {
+func (mmDelete *PatchCollectorMock) Delete(apiVersion string, kind string, namespace string, name string) {
 	mm_atomic.AddUint64(&mmDelete.beforeDeleteCounter, 1)
 	defer mm_atomic.AddUint64(&mmDelete.afterDeleteCounter, 1)
 
 	mmDelete.t.Helper()
 
 	if mmDelete.inspectFuncDelete != nil {
-		mmDelete.inspectFuncDelete(apiVersion, kind, namespace, name, opts...)
+		mmDelete.inspectFuncDelete(apiVersion, kind, namespace, name)
 	}
 
-	mm_params := PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name, opts}
+	mm_params := PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name}
 
 	// Record call args
 	mmDelete.DeleteMock.mutex.Lock()
@@ -1462,7 +1373,7 @@ func (mmDelete *PatchCollectorMock) Delete(apiVersion string, kind string, names
 		mm_want := mmDelete.DeleteMock.defaultExpectation.params
 		mm_want_ptrs := mmDelete.DeleteMock.defaultExpectation.paramPtrs
 
-		mm_got := PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name, opts}
+		mm_got := PatchCollectorMockDeleteParams{apiVersion, kind, namespace, name}
 
 		if mm_want_ptrs != nil {
 
@@ -1486,11 +1397,6 @@ func (mmDelete *PatchCollectorMock) Delete(apiVersion string, kind string, names
 					mmDelete.DeleteMock.defaultExpectation.expectationOrigins.originName, *mm_want_ptrs.name, mm_got.name, minimock.Diff(*mm_want_ptrs.name, mm_got.name))
 			}
 
-			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
-				mmDelete.t.Errorf("PatchCollectorMock.Delete got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmDelete.DeleteMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
-			}
-
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmDelete.t.Errorf("PatchCollectorMock.Delete got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
 				mmDelete.DeleteMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
@@ -1500,10 +1406,10 @@ func (mmDelete *PatchCollectorMock) Delete(apiVersion string, kind string, names
 
 	}
 	if mmDelete.funcDelete != nil {
-		mmDelete.funcDelete(apiVersion, kind, namespace, name, opts...)
+		mmDelete.funcDelete(apiVersion, kind, namespace, name)
 		return
 	}
-	mmDelete.t.Fatalf("Unexpected call to PatchCollectorMock.Delete. %v %v %v %v %v", apiVersion, kind, namespace, name, opts)
+	mmDelete.t.Fatalf("Unexpected call to PatchCollectorMock.Delete. %v %v %v %v", apiVersion, kind, namespace, name)
 
 }
 
@@ -1605,7 +1511,6 @@ type PatchCollectorMockDeleteInBackgroundParams struct {
 	kind       string
 	namespace  string
 	name       string
-	opts       []mm_pkg.PatchCollectorDeleteOption
 }
 
 // PatchCollectorMockDeleteInBackgroundParamPtrs contains pointers to parameters of the EMPatchCollector.DeleteInBackground
@@ -1614,7 +1519,6 @@ type PatchCollectorMockDeleteInBackgroundParamPtrs struct {
 	kind       *string
 	namespace  *string
 	name       *string
-	opts       *[]mm_pkg.PatchCollectorDeleteOption
 }
 
 // PatchCollectorMockDeleteInBackgroundOrigins contains origins of expectations of the EMPatchCollector.DeleteInBackground
@@ -1624,7 +1528,6 @@ type PatchCollectorMockDeleteInBackgroundExpectationOrigins struct {
 	originKind       string
 	originNamespace  string
 	originName       string
-	originOpts       string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -1638,7 +1541,7 @@ func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Optional() *m
 }
 
 // Expect sets up expected params for EMPatchCollector.DeleteInBackground
-func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Expect(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) *mPatchCollectorMockDeleteInBackground {
+func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Expect(apiVersion string, kind string, namespace string, name string) *mPatchCollectorMockDeleteInBackground {
 	if mmDeleteInBackground.mock.funcDeleteInBackground != nil {
 		mmDeleteInBackground.mock.t.Fatalf("PatchCollectorMock.DeleteInBackground mock is already set by Set")
 	}
@@ -1651,7 +1554,7 @@ func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Expect(apiVer
 		mmDeleteInBackground.mock.t.Fatalf("PatchCollectorMock.DeleteInBackground mock is already set by ExpectParams functions")
 	}
 
-	mmDeleteInBackground.defaultExpectation.params = &PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name, opts}
+	mmDeleteInBackground.defaultExpectation.params = &PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name}
 	mmDeleteInBackground.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmDeleteInBackground.expectations {
 		if minimock.Equal(e.params, mmDeleteInBackground.defaultExpectation.params) {
@@ -1754,31 +1657,8 @@ func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) ExpectNamePar
 	return mmDeleteInBackground
 }
 
-// ExpectOptsParam5 sets up expected param opts for EMPatchCollector.DeleteInBackground
-func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) ExpectOptsParam5(opts ...mm_pkg.PatchCollectorDeleteOption) *mPatchCollectorMockDeleteInBackground {
-	if mmDeleteInBackground.mock.funcDeleteInBackground != nil {
-		mmDeleteInBackground.mock.t.Fatalf("PatchCollectorMock.DeleteInBackground mock is already set by Set")
-	}
-
-	if mmDeleteInBackground.defaultExpectation == nil {
-		mmDeleteInBackground.defaultExpectation = &PatchCollectorMockDeleteInBackgroundExpectation{}
-	}
-
-	if mmDeleteInBackground.defaultExpectation.params != nil {
-		mmDeleteInBackground.mock.t.Fatalf("PatchCollectorMock.DeleteInBackground mock is already set by Expect")
-	}
-
-	if mmDeleteInBackground.defaultExpectation.paramPtrs == nil {
-		mmDeleteInBackground.defaultExpectation.paramPtrs = &PatchCollectorMockDeleteInBackgroundParamPtrs{}
-	}
-	mmDeleteInBackground.defaultExpectation.paramPtrs.opts = &opts
-	mmDeleteInBackground.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
-
-	return mmDeleteInBackground
-}
-
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.DeleteInBackground
-func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Inspect(f func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)) *mPatchCollectorMockDeleteInBackground {
+func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Inspect(f func(apiVersion string, kind string, namespace string, name string)) *mPatchCollectorMockDeleteInBackground {
 	if mmDeleteInBackground.mock.inspectFuncDeleteInBackground != nil {
 		mmDeleteInBackground.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.DeleteInBackground")
 	}
@@ -1803,7 +1683,7 @@ func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Return() *Pat
 }
 
 // Set uses given function f to mock the EMPatchCollector.DeleteInBackground method
-func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Set(f func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)) *PatchCollectorMock {
+func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Set(f func(apiVersion string, kind string, namespace string, name string)) *PatchCollectorMock {
 	if mmDeleteInBackground.defaultExpectation != nil {
 		mmDeleteInBackground.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.DeleteInBackground method")
 	}
@@ -1819,14 +1699,14 @@ func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) Set(f func(ap
 
 // When sets expectation for the EMPatchCollector.DeleteInBackground which will trigger the result defined by the following
 // Then helper
-func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) When(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) *PatchCollectorMockDeleteInBackgroundExpectation {
+func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) When(apiVersion string, kind string, namespace string, name string) *PatchCollectorMockDeleteInBackgroundExpectation {
 	if mmDeleteInBackground.mock.funcDeleteInBackground != nil {
 		mmDeleteInBackground.mock.t.Fatalf("PatchCollectorMock.DeleteInBackground mock is already set by Set")
 	}
 
 	expectation := &PatchCollectorMockDeleteInBackgroundExpectation{
 		mock:               mmDeleteInBackground.mock,
-		params:             &PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name, opts},
+		params:             &PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name},
 		expectationOrigins: PatchCollectorMockDeleteInBackgroundExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmDeleteInBackground.expectations = append(mmDeleteInBackground.expectations, expectation)
@@ -1861,17 +1741,17 @@ func (mmDeleteInBackground *mPatchCollectorMockDeleteInBackground) invocationsDo
 }
 
 // DeleteInBackground implements mm_pkg.EMPatchCollector
-func (mmDeleteInBackground *PatchCollectorMock) DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) {
+func (mmDeleteInBackground *PatchCollectorMock) DeleteInBackground(apiVersion string, kind string, namespace string, name string) {
 	mm_atomic.AddUint64(&mmDeleteInBackground.beforeDeleteInBackgroundCounter, 1)
 	defer mm_atomic.AddUint64(&mmDeleteInBackground.afterDeleteInBackgroundCounter, 1)
 
 	mmDeleteInBackground.t.Helper()
 
 	if mmDeleteInBackground.inspectFuncDeleteInBackground != nil {
-		mmDeleteInBackground.inspectFuncDeleteInBackground(apiVersion, kind, namespace, name, opts...)
+		mmDeleteInBackground.inspectFuncDeleteInBackground(apiVersion, kind, namespace, name)
 	}
 
-	mm_params := PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name, opts}
+	mm_params := PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name}
 
 	// Record call args
 	mmDeleteInBackground.DeleteInBackgroundMock.mutex.Lock()
@@ -1890,7 +1770,7 @@ func (mmDeleteInBackground *PatchCollectorMock) DeleteInBackground(apiVersion st
 		mm_want := mmDeleteInBackground.DeleteInBackgroundMock.defaultExpectation.params
 		mm_want_ptrs := mmDeleteInBackground.DeleteInBackgroundMock.defaultExpectation.paramPtrs
 
-		mm_got := PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name, opts}
+		mm_got := PatchCollectorMockDeleteInBackgroundParams{apiVersion, kind, namespace, name}
 
 		if mm_want_ptrs != nil {
 
@@ -1914,11 +1794,6 @@ func (mmDeleteInBackground *PatchCollectorMock) DeleteInBackground(apiVersion st
 					mmDeleteInBackground.DeleteInBackgroundMock.defaultExpectation.expectationOrigins.originName, *mm_want_ptrs.name, mm_got.name, minimock.Diff(*mm_want_ptrs.name, mm_got.name))
 			}
 
-			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
-				mmDeleteInBackground.t.Errorf("PatchCollectorMock.DeleteInBackground got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmDeleteInBackground.DeleteInBackgroundMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
-			}
-
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmDeleteInBackground.t.Errorf("PatchCollectorMock.DeleteInBackground got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
 				mmDeleteInBackground.DeleteInBackgroundMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
@@ -1928,10 +1803,10 @@ func (mmDeleteInBackground *PatchCollectorMock) DeleteInBackground(apiVersion st
 
 	}
 	if mmDeleteInBackground.funcDeleteInBackground != nil {
-		mmDeleteInBackground.funcDeleteInBackground(apiVersion, kind, namespace, name, opts...)
+		mmDeleteInBackground.funcDeleteInBackground(apiVersion, kind, namespace, name)
 		return
 	}
-	mmDeleteInBackground.t.Fatalf("Unexpected call to PatchCollectorMock.DeleteInBackground. %v %v %v %v %v", apiVersion, kind, namespace, name, opts)
+	mmDeleteInBackground.t.Fatalf("Unexpected call to PatchCollectorMock.DeleteInBackground. %v %v %v %v", apiVersion, kind, namespace, name)
 
 }
 
@@ -2033,7 +1908,6 @@ type PatchCollectorMockDeleteNonCascadingParams struct {
 	kind       string
 	namespace  string
 	name       string
-	opts       []mm_pkg.PatchCollectorDeleteOption
 }
 
 // PatchCollectorMockDeleteNonCascadingParamPtrs contains pointers to parameters of the EMPatchCollector.DeleteNonCascading
@@ -2042,7 +1916,6 @@ type PatchCollectorMockDeleteNonCascadingParamPtrs struct {
 	kind       *string
 	namespace  *string
 	name       *string
-	opts       *[]mm_pkg.PatchCollectorDeleteOption
 }
 
 // PatchCollectorMockDeleteNonCascadingOrigins contains origins of expectations of the EMPatchCollector.DeleteNonCascading
@@ -2052,7 +1925,6 @@ type PatchCollectorMockDeleteNonCascadingExpectationOrigins struct {
 	originKind       string
 	originNamespace  string
 	originName       string
-	originOpts       string
 }
 
 // Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
@@ -2066,7 +1938,7 @@ func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Optional() *m
 }
 
 // Expect sets up expected params for EMPatchCollector.DeleteNonCascading
-func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Expect(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) *mPatchCollectorMockDeleteNonCascading {
+func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Expect(apiVersion string, kind string, namespace string, name string) *mPatchCollectorMockDeleteNonCascading {
 	if mmDeleteNonCascading.mock.funcDeleteNonCascading != nil {
 		mmDeleteNonCascading.mock.t.Fatalf("PatchCollectorMock.DeleteNonCascading mock is already set by Set")
 	}
@@ -2079,7 +1951,7 @@ func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Expect(apiVer
 		mmDeleteNonCascading.mock.t.Fatalf("PatchCollectorMock.DeleteNonCascading mock is already set by ExpectParams functions")
 	}
 
-	mmDeleteNonCascading.defaultExpectation.params = &PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name, opts}
+	mmDeleteNonCascading.defaultExpectation.params = &PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name}
 	mmDeleteNonCascading.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
 	for _, e := range mmDeleteNonCascading.expectations {
 		if minimock.Equal(e.params, mmDeleteNonCascading.defaultExpectation.params) {
@@ -2182,31 +2054,8 @@ func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) ExpectNamePar
 	return mmDeleteNonCascading
 }
 
-// ExpectOptsParam5 sets up expected param opts for EMPatchCollector.DeleteNonCascading
-func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) ExpectOptsParam5(opts ...mm_pkg.PatchCollectorDeleteOption) *mPatchCollectorMockDeleteNonCascading {
-	if mmDeleteNonCascading.mock.funcDeleteNonCascading != nil {
-		mmDeleteNonCascading.mock.t.Fatalf("PatchCollectorMock.DeleteNonCascading mock is already set by Set")
-	}
-
-	if mmDeleteNonCascading.defaultExpectation == nil {
-		mmDeleteNonCascading.defaultExpectation = &PatchCollectorMockDeleteNonCascadingExpectation{}
-	}
-
-	if mmDeleteNonCascading.defaultExpectation.params != nil {
-		mmDeleteNonCascading.mock.t.Fatalf("PatchCollectorMock.DeleteNonCascading mock is already set by Expect")
-	}
-
-	if mmDeleteNonCascading.defaultExpectation.paramPtrs == nil {
-		mmDeleteNonCascading.defaultExpectation.paramPtrs = &PatchCollectorMockDeleteNonCascadingParamPtrs{}
-	}
-	mmDeleteNonCascading.defaultExpectation.paramPtrs.opts = &opts
-	mmDeleteNonCascading.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
-
-	return mmDeleteNonCascading
-}
-
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.DeleteNonCascading
-func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Inspect(f func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)) *mPatchCollectorMockDeleteNonCascading {
+func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Inspect(f func(apiVersion string, kind string, namespace string, name string)) *mPatchCollectorMockDeleteNonCascading {
 	if mmDeleteNonCascading.mock.inspectFuncDeleteNonCascading != nil {
 		mmDeleteNonCascading.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.DeleteNonCascading")
 	}
@@ -2231,7 +2080,7 @@ func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Return() *Pat
 }
 
 // Set uses given function f to mock the EMPatchCollector.DeleteNonCascading method
-func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Set(f func(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption)) *PatchCollectorMock {
+func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Set(f func(apiVersion string, kind string, namespace string, name string)) *PatchCollectorMock {
 	if mmDeleteNonCascading.defaultExpectation != nil {
 		mmDeleteNonCascading.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.DeleteNonCascading method")
 	}
@@ -2247,14 +2096,14 @@ func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) Set(f func(ap
 
 // When sets expectation for the EMPatchCollector.DeleteNonCascading which will trigger the result defined by the following
 // Then helper
-func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) When(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) *PatchCollectorMockDeleteNonCascadingExpectation {
+func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) When(apiVersion string, kind string, namespace string, name string) *PatchCollectorMockDeleteNonCascadingExpectation {
 	if mmDeleteNonCascading.mock.funcDeleteNonCascading != nil {
 		mmDeleteNonCascading.mock.t.Fatalf("PatchCollectorMock.DeleteNonCascading mock is already set by Set")
 	}
 
 	expectation := &PatchCollectorMockDeleteNonCascadingExpectation{
 		mock:               mmDeleteNonCascading.mock,
-		params:             &PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name, opts},
+		params:             &PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name},
 		expectationOrigins: PatchCollectorMockDeleteNonCascadingExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
 	mmDeleteNonCascading.expectations = append(mmDeleteNonCascading.expectations, expectation)
@@ -2289,17 +2138,17 @@ func (mmDeleteNonCascading *mPatchCollectorMockDeleteNonCascading) invocationsDo
 }
 
 // DeleteNonCascading implements mm_pkg.EMPatchCollector
-func (mmDeleteNonCascading *PatchCollectorMock) DeleteNonCascading(apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorDeleteOption) {
+func (mmDeleteNonCascading *PatchCollectorMock) DeleteNonCascading(apiVersion string, kind string, namespace string, name string) {
 	mm_atomic.AddUint64(&mmDeleteNonCascading.beforeDeleteNonCascadingCounter, 1)
 	defer mm_atomic.AddUint64(&mmDeleteNonCascading.afterDeleteNonCascadingCounter, 1)
 
 	mmDeleteNonCascading.t.Helper()
 
 	if mmDeleteNonCascading.inspectFuncDeleteNonCascading != nil {
-		mmDeleteNonCascading.inspectFuncDeleteNonCascading(apiVersion, kind, namespace, name, opts...)
+		mmDeleteNonCascading.inspectFuncDeleteNonCascading(apiVersion, kind, namespace, name)
 	}
 
-	mm_params := PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name, opts}
+	mm_params := PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name}
 
 	// Record call args
 	mmDeleteNonCascading.DeleteNonCascadingMock.mutex.Lock()
@@ -2318,7 +2167,7 @@ func (mmDeleteNonCascading *PatchCollectorMock) DeleteNonCascading(apiVersion st
 		mm_want := mmDeleteNonCascading.DeleteNonCascadingMock.defaultExpectation.params
 		mm_want_ptrs := mmDeleteNonCascading.DeleteNonCascadingMock.defaultExpectation.paramPtrs
 
-		mm_got := PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name, opts}
+		mm_got := PatchCollectorMockDeleteNonCascadingParams{apiVersion, kind, namespace, name}
 
 		if mm_want_ptrs != nil {
 
@@ -2342,11 +2191,6 @@ func (mmDeleteNonCascading *PatchCollectorMock) DeleteNonCascading(apiVersion st
 					mmDeleteNonCascading.DeleteNonCascadingMock.defaultExpectation.expectationOrigins.originName, *mm_want_ptrs.name, mm_got.name, minimock.Diff(*mm_want_ptrs.name, mm_got.name))
 			}
 
-			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
-				mmDeleteNonCascading.t.Errorf("PatchCollectorMock.DeleteNonCascading got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmDeleteNonCascading.DeleteNonCascadingMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
-			}
-
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
 			mmDeleteNonCascading.t.Errorf("PatchCollectorMock.DeleteNonCascading got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
 				mmDeleteNonCascading.DeleteNonCascadingMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
@@ -2356,10 +2200,10 @@ func (mmDeleteNonCascading *PatchCollectorMock) DeleteNonCascading(apiVersion st
 
 	}
 	if mmDeleteNonCascading.funcDeleteNonCascading != nil {
-		mmDeleteNonCascading.funcDeleteNonCascading(apiVersion, kind, namespace, name, opts...)
+		mmDeleteNonCascading.funcDeleteNonCascading(apiVersion, kind, namespace, name)
 		return
 	}
-	mmDeleteNonCascading.t.Fatalf("Unexpected call to PatchCollectorMock.DeleteNonCascading. %v %v %v %v %v", apiVersion, kind, namespace, name, opts)
+	mmDeleteNonCascading.t.Fatalf("Unexpected call to PatchCollectorMock.DeleteNonCascading. %v %v %v %v", apiVersion, kind, namespace, name)
 
 }
 
@@ -2462,7 +2306,7 @@ type PatchCollectorMockJQFilterParams struct {
 	kind       string
 	namespace  string
 	name       string
-	opts       []mm_pkg.PatchCollectorFilterOption
+	opts       []mm_pkg.PatchCollectorOption
 }
 
 // PatchCollectorMockJQFilterParamPtrs contains pointers to parameters of the EMPatchCollector.JQFilter
@@ -2472,7 +2316,7 @@ type PatchCollectorMockJQFilterParamPtrs struct {
 	kind       *string
 	namespace  *string
 	name       *string
-	opts       *[]mm_pkg.PatchCollectorFilterOption
+	opts       *[]mm_pkg.PatchCollectorOption
 }
 
 // PatchCollectorMockJQFilterOrigins contains origins of expectations of the EMPatchCollector.JQFilter
@@ -2497,7 +2341,7 @@ func (mmJQFilter *mPatchCollectorMockJQFilter) Optional() *mPatchCollectorMockJQ
 }
 
 // Expect sets up expected params for EMPatchCollector.JQFilter
-func (mmJQFilter *mPatchCollectorMockJQFilter) Expect(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption) *mPatchCollectorMockJQFilter {
+func (mmJQFilter *mPatchCollectorMockJQFilter) Expect(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockJQFilter {
 	if mmJQFilter.mock.funcJQFilter != nil {
 		mmJQFilter.mock.t.Fatalf("PatchCollectorMock.JQFilter mock is already set by Set")
 	}
@@ -2637,7 +2481,7 @@ func (mmJQFilter *mPatchCollectorMockJQFilter) ExpectNameParam5(name string) *mP
 }
 
 // ExpectOptsParam6 sets up expected param opts for EMPatchCollector.JQFilter
-func (mmJQFilter *mPatchCollectorMockJQFilter) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorFilterOption) *mPatchCollectorMockJQFilter {
+func (mmJQFilter *mPatchCollectorMockJQFilter) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockJQFilter {
 	if mmJQFilter.mock.funcJQFilter != nil {
 		mmJQFilter.mock.t.Fatalf("PatchCollectorMock.JQFilter mock is already set by Set")
 	}
@@ -2660,7 +2504,7 @@ func (mmJQFilter *mPatchCollectorMockJQFilter) ExpectOptsParam6(opts ...mm_pkg.P
 }
 
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.JQFilter
-func (mmJQFilter *mPatchCollectorMockJQFilter) Inspect(f func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption)) *mPatchCollectorMockJQFilter {
+func (mmJQFilter *mPatchCollectorMockJQFilter) Inspect(f func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *mPatchCollectorMockJQFilter {
 	if mmJQFilter.mock.inspectFuncJQFilter != nil {
 		mmJQFilter.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.JQFilter")
 	}
@@ -2685,7 +2529,7 @@ func (mmJQFilter *mPatchCollectorMockJQFilter) Return() *PatchCollectorMock {
 }
 
 // Set uses given function f to mock the EMPatchCollector.JQFilter method
-func (mmJQFilter *mPatchCollectorMockJQFilter) Set(f func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption)) *PatchCollectorMock {
+func (mmJQFilter *mPatchCollectorMockJQFilter) Set(f func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *PatchCollectorMock {
 	if mmJQFilter.defaultExpectation != nil {
 		mmJQFilter.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.JQFilter method")
 	}
@@ -2701,7 +2545,7 @@ func (mmJQFilter *mPatchCollectorMockJQFilter) Set(f func(jqfilter string, apiVe
 
 // When sets expectation for the EMPatchCollector.JQFilter which will trigger the result defined by the following
 // Then helper
-func (mmJQFilter *mPatchCollectorMockJQFilter) When(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption) *PatchCollectorMockJQFilterExpectation {
+func (mmJQFilter *mPatchCollectorMockJQFilter) When(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *PatchCollectorMockJQFilterExpectation {
 	if mmJQFilter.mock.funcJQFilter != nil {
 		mmJQFilter.mock.t.Fatalf("PatchCollectorMock.JQFilter mock is already set by Set")
 	}
@@ -2743,7 +2587,7 @@ func (mmJQFilter *mPatchCollectorMockJQFilter) invocationsDone() bool {
 }
 
 // JQFilter implements mm_pkg.EMPatchCollector
-func (mmJQFilter *PatchCollectorMock) JQFilter(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorFilterOption) {
+func (mmJQFilter *PatchCollectorMock) JQFilter(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) {
 	mm_atomic.AddUint64(&mmJQFilter.beforeJQFilterCounter, 1)
 	defer mm_atomic.AddUint64(&mmJQFilter.afterJQFilterCounter, 1)
 
@@ -3994,6 +3838,1383 @@ func (m *PatchCollectorMock) MinimockOperationsInspect() {
 	}
 }
 
+type mPatchCollectorMockPatchWithJQ struct {
+	optional           bool
+	mock               *PatchCollectorMock
+	defaultExpectation *PatchCollectorMockPatchWithJQExpectation
+	expectations       []*PatchCollectorMockPatchWithJQExpectation
+
+	callArgs []*PatchCollectorMockPatchWithJQParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// PatchCollectorMockPatchWithJQExpectation specifies expectation struct of the EMPatchCollector.PatchWithJQ
+type PatchCollectorMockPatchWithJQExpectation struct {
+	mock               *PatchCollectorMock
+	params             *PatchCollectorMockPatchWithJQParams
+	paramPtrs          *PatchCollectorMockPatchWithJQParamPtrs
+	expectationOrigins PatchCollectorMockPatchWithJQExpectationOrigins
+
+	returnOrigin string
+	Counter      uint64
+}
+
+// PatchCollectorMockPatchWithJQParams contains parameters of the EMPatchCollector.PatchWithJQ
+type PatchCollectorMockPatchWithJQParams struct {
+	jqfilter   string
+	apiVersion string
+	kind       string
+	namespace  string
+	name       string
+	opts       []mm_pkg.PatchCollectorOption
+}
+
+// PatchCollectorMockPatchWithJQParamPtrs contains pointers to parameters of the EMPatchCollector.PatchWithJQ
+type PatchCollectorMockPatchWithJQParamPtrs struct {
+	jqfilter   *string
+	apiVersion *string
+	kind       *string
+	namespace  *string
+	name       *string
+	opts       *[]mm_pkg.PatchCollectorOption
+}
+
+// PatchCollectorMockPatchWithJQOrigins contains origins of expectations of the EMPatchCollector.PatchWithJQ
+type PatchCollectorMockPatchWithJQExpectationOrigins struct {
+	origin           string
+	originJqfilter   string
+	originApiVersion string
+	originKind       string
+	originNamespace  string
+	originName       string
+	originOpts       string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Optional() *mPatchCollectorMockPatchWithJQ {
+	mmPatchWithJQ.optional = true
+	return mmPatchWithJQ
+}
+
+// Expect sets up expected params for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Expect(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by ExpectParams functions")
+	}
+
+	mmPatchWithJQ.defaultExpectation.params = &PatchCollectorMockPatchWithJQParams{jqfilter, apiVersion, kind, namespace, name, opts}
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmPatchWithJQ.expectations {
+		if minimock.Equal(e.params, mmPatchWithJQ.defaultExpectation.params) {
+			mmPatchWithJQ.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmPatchWithJQ.defaultExpectation.params)
+		}
+	}
+
+	return mmPatchWithJQ
+}
+
+// ExpectJqfilterParam1 sets up expected param jqfilter for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) ExpectJqfilterParam1(jqfilter string) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.params != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Expect")
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJQ.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJQParamPtrs{}
+	}
+	mmPatchWithJQ.defaultExpectation.paramPtrs.jqfilter = &jqfilter
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.originJqfilter = minimock.CallerInfo(1)
+
+	return mmPatchWithJQ
+}
+
+// ExpectApiVersionParam2 sets up expected param apiVersion for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) ExpectApiVersionParam2(apiVersion string) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.params != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Expect")
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJQ.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJQParamPtrs{}
+	}
+	mmPatchWithJQ.defaultExpectation.paramPtrs.apiVersion = &apiVersion
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.originApiVersion = minimock.CallerInfo(1)
+
+	return mmPatchWithJQ
+}
+
+// ExpectKindParam3 sets up expected param kind for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) ExpectKindParam3(kind string) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.params != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Expect")
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJQ.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJQParamPtrs{}
+	}
+	mmPatchWithJQ.defaultExpectation.paramPtrs.kind = &kind
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.originKind = minimock.CallerInfo(1)
+
+	return mmPatchWithJQ
+}
+
+// ExpectNamespaceParam4 sets up expected param namespace for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) ExpectNamespaceParam4(namespace string) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.params != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Expect")
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJQ.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJQParamPtrs{}
+	}
+	mmPatchWithJQ.defaultExpectation.paramPtrs.namespace = &namespace
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.originNamespace = minimock.CallerInfo(1)
+
+	return mmPatchWithJQ
+}
+
+// ExpectNameParam5 sets up expected param name for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) ExpectNameParam5(name string) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.params != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Expect")
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJQ.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJQParamPtrs{}
+	}
+	mmPatchWithJQ.defaultExpectation.paramPtrs.name = &name
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.originName = minimock.CallerInfo(1)
+
+	return mmPatchWithJQ
+}
+
+// ExpectOptsParam6 sets up expected param opts for EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{}
+	}
+
+	if mmPatchWithJQ.defaultExpectation.params != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Expect")
+	}
+
+	if mmPatchWithJQ.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJQ.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJQParamPtrs{}
+	}
+	mmPatchWithJQ.defaultExpectation.paramPtrs.opts = &opts
+	mmPatchWithJQ.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmPatchWithJQ
+}
+
+// Inspect accepts an inspector function that has same arguments as the EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Inspect(f func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *mPatchCollectorMockPatchWithJQ {
+	if mmPatchWithJQ.mock.inspectFuncPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.PatchWithJQ")
+	}
+
+	mmPatchWithJQ.mock.inspectFuncPatchWithJQ = f
+
+	return mmPatchWithJQ
+}
+
+// Return sets up results that will be returned by EMPatchCollector.PatchWithJQ
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Return() *PatchCollectorMock {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	if mmPatchWithJQ.defaultExpectation == nil {
+		mmPatchWithJQ.defaultExpectation = &PatchCollectorMockPatchWithJQExpectation{mock: mmPatchWithJQ.mock}
+	}
+
+	mmPatchWithJQ.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmPatchWithJQ.mock
+}
+
+// Set uses given function f to mock the EMPatchCollector.PatchWithJQ method
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Set(f func(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *PatchCollectorMock {
+	if mmPatchWithJQ.defaultExpectation != nil {
+		mmPatchWithJQ.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.PatchWithJQ method")
+	}
+
+	if len(mmPatchWithJQ.expectations) > 0 {
+		mmPatchWithJQ.mock.t.Fatalf("Some expectations are already set for the EMPatchCollector.PatchWithJQ method")
+	}
+
+	mmPatchWithJQ.mock.funcPatchWithJQ = f
+	mmPatchWithJQ.mock.funcPatchWithJQOrigin = minimock.CallerInfo(1)
+	return mmPatchWithJQ.mock
+}
+
+// When sets expectation for the EMPatchCollector.PatchWithJQ which will trigger the result defined by the following
+// Then helper
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) When(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *PatchCollectorMockPatchWithJQExpectation {
+	if mmPatchWithJQ.mock.funcPatchWithJQ != nil {
+		mmPatchWithJQ.mock.t.Fatalf("PatchCollectorMock.PatchWithJQ mock is already set by Set")
+	}
+
+	expectation := &PatchCollectorMockPatchWithJQExpectation{
+		mock:               mmPatchWithJQ.mock,
+		params:             &PatchCollectorMockPatchWithJQParams{jqfilter, apiVersion, kind, namespace, name, opts},
+		expectationOrigins: PatchCollectorMockPatchWithJQExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmPatchWithJQ.expectations = append(mmPatchWithJQ.expectations, expectation)
+	return expectation
+}
+
+// Then sets up EMPatchCollector.PatchWithJQ return parameters for the expectation previously defined by the When method
+
+func (e *PatchCollectorMockPatchWithJQExpectation) Then() *PatchCollectorMock {
+	return e.mock
+}
+
+// Times sets number of times EMPatchCollector.PatchWithJQ should be invoked
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Times(n uint64) *mPatchCollectorMockPatchWithJQ {
+	if n == 0 {
+		mmPatchWithJQ.mock.t.Fatalf("Times of PatchCollectorMock.PatchWithJQ mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmPatchWithJQ.expectedInvocations, n)
+	mmPatchWithJQ.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmPatchWithJQ
+}
+
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) invocationsDone() bool {
+	if len(mmPatchWithJQ.expectations) == 0 && mmPatchWithJQ.defaultExpectation == nil && mmPatchWithJQ.mock.funcPatchWithJQ == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmPatchWithJQ.mock.afterPatchWithJQCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmPatchWithJQ.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// PatchWithJQ implements mm_pkg.EMPatchCollector
+func (mmPatchWithJQ *PatchCollectorMock) PatchWithJQ(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) {
+	mm_atomic.AddUint64(&mmPatchWithJQ.beforePatchWithJQCounter, 1)
+	defer mm_atomic.AddUint64(&mmPatchWithJQ.afterPatchWithJQCounter, 1)
+
+	mmPatchWithJQ.t.Helper()
+
+	if mmPatchWithJQ.inspectFuncPatchWithJQ != nil {
+		mmPatchWithJQ.inspectFuncPatchWithJQ(jqfilter, apiVersion, kind, namespace, name, opts...)
+	}
+
+	mm_params := PatchCollectorMockPatchWithJQParams{jqfilter, apiVersion, kind, namespace, name, opts}
+
+	// Record call args
+	mmPatchWithJQ.PatchWithJQMock.mutex.Lock()
+	mmPatchWithJQ.PatchWithJQMock.callArgs = append(mmPatchWithJQ.PatchWithJQMock.callArgs, &mm_params)
+	mmPatchWithJQ.PatchWithJQMock.mutex.Unlock()
+
+	for _, e := range mmPatchWithJQ.PatchWithJQMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return
+		}
+	}
+
+	if mmPatchWithJQ.PatchWithJQMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmPatchWithJQ.PatchWithJQMock.defaultExpectation.Counter, 1)
+		mm_want := mmPatchWithJQ.PatchWithJQMock.defaultExpectation.params
+		mm_want_ptrs := mmPatchWithJQ.PatchWithJQMock.defaultExpectation.paramPtrs
+
+		mm_got := PatchCollectorMockPatchWithJQParams{jqfilter, apiVersion, kind, namespace, name, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.jqfilter != nil && !minimock.Equal(*mm_want_ptrs.jqfilter, mm_got.jqfilter) {
+				mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameter jqfilter, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.originJqfilter, *mm_want_ptrs.jqfilter, mm_got.jqfilter, minimock.Diff(*mm_want_ptrs.jqfilter, mm_got.jqfilter))
+			}
+
+			if mm_want_ptrs.apiVersion != nil && !minimock.Equal(*mm_want_ptrs.apiVersion, mm_got.apiVersion) {
+				mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameter apiVersion, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.originApiVersion, *mm_want_ptrs.apiVersion, mm_got.apiVersion, minimock.Diff(*mm_want_ptrs.apiVersion, mm_got.apiVersion))
+			}
+
+			if mm_want_ptrs.kind != nil && !minimock.Equal(*mm_want_ptrs.kind, mm_got.kind) {
+				mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameter kind, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.originKind, *mm_want_ptrs.kind, mm_got.kind, minimock.Diff(*mm_want_ptrs.kind, mm_got.kind))
+			}
+
+			if mm_want_ptrs.namespace != nil && !minimock.Equal(*mm_want_ptrs.namespace, mm_got.namespace) {
+				mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameter namespace, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.originNamespace, *mm_want_ptrs.namespace, mm_got.namespace, minimock.Diff(*mm_want_ptrs.namespace, mm_got.namespace))
+			}
+
+			if mm_want_ptrs.name != nil && !minimock.Equal(*mm_want_ptrs.name, mm_got.name) {
+				mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameter name, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.originName, *mm_want_ptrs.name, mm_got.name, minimock.Diff(*mm_want_ptrs.name, mm_got.name))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmPatchWithJQ.t.Errorf("PatchCollectorMock.PatchWithJQ got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmPatchWithJQ.PatchWithJQMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		return
+
+	}
+	if mmPatchWithJQ.funcPatchWithJQ != nil {
+		mmPatchWithJQ.funcPatchWithJQ(jqfilter, apiVersion, kind, namespace, name, opts...)
+		return
+	}
+	mmPatchWithJQ.t.Fatalf("Unexpected call to PatchCollectorMock.PatchWithJQ. %v %v %v %v %v %v", jqfilter, apiVersion, kind, namespace, name, opts)
+
+}
+
+// PatchWithJQAfterCounter returns a count of finished PatchCollectorMock.PatchWithJQ invocations
+func (mmPatchWithJQ *PatchCollectorMock) PatchWithJQAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmPatchWithJQ.afterPatchWithJQCounter)
+}
+
+// PatchWithJQBeforeCounter returns a count of PatchCollectorMock.PatchWithJQ invocations
+func (mmPatchWithJQ *PatchCollectorMock) PatchWithJQBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmPatchWithJQ.beforePatchWithJQCounter)
+}
+
+// Calls returns a list of arguments used in each call to PatchCollectorMock.PatchWithJQ.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmPatchWithJQ *mPatchCollectorMockPatchWithJQ) Calls() []*PatchCollectorMockPatchWithJQParams {
+	mmPatchWithJQ.mutex.RLock()
+
+	argCopy := make([]*PatchCollectorMockPatchWithJQParams, len(mmPatchWithJQ.callArgs))
+	copy(argCopy, mmPatchWithJQ.callArgs)
+
+	mmPatchWithJQ.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockPatchWithJQDone returns true if the count of the PatchWithJQ invocations corresponds
+// the number of defined expectations
+func (m *PatchCollectorMock) MinimockPatchWithJQDone() bool {
+	if m.PatchWithJQMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.PatchWithJQMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.PatchWithJQMock.invocationsDone()
+}
+
+// MinimockPatchWithJQInspect logs each unmet expectation
+func (m *PatchCollectorMock) MinimockPatchWithJQInspect() {
+	for _, e := range m.PatchWithJQMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJQ at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterPatchWithJQCounter := mm_atomic.LoadUint64(&m.afterPatchWithJQCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.PatchWithJQMock.defaultExpectation != nil && afterPatchWithJQCounter < 1 {
+		if m.PatchWithJQMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJQ at\n%s", m.PatchWithJQMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJQ at\n%s with params: %#v", m.PatchWithJQMock.defaultExpectation.expectationOrigins.origin, *m.PatchWithJQMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcPatchWithJQ != nil && afterPatchWithJQCounter < 1 {
+		m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJQ at\n%s", m.funcPatchWithJQOrigin)
+	}
+
+	if !m.PatchWithJQMock.invocationsDone() && afterPatchWithJQCounter > 0 {
+		m.t.Errorf("Expected %d calls to PatchCollectorMock.PatchWithJQ at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.PatchWithJQMock.expectedInvocations), m.PatchWithJQMock.expectedInvocationsOrigin, afterPatchWithJQCounter)
+	}
+}
+
+type mPatchCollectorMockPatchWithJSON struct {
+	optional           bool
+	mock               *PatchCollectorMock
+	defaultExpectation *PatchCollectorMockPatchWithJSONExpectation
+	expectations       []*PatchCollectorMockPatchWithJSONExpectation
+
+	callArgs []*PatchCollectorMockPatchWithJSONParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// PatchCollectorMockPatchWithJSONExpectation specifies expectation struct of the EMPatchCollector.PatchWithJSON
+type PatchCollectorMockPatchWithJSONExpectation struct {
+	mock               *PatchCollectorMock
+	params             *PatchCollectorMockPatchWithJSONParams
+	paramPtrs          *PatchCollectorMockPatchWithJSONParamPtrs
+	expectationOrigins PatchCollectorMockPatchWithJSONExpectationOrigins
+
+	returnOrigin string
+	Counter      uint64
+}
+
+// PatchCollectorMockPatchWithJSONParams contains parameters of the EMPatchCollector.PatchWithJSON
+type PatchCollectorMockPatchWithJSONParams struct {
+	jsonPatch  any
+	apiVersion string
+	kind       string
+	namespace  string
+	name       string
+	opts       []mm_pkg.PatchCollectorOption
+}
+
+// PatchCollectorMockPatchWithJSONParamPtrs contains pointers to parameters of the EMPatchCollector.PatchWithJSON
+type PatchCollectorMockPatchWithJSONParamPtrs struct {
+	jsonPatch  *any
+	apiVersion *string
+	kind       *string
+	namespace  *string
+	name       *string
+	opts       *[]mm_pkg.PatchCollectorOption
+}
+
+// PatchCollectorMockPatchWithJSONOrigins contains origins of expectations of the EMPatchCollector.PatchWithJSON
+type PatchCollectorMockPatchWithJSONExpectationOrigins struct {
+	origin           string
+	originJsonPatch  string
+	originApiVersion string
+	originKind       string
+	originNamespace  string
+	originName       string
+	originOpts       string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Optional() *mPatchCollectorMockPatchWithJSON {
+	mmPatchWithJSON.optional = true
+	return mmPatchWithJSON
+}
+
+// Expect sets up expected params for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Expect(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by ExpectParams functions")
+	}
+
+	mmPatchWithJSON.defaultExpectation.params = &PatchCollectorMockPatchWithJSONParams{jsonPatch, apiVersion, kind, namespace, name, opts}
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmPatchWithJSON.expectations {
+		if minimock.Equal(e.params, mmPatchWithJSON.defaultExpectation.params) {
+			mmPatchWithJSON.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmPatchWithJSON.defaultExpectation.params)
+		}
+	}
+
+	return mmPatchWithJSON
+}
+
+// ExpectJsonPatchParam1 sets up expected param jsonPatch for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) ExpectJsonPatchParam1(jsonPatch any) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.params != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Expect")
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJSON.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJSONParamPtrs{}
+	}
+	mmPatchWithJSON.defaultExpectation.paramPtrs.jsonPatch = &jsonPatch
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.originJsonPatch = minimock.CallerInfo(1)
+
+	return mmPatchWithJSON
+}
+
+// ExpectApiVersionParam2 sets up expected param apiVersion for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) ExpectApiVersionParam2(apiVersion string) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.params != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Expect")
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJSON.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJSONParamPtrs{}
+	}
+	mmPatchWithJSON.defaultExpectation.paramPtrs.apiVersion = &apiVersion
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.originApiVersion = minimock.CallerInfo(1)
+
+	return mmPatchWithJSON
+}
+
+// ExpectKindParam3 sets up expected param kind for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) ExpectKindParam3(kind string) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.params != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Expect")
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJSON.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJSONParamPtrs{}
+	}
+	mmPatchWithJSON.defaultExpectation.paramPtrs.kind = &kind
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.originKind = minimock.CallerInfo(1)
+
+	return mmPatchWithJSON
+}
+
+// ExpectNamespaceParam4 sets up expected param namespace for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) ExpectNamespaceParam4(namespace string) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.params != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Expect")
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJSON.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJSONParamPtrs{}
+	}
+	mmPatchWithJSON.defaultExpectation.paramPtrs.namespace = &namespace
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.originNamespace = minimock.CallerInfo(1)
+
+	return mmPatchWithJSON
+}
+
+// ExpectNameParam5 sets up expected param name for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) ExpectNameParam5(name string) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.params != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Expect")
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJSON.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJSONParamPtrs{}
+	}
+	mmPatchWithJSON.defaultExpectation.paramPtrs.name = &name
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.originName = minimock.CallerInfo(1)
+
+	return mmPatchWithJSON
+}
+
+// ExpectOptsParam6 sets up expected param opts for EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{}
+	}
+
+	if mmPatchWithJSON.defaultExpectation.params != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Expect")
+	}
+
+	if mmPatchWithJSON.defaultExpectation.paramPtrs == nil {
+		mmPatchWithJSON.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithJSONParamPtrs{}
+	}
+	mmPatchWithJSON.defaultExpectation.paramPtrs.opts = &opts
+	mmPatchWithJSON.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmPatchWithJSON
+}
+
+// Inspect accepts an inspector function that has same arguments as the EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Inspect(f func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *mPatchCollectorMockPatchWithJSON {
+	if mmPatchWithJSON.mock.inspectFuncPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.PatchWithJSON")
+	}
+
+	mmPatchWithJSON.mock.inspectFuncPatchWithJSON = f
+
+	return mmPatchWithJSON
+}
+
+// Return sets up results that will be returned by EMPatchCollector.PatchWithJSON
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Return() *PatchCollectorMock {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	if mmPatchWithJSON.defaultExpectation == nil {
+		mmPatchWithJSON.defaultExpectation = &PatchCollectorMockPatchWithJSONExpectation{mock: mmPatchWithJSON.mock}
+	}
+
+	mmPatchWithJSON.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmPatchWithJSON.mock
+}
+
+// Set uses given function f to mock the EMPatchCollector.PatchWithJSON method
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Set(f func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *PatchCollectorMock {
+	if mmPatchWithJSON.defaultExpectation != nil {
+		mmPatchWithJSON.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.PatchWithJSON method")
+	}
+
+	if len(mmPatchWithJSON.expectations) > 0 {
+		mmPatchWithJSON.mock.t.Fatalf("Some expectations are already set for the EMPatchCollector.PatchWithJSON method")
+	}
+
+	mmPatchWithJSON.mock.funcPatchWithJSON = f
+	mmPatchWithJSON.mock.funcPatchWithJSONOrigin = minimock.CallerInfo(1)
+	return mmPatchWithJSON.mock
+}
+
+// When sets expectation for the EMPatchCollector.PatchWithJSON which will trigger the result defined by the following
+// Then helper
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) When(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *PatchCollectorMockPatchWithJSONExpectation {
+	if mmPatchWithJSON.mock.funcPatchWithJSON != nil {
+		mmPatchWithJSON.mock.t.Fatalf("PatchCollectorMock.PatchWithJSON mock is already set by Set")
+	}
+
+	expectation := &PatchCollectorMockPatchWithJSONExpectation{
+		mock:               mmPatchWithJSON.mock,
+		params:             &PatchCollectorMockPatchWithJSONParams{jsonPatch, apiVersion, kind, namespace, name, opts},
+		expectationOrigins: PatchCollectorMockPatchWithJSONExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmPatchWithJSON.expectations = append(mmPatchWithJSON.expectations, expectation)
+	return expectation
+}
+
+// Then sets up EMPatchCollector.PatchWithJSON return parameters for the expectation previously defined by the When method
+
+func (e *PatchCollectorMockPatchWithJSONExpectation) Then() *PatchCollectorMock {
+	return e.mock
+}
+
+// Times sets number of times EMPatchCollector.PatchWithJSON should be invoked
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Times(n uint64) *mPatchCollectorMockPatchWithJSON {
+	if n == 0 {
+		mmPatchWithJSON.mock.t.Fatalf("Times of PatchCollectorMock.PatchWithJSON mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmPatchWithJSON.expectedInvocations, n)
+	mmPatchWithJSON.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmPatchWithJSON
+}
+
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) invocationsDone() bool {
+	if len(mmPatchWithJSON.expectations) == 0 && mmPatchWithJSON.defaultExpectation == nil && mmPatchWithJSON.mock.funcPatchWithJSON == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmPatchWithJSON.mock.afterPatchWithJSONCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmPatchWithJSON.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// PatchWithJSON implements mm_pkg.EMPatchCollector
+func (mmPatchWithJSON *PatchCollectorMock) PatchWithJSON(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) {
+	mm_atomic.AddUint64(&mmPatchWithJSON.beforePatchWithJSONCounter, 1)
+	defer mm_atomic.AddUint64(&mmPatchWithJSON.afterPatchWithJSONCounter, 1)
+
+	mmPatchWithJSON.t.Helper()
+
+	if mmPatchWithJSON.inspectFuncPatchWithJSON != nil {
+		mmPatchWithJSON.inspectFuncPatchWithJSON(jsonPatch, apiVersion, kind, namespace, name, opts...)
+	}
+
+	mm_params := PatchCollectorMockPatchWithJSONParams{jsonPatch, apiVersion, kind, namespace, name, opts}
+
+	// Record call args
+	mmPatchWithJSON.PatchWithJSONMock.mutex.Lock()
+	mmPatchWithJSON.PatchWithJSONMock.callArgs = append(mmPatchWithJSON.PatchWithJSONMock.callArgs, &mm_params)
+	mmPatchWithJSON.PatchWithJSONMock.mutex.Unlock()
+
+	for _, e := range mmPatchWithJSON.PatchWithJSONMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return
+		}
+	}
+
+	if mmPatchWithJSON.PatchWithJSONMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.Counter, 1)
+		mm_want := mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.params
+		mm_want_ptrs := mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.paramPtrs
+
+		mm_got := PatchCollectorMockPatchWithJSONParams{jsonPatch, apiVersion, kind, namespace, name, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.jsonPatch != nil && !minimock.Equal(*mm_want_ptrs.jsonPatch, mm_got.jsonPatch) {
+				mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameter jsonPatch, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.originJsonPatch, *mm_want_ptrs.jsonPatch, mm_got.jsonPatch, minimock.Diff(*mm_want_ptrs.jsonPatch, mm_got.jsonPatch))
+			}
+
+			if mm_want_ptrs.apiVersion != nil && !minimock.Equal(*mm_want_ptrs.apiVersion, mm_got.apiVersion) {
+				mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameter apiVersion, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.originApiVersion, *mm_want_ptrs.apiVersion, mm_got.apiVersion, minimock.Diff(*mm_want_ptrs.apiVersion, mm_got.apiVersion))
+			}
+
+			if mm_want_ptrs.kind != nil && !minimock.Equal(*mm_want_ptrs.kind, mm_got.kind) {
+				mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameter kind, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.originKind, *mm_want_ptrs.kind, mm_got.kind, minimock.Diff(*mm_want_ptrs.kind, mm_got.kind))
+			}
+
+			if mm_want_ptrs.namespace != nil && !minimock.Equal(*mm_want_ptrs.namespace, mm_got.namespace) {
+				mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameter namespace, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.originNamespace, *mm_want_ptrs.namespace, mm_got.namespace, minimock.Diff(*mm_want_ptrs.namespace, mm_got.namespace))
+			}
+
+			if mm_want_ptrs.name != nil && !minimock.Equal(*mm_want_ptrs.name, mm_got.name) {
+				mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameter name, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.originName, *mm_want_ptrs.name, mm_got.name, minimock.Diff(*mm_want_ptrs.name, mm_got.name))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmPatchWithJSON.t.Errorf("PatchCollectorMock.PatchWithJSON got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmPatchWithJSON.PatchWithJSONMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		return
+
+	}
+	if mmPatchWithJSON.funcPatchWithJSON != nil {
+		mmPatchWithJSON.funcPatchWithJSON(jsonPatch, apiVersion, kind, namespace, name, opts...)
+		return
+	}
+	mmPatchWithJSON.t.Fatalf("Unexpected call to PatchCollectorMock.PatchWithJSON. %v %v %v %v %v %v", jsonPatch, apiVersion, kind, namespace, name, opts)
+
+}
+
+// PatchWithJSONAfterCounter returns a count of finished PatchCollectorMock.PatchWithJSON invocations
+func (mmPatchWithJSON *PatchCollectorMock) PatchWithJSONAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmPatchWithJSON.afterPatchWithJSONCounter)
+}
+
+// PatchWithJSONBeforeCounter returns a count of PatchCollectorMock.PatchWithJSON invocations
+func (mmPatchWithJSON *PatchCollectorMock) PatchWithJSONBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmPatchWithJSON.beforePatchWithJSONCounter)
+}
+
+// Calls returns a list of arguments used in each call to PatchCollectorMock.PatchWithJSON.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmPatchWithJSON *mPatchCollectorMockPatchWithJSON) Calls() []*PatchCollectorMockPatchWithJSONParams {
+	mmPatchWithJSON.mutex.RLock()
+
+	argCopy := make([]*PatchCollectorMockPatchWithJSONParams, len(mmPatchWithJSON.callArgs))
+	copy(argCopy, mmPatchWithJSON.callArgs)
+
+	mmPatchWithJSON.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockPatchWithJSONDone returns true if the count of the PatchWithJSON invocations corresponds
+// the number of defined expectations
+func (m *PatchCollectorMock) MinimockPatchWithJSONDone() bool {
+	if m.PatchWithJSONMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.PatchWithJSONMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.PatchWithJSONMock.invocationsDone()
+}
+
+// MinimockPatchWithJSONInspect logs each unmet expectation
+func (m *PatchCollectorMock) MinimockPatchWithJSONInspect() {
+	for _, e := range m.PatchWithJSONMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJSON at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterPatchWithJSONCounter := mm_atomic.LoadUint64(&m.afterPatchWithJSONCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.PatchWithJSONMock.defaultExpectation != nil && afterPatchWithJSONCounter < 1 {
+		if m.PatchWithJSONMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJSON at\n%s", m.PatchWithJSONMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJSON at\n%s with params: %#v", m.PatchWithJSONMock.defaultExpectation.expectationOrigins.origin, *m.PatchWithJSONMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcPatchWithJSON != nil && afterPatchWithJSONCounter < 1 {
+		m.t.Errorf("Expected call to PatchCollectorMock.PatchWithJSON at\n%s", m.funcPatchWithJSONOrigin)
+	}
+
+	if !m.PatchWithJSONMock.invocationsDone() && afterPatchWithJSONCounter > 0 {
+		m.t.Errorf("Expected %d calls to PatchCollectorMock.PatchWithJSON at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.PatchWithJSONMock.expectedInvocations), m.PatchWithJSONMock.expectedInvocationsOrigin, afterPatchWithJSONCounter)
+	}
+}
+
+type mPatchCollectorMockPatchWithMerge struct {
+	optional           bool
+	mock               *PatchCollectorMock
+	defaultExpectation *PatchCollectorMockPatchWithMergeExpectation
+	expectations       []*PatchCollectorMockPatchWithMergeExpectation
+
+	callArgs []*PatchCollectorMockPatchWithMergeParams
+	mutex    sync.RWMutex
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// PatchCollectorMockPatchWithMergeExpectation specifies expectation struct of the EMPatchCollector.PatchWithMerge
+type PatchCollectorMockPatchWithMergeExpectation struct {
+	mock               *PatchCollectorMock
+	params             *PatchCollectorMockPatchWithMergeParams
+	paramPtrs          *PatchCollectorMockPatchWithMergeParamPtrs
+	expectationOrigins PatchCollectorMockPatchWithMergeExpectationOrigins
+
+	returnOrigin string
+	Counter      uint64
+}
+
+// PatchCollectorMockPatchWithMergeParams contains parameters of the EMPatchCollector.PatchWithMerge
+type PatchCollectorMockPatchWithMergeParams struct {
+	mergePatch any
+	apiVersion string
+	kind       string
+	namespace  string
+	name       string
+	opts       []mm_pkg.PatchCollectorOption
+}
+
+// PatchCollectorMockPatchWithMergeParamPtrs contains pointers to parameters of the EMPatchCollector.PatchWithMerge
+type PatchCollectorMockPatchWithMergeParamPtrs struct {
+	mergePatch *any
+	apiVersion *string
+	kind       *string
+	namespace  *string
+	name       *string
+	opts       *[]mm_pkg.PatchCollectorOption
+}
+
+// PatchCollectorMockPatchWithMergeOrigins contains origins of expectations of the EMPatchCollector.PatchWithMerge
+type PatchCollectorMockPatchWithMergeExpectationOrigins struct {
+	origin           string
+	originMergePatch string
+	originApiVersion string
+	originKind       string
+	originNamespace  string
+	originName       string
+	originOpts       string
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Optional() *mPatchCollectorMockPatchWithMerge {
+	mmPatchWithMerge.optional = true
+	return mmPatchWithMerge
+}
+
+// Expect sets up expected params for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Expect(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by ExpectParams functions")
+	}
+
+	mmPatchWithMerge.defaultExpectation.params = &PatchCollectorMockPatchWithMergeParams{mergePatch, apiVersion, kind, namespace, name, opts}
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmPatchWithMerge.expectations {
+		if minimock.Equal(e.params, mmPatchWithMerge.defaultExpectation.params) {
+			mmPatchWithMerge.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmPatchWithMerge.defaultExpectation.params)
+		}
+	}
+
+	return mmPatchWithMerge
+}
+
+// ExpectMergePatchParam1 sets up expected param mergePatch for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) ExpectMergePatchParam1(mergePatch any) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.params != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Expect")
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs == nil {
+		mmPatchWithMerge.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithMergeParamPtrs{}
+	}
+	mmPatchWithMerge.defaultExpectation.paramPtrs.mergePatch = &mergePatch
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.originMergePatch = minimock.CallerInfo(1)
+
+	return mmPatchWithMerge
+}
+
+// ExpectApiVersionParam2 sets up expected param apiVersion for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) ExpectApiVersionParam2(apiVersion string) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.params != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Expect")
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs == nil {
+		mmPatchWithMerge.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithMergeParamPtrs{}
+	}
+	mmPatchWithMerge.defaultExpectation.paramPtrs.apiVersion = &apiVersion
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.originApiVersion = minimock.CallerInfo(1)
+
+	return mmPatchWithMerge
+}
+
+// ExpectKindParam3 sets up expected param kind for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) ExpectKindParam3(kind string) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.params != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Expect")
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs == nil {
+		mmPatchWithMerge.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithMergeParamPtrs{}
+	}
+	mmPatchWithMerge.defaultExpectation.paramPtrs.kind = &kind
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.originKind = minimock.CallerInfo(1)
+
+	return mmPatchWithMerge
+}
+
+// ExpectNamespaceParam4 sets up expected param namespace for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) ExpectNamespaceParam4(namespace string) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.params != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Expect")
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs == nil {
+		mmPatchWithMerge.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithMergeParamPtrs{}
+	}
+	mmPatchWithMerge.defaultExpectation.paramPtrs.namespace = &namespace
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.originNamespace = minimock.CallerInfo(1)
+
+	return mmPatchWithMerge
+}
+
+// ExpectNameParam5 sets up expected param name for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) ExpectNameParam5(name string) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.params != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Expect")
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs == nil {
+		mmPatchWithMerge.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithMergeParamPtrs{}
+	}
+	mmPatchWithMerge.defaultExpectation.paramPtrs.name = &name
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.originName = minimock.CallerInfo(1)
+
+	return mmPatchWithMerge
+}
+
+// ExpectOptsParam6 sets up expected param opts for EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{}
+	}
+
+	if mmPatchWithMerge.defaultExpectation.params != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Expect")
+	}
+
+	if mmPatchWithMerge.defaultExpectation.paramPtrs == nil {
+		mmPatchWithMerge.defaultExpectation.paramPtrs = &PatchCollectorMockPatchWithMergeParamPtrs{}
+	}
+	mmPatchWithMerge.defaultExpectation.paramPtrs.opts = &opts
+	mmPatchWithMerge.defaultExpectation.expectationOrigins.originOpts = minimock.CallerInfo(1)
+
+	return mmPatchWithMerge
+}
+
+// Inspect accepts an inspector function that has same arguments as the EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Inspect(f func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *mPatchCollectorMockPatchWithMerge {
+	if mmPatchWithMerge.mock.inspectFuncPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.PatchWithMerge")
+	}
+
+	mmPatchWithMerge.mock.inspectFuncPatchWithMerge = f
+
+	return mmPatchWithMerge
+}
+
+// Return sets up results that will be returned by EMPatchCollector.PatchWithMerge
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Return() *PatchCollectorMock {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	if mmPatchWithMerge.defaultExpectation == nil {
+		mmPatchWithMerge.defaultExpectation = &PatchCollectorMockPatchWithMergeExpectation{mock: mmPatchWithMerge.mock}
+	}
+
+	mmPatchWithMerge.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmPatchWithMerge.mock
+}
+
+// Set uses given function f to mock the EMPatchCollector.PatchWithMerge method
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Set(f func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *PatchCollectorMock {
+	if mmPatchWithMerge.defaultExpectation != nil {
+		mmPatchWithMerge.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.PatchWithMerge method")
+	}
+
+	if len(mmPatchWithMerge.expectations) > 0 {
+		mmPatchWithMerge.mock.t.Fatalf("Some expectations are already set for the EMPatchCollector.PatchWithMerge method")
+	}
+
+	mmPatchWithMerge.mock.funcPatchWithMerge = f
+	mmPatchWithMerge.mock.funcPatchWithMergeOrigin = minimock.CallerInfo(1)
+	return mmPatchWithMerge.mock
+}
+
+// When sets expectation for the EMPatchCollector.PatchWithMerge which will trigger the result defined by the following
+// Then helper
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) When(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *PatchCollectorMockPatchWithMergeExpectation {
+	if mmPatchWithMerge.mock.funcPatchWithMerge != nil {
+		mmPatchWithMerge.mock.t.Fatalf("PatchCollectorMock.PatchWithMerge mock is already set by Set")
+	}
+
+	expectation := &PatchCollectorMockPatchWithMergeExpectation{
+		mock:               mmPatchWithMerge.mock,
+		params:             &PatchCollectorMockPatchWithMergeParams{mergePatch, apiVersion, kind, namespace, name, opts},
+		expectationOrigins: PatchCollectorMockPatchWithMergeExpectationOrigins{origin: minimock.CallerInfo(1)},
+	}
+	mmPatchWithMerge.expectations = append(mmPatchWithMerge.expectations, expectation)
+	return expectation
+}
+
+// Then sets up EMPatchCollector.PatchWithMerge return parameters for the expectation previously defined by the When method
+
+func (e *PatchCollectorMockPatchWithMergeExpectation) Then() *PatchCollectorMock {
+	return e.mock
+}
+
+// Times sets number of times EMPatchCollector.PatchWithMerge should be invoked
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Times(n uint64) *mPatchCollectorMockPatchWithMerge {
+	if n == 0 {
+		mmPatchWithMerge.mock.t.Fatalf("Times of PatchCollectorMock.PatchWithMerge mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmPatchWithMerge.expectedInvocations, n)
+	mmPatchWithMerge.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmPatchWithMerge
+}
+
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) invocationsDone() bool {
+	if len(mmPatchWithMerge.expectations) == 0 && mmPatchWithMerge.defaultExpectation == nil && mmPatchWithMerge.mock.funcPatchWithMerge == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmPatchWithMerge.mock.afterPatchWithMergeCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmPatchWithMerge.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// PatchWithMerge implements mm_pkg.EMPatchCollector
+func (mmPatchWithMerge *PatchCollectorMock) PatchWithMerge(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) {
+	mm_atomic.AddUint64(&mmPatchWithMerge.beforePatchWithMergeCounter, 1)
+	defer mm_atomic.AddUint64(&mmPatchWithMerge.afterPatchWithMergeCounter, 1)
+
+	mmPatchWithMerge.t.Helper()
+
+	if mmPatchWithMerge.inspectFuncPatchWithMerge != nil {
+		mmPatchWithMerge.inspectFuncPatchWithMerge(mergePatch, apiVersion, kind, namespace, name, opts...)
+	}
+
+	mm_params := PatchCollectorMockPatchWithMergeParams{mergePatch, apiVersion, kind, namespace, name, opts}
+
+	// Record call args
+	mmPatchWithMerge.PatchWithMergeMock.mutex.Lock()
+	mmPatchWithMerge.PatchWithMergeMock.callArgs = append(mmPatchWithMerge.PatchWithMergeMock.callArgs, &mm_params)
+	mmPatchWithMerge.PatchWithMergeMock.mutex.Unlock()
+
+	for _, e := range mmPatchWithMerge.PatchWithMergeMock.expectations {
+		if minimock.Equal(*e.params, mm_params) {
+			mm_atomic.AddUint64(&e.Counter, 1)
+			return
+		}
+	}
+
+	if mmPatchWithMerge.PatchWithMergeMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.Counter, 1)
+		mm_want := mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.params
+		mm_want_ptrs := mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.paramPtrs
+
+		mm_got := PatchCollectorMockPatchWithMergeParams{mergePatch, apiVersion, kind, namespace, name, opts}
+
+		if mm_want_ptrs != nil {
+
+			if mm_want_ptrs.mergePatch != nil && !minimock.Equal(*mm_want_ptrs.mergePatch, mm_got.mergePatch) {
+				mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameter mergePatch, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.originMergePatch, *mm_want_ptrs.mergePatch, mm_got.mergePatch, minimock.Diff(*mm_want_ptrs.mergePatch, mm_got.mergePatch))
+			}
+
+			if mm_want_ptrs.apiVersion != nil && !minimock.Equal(*mm_want_ptrs.apiVersion, mm_got.apiVersion) {
+				mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameter apiVersion, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.originApiVersion, *mm_want_ptrs.apiVersion, mm_got.apiVersion, minimock.Diff(*mm_want_ptrs.apiVersion, mm_got.apiVersion))
+			}
+
+			if mm_want_ptrs.kind != nil && !minimock.Equal(*mm_want_ptrs.kind, mm_got.kind) {
+				mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameter kind, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.originKind, *mm_want_ptrs.kind, mm_got.kind, minimock.Diff(*mm_want_ptrs.kind, mm_got.kind))
+			}
+
+			if mm_want_ptrs.namespace != nil && !minimock.Equal(*mm_want_ptrs.namespace, mm_got.namespace) {
+				mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameter namespace, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.originNamespace, *mm_want_ptrs.namespace, mm_got.namespace, minimock.Diff(*mm_want_ptrs.namespace, mm_got.namespace))
+			}
+
+			if mm_want_ptrs.name != nil && !minimock.Equal(*mm_want_ptrs.name, mm_got.name) {
+				mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameter name, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.originName, *mm_want_ptrs.name, mm_got.name, minimock.Diff(*mm_want_ptrs.name, mm_got.name))
+			}
+
+			if mm_want_ptrs.opts != nil && !minimock.Equal(*mm_want_ptrs.opts, mm_got.opts) {
+				mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameter opts, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.originOpts, *mm_want_ptrs.opts, mm_got.opts, minimock.Diff(*mm_want_ptrs.opts, mm_got.opts))
+			}
+
+		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
+			mmPatchWithMerge.t.Errorf("PatchCollectorMock.PatchWithMerge got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmPatchWithMerge.PatchWithMergeMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+		}
+
+		return
+
+	}
+	if mmPatchWithMerge.funcPatchWithMerge != nil {
+		mmPatchWithMerge.funcPatchWithMerge(mergePatch, apiVersion, kind, namespace, name, opts...)
+		return
+	}
+	mmPatchWithMerge.t.Fatalf("Unexpected call to PatchCollectorMock.PatchWithMerge. %v %v %v %v %v %v", mergePatch, apiVersion, kind, namespace, name, opts)
+
+}
+
+// PatchWithMergeAfterCounter returns a count of finished PatchCollectorMock.PatchWithMerge invocations
+func (mmPatchWithMerge *PatchCollectorMock) PatchWithMergeAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmPatchWithMerge.afterPatchWithMergeCounter)
+}
+
+// PatchWithMergeBeforeCounter returns a count of PatchCollectorMock.PatchWithMerge invocations
+func (mmPatchWithMerge *PatchCollectorMock) PatchWithMergeBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmPatchWithMerge.beforePatchWithMergeCounter)
+}
+
+// Calls returns a list of arguments used in each call to PatchCollectorMock.PatchWithMerge.
+// The list is in the same order as the calls were made (i.e. recent calls have a higher index)
+func (mmPatchWithMerge *mPatchCollectorMockPatchWithMerge) Calls() []*PatchCollectorMockPatchWithMergeParams {
+	mmPatchWithMerge.mutex.RLock()
+
+	argCopy := make([]*PatchCollectorMockPatchWithMergeParams, len(mmPatchWithMerge.callArgs))
+	copy(argCopy, mmPatchWithMerge.callArgs)
+
+	mmPatchWithMerge.mutex.RUnlock()
+
+	return argCopy
+}
+
+// MinimockPatchWithMergeDone returns true if the count of the PatchWithMerge invocations corresponds
+// the number of defined expectations
+func (m *PatchCollectorMock) MinimockPatchWithMergeDone() bool {
+	if m.PatchWithMergeMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.PatchWithMergeMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.PatchWithMergeMock.invocationsDone()
+}
+
+// MinimockPatchWithMergeInspect logs each unmet expectation
+func (m *PatchCollectorMock) MinimockPatchWithMergeInspect() {
+	for _, e := range m.PatchWithMergeMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithMerge at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+		}
+	}
+
+	afterPatchWithMergeCounter := mm_atomic.LoadUint64(&m.afterPatchWithMergeCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.PatchWithMergeMock.defaultExpectation != nil && afterPatchWithMergeCounter < 1 {
+		if m.PatchWithMergeMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithMerge at\n%s", m.PatchWithMergeMock.defaultExpectation.returnOrigin)
+		} else {
+			m.t.Errorf("Expected call to PatchCollectorMock.PatchWithMerge at\n%s with params: %#v", m.PatchWithMergeMock.defaultExpectation.expectationOrigins.origin, *m.PatchWithMergeMock.defaultExpectation.params)
+		}
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcPatchWithMerge != nil && afterPatchWithMergeCounter < 1 {
+		m.t.Errorf("Expected call to PatchCollectorMock.PatchWithMerge at\n%s", m.funcPatchWithMergeOrigin)
+	}
+
+	if !m.PatchWithMergeMock.invocationsDone() && afterPatchWithMergeCounter > 0 {
+		m.t.Errorf("Expected %d calls to PatchCollectorMock.PatchWithMerge at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.PatchWithMergeMock.expectedInvocations), m.PatchWithMergeMock.expectedInvocationsOrigin, afterPatchWithMergeCounter)
+	}
+}
+
 type mPatchCollectorMockWriteOutput struct {
 	optional           bool
 	mock               *PatchCollectorMock
@@ -4329,6 +5550,12 @@ func (m *PatchCollectorMock) MinimockFinish() {
 
 			m.MinimockOperationsInspect()
 
+			m.MinimockPatchWithJQInspect()
+
+			m.MinimockPatchWithJSONInspect()
+
+			m.MinimockPatchWithMergeInspect()
+
 			m.MinimockWriteOutputInspect()
 		}
 	})
@@ -4363,5 +5590,8 @@ func (m *PatchCollectorMock) minimockDone() bool {
 		m.MinimockJSONPatchDone() &&
 		m.MinimockMergePatchDone() &&
 		m.MinimockOperationsDone() &&
+		m.MinimockPatchWithJQDone() &&
+		m.MinimockPatchWithJSONDone() &&
+		m.MinimockPatchWithMergeDone() &&
 		m.MinimockWriteOutputDone()
 }

@@ -44,70 +44,58 @@ var _ = Describe("patch hook", func() {
 
 		It("logs hello message and executes patch collector operations", func() {
 			// Set expectations for Create
-			patchCollector.CreateMock.Set(func(obj interface{}, opts ...pkg.PatchCollectorCreateOption) {
+			patchCollector.CreateMock.Set(func(obj interface{}) {
 				pod, ok := obj.(*corev1.Pod)
 				Expect(ok).To(BeTrue())
 				Expect(pod.Name).To(Equal("my-first-pod"))
 				Expect(pod.Namespace).To(Equal("default"))
 				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-
-				// Verify options
-				Expect(len(opts)).To(Equal(1))
 			})
 
 			// Set expectations for CreateOrUpdate
-			patchCollector.CreateOrUpdateMock.Set(func(obj interface{}, opts ...pkg.PatchCollectorCreateOption) {
+			patchCollector.CreateOrUpdateMock.Set(func(obj interface{}) {
 				pod, ok := obj.(*corev1.Pod)
 				Expect(ok).To(BeTrue())
 				Expect(pod.Name).To(Equal("my-second-pod"))
 				Expect(pod.Namespace).To(Equal("default"))
 				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-
-				// Verify options
-				Expect(len(opts)).To(Equal(1))
 			})
 
 			// Set expectations for CreateIfNotExists
-			patchCollector.CreateIfNotExistsMock.Set(func(obj interface{}, opts ...pkg.PatchCollectorCreateOption) {
+			patchCollector.CreateIfNotExistsMock.Set(func(obj interface{}) {
 				pod, ok := obj.(*corev1.Pod)
 				Expect(ok).To(BeTrue())
 				Expect(pod.Name).To(Equal("my-third-pod"))
 				Expect(pod.Namespace).To(Equal("default"))
 				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-
-				// Verify options
-				Expect(len(opts)).To(Equal(1))
 			})
 
 			// Set expectations for Delete
-			patchCollector.DeleteMock.Set(func(apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorDeleteOption) {
+			patchCollector.DeleteMock.Set(func(apiVersion, kind, namespace, name string) {
 				Expect(apiVersion).To(Equal("v1"))
 				Expect(kind).To(Equal("Pod"))
 				Expect(namespace).To(Equal("default"))
 				Expect(name).To(Equal("my-first-pod"))
-				Expect(len(opts)).To(Equal(1))
 			})
 
 			// Set expectations for DeleteInBackground
-			patchCollector.DeleteInBackgroundMock.Set(func(apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorDeleteOption) {
+			patchCollector.DeleteInBackgroundMock.Set(func(apiVersion, kind, namespace, name string) {
 				Expect(apiVersion).To(Equal("v1"))
 				Expect(kind).To(Equal("Pod"))
 				Expect(namespace).To(Equal("default"))
 				Expect(name).To(Equal("my-second-pod"))
-				Expect(len(opts)).To(Equal(1))
 			})
 
 			// Set expectations for DeleteNonCascading
-			patchCollector.DeleteNonCascadingMock.Set(func(apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorDeleteOption) {
+			patchCollector.DeleteNonCascadingMock.Set(func(apiVersion, kind, namespace, name string) {
 				Expect(apiVersion).To(Equal("v1"))
 				Expect(kind).To(Equal("Pod"))
 				Expect(namespace).To(Equal("default"))
 				Expect(name).To(Equal("my-third-pod"))
-				Expect(len(opts)).To(Equal(1))
 			})
 
 			// Set expectations for MergePatch
-			patchCollector.MergePatchMock.Set(func(patch interface{}, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorPatchOption) {
+			patchCollector.MergePatchMock.Set(func(patch interface{}, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				patchMap, ok := patch.(map[string]interface{})
 				Expect(ok).To(BeTrue())
 				Expect(patchMap).To(HaveKeyWithValue("/status", "newStatus"))

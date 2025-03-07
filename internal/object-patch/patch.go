@@ -2,10 +2,7 @@ package objectpatch
 
 import "github.com/deckhouse/module-sdk/pkg"
 
-var _ pkg.PatchCollectorCreateOptionApplier = (*Patch)(nil)
-var _ pkg.PatchCollectorDeleteOptionApplier = (*Patch)(nil)
-var _ pkg.PatchCollectorPatchOptionApplier = (*Patch)(nil)
-var _ pkg.PatchCollectorFilterOptionApplier = (*Patch)(nil)
+var _ pkg.PatchCollectorOptionApplier = (*Patch)(nil)
 
 type Patch struct {
 	patchValues map[string]any

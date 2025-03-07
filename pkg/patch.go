@@ -47,110 +47,36 @@ type PatchCollectorOperation interface {
 	Description() string
 }
 
-type PatchCollectorCreateOption interface {
-	Apply(PatchCollectorCreateOptionApplier)
-}
-
-type PatchCollectorCreateOptionApplier interface {
-	WithSubresource(subresource string)
-}
-
-type CreateOption func(o PatchCollectorCreateOptionApplier)
-
-func (opt CreateOption) Apply(o PatchCollectorCreateOptionApplier) {
-	opt(o)
-}
-
-func CreateWithSubresource(subresource string) CreateOption {
-	return func(o PatchCollectorCreateOptionApplier) {
-		o.WithSubresource(subresource)
-	}
-}
-
-type PatchCollectorDeleteOption interface {
-	Apply(PatchCollectorDeleteOptionApplier)
-}
-
-type PatchCollectorDeleteOptionApplier interface {
-	WithSubresource(subresource string)
-}
-
-type DeleteOption func(o PatchCollectorDeleteOptionApplier)
-
-func (opt DeleteOption) Apply(o PatchCollectorDeleteOptionApplier) {
-	opt(o)
-}
-
-func DeleteWithSubresource(subresource string) DeleteOption {
-	return func(o PatchCollectorDeleteOptionApplier) {
-		o.WithSubresource(subresource)
-	}
-}
-
 type PatchCollectorOption interface {
-	Apply(PatchCollectorPatchOptionApplier)
+	Apply(PatchCollectorOptionApplier)
 }
 
-type PatchCollectorPatchOptionApplier interface {
+type PatchCollectorOptionApplier interface {
 	WithSubresource(subresource string)
 	WithIgnoreMissingObject(ignore bool)
 	WithIgnoreHookError(update bool)
 }
 
-type PatchOption func(o PatchCollectorPatchOptionApplier)
+type PatchOption func(o PatchCollectorOptionApplier)
 
-func (opt PatchOption) Apply(o PatchCollectorPatchOptionApplier) {
+func (opt PatchOption) Apply(o PatchCollectorOptionApplier) {
 	opt(o)
 }
 
-func PatchWithSubresource(subresource string) PatchOption {
-	return func(o PatchCollectorPatchOptionApplier) {
+func WithSubresource(subresource string) PatchOption {
+	return func(o PatchCollectorOptionApplier) {
 		o.WithSubresource(subresource)
 	}
 }
 
-func PatchWithIgnoreMissingObject(ignore bool) PatchOption {
-	return func(o PatchCollectorPatchOptionApplier) {
+func WithIgnoreMissingObject(ignore bool) PatchOption {
+	return func(o PatchCollectorOptionApplier) {
 		o.WithIgnoreMissingObject(ignore)
 	}
 }
 
-func PatchWithIgnoreHookError(ignore bool) PatchOption {
-	return func(o PatchCollectorPatchOptionApplier) {
-		o.WithIgnoreHookError(ignore)
-	}
-}
-
-type PatchCollectorFilterOption interface {
-	Apply(PatchCollectorFilterOptionApplier)
-}
-
-type PatchCollectorFilterOptionApplier interface {
-	WithSubresource(subresource string)
-	WithIgnoreMissingObject(ignore bool)
-	WithIgnoreHookError(update bool)
-}
-
-type FilterOption func(o PatchCollectorFilterOptionApplier)
-
-func (opt FilterOption) Apply(o PatchCollectorFilterOptionApplier) {
-	opt(o)
-}
-
-func FilterWithSubresource(subresource string) FilterOption {
-	return func(o PatchCollectorFilterOptionApplier) {
-		o.WithSubresource(subresource)
-	}
-}
-
-func FilterWithIgnoreMissingObject(ignore bool) FilterOption {
-	return func(o PatchCollectorFilterOptionApplier) {
-		o.WithIgnoreMissingObject(ignore)
-	}
-}
-
-func FilterWithIgnoreHookError(ignore bool) FilterOption {
-	return func(o PatchCollectorFilterOptionApplier) {
+func WithIgnoreHookError(ignore bool) PatchOption {
+	return func(o PatchCollectorOptionApplier) {
 		o.WithIgnoreHookError(ignore)
 	}
 }
