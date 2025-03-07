@@ -21,6 +21,10 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 
 	// CREATE
 	firstPod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-first-pod",
 			Namespace: "default",
@@ -32,6 +36,10 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 	input.PatchCollector.Create(firstPod, objectpatch.CreateWithSubresource("/status"))
 
 	secondPod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-second-pod",
 			Namespace: "default",
@@ -43,6 +51,10 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 	input.PatchCollector.CreateOrUpdate(secondPod, objectpatch.CreateWithSubresource("/status"))
 
 	thirdPod := &corev1.Pod{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "my-third-pod",
 			Namespace: "default",
