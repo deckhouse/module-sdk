@@ -52,6 +52,7 @@ func (c *ObjectPatchCollector) create(operation CreateOperation, obj any) {
 	}
 
 	p := &Patch{
+		kind: operationCreate,
 		patchValues: map[string]any{
 			"operation": operation,
 			"object":    processed,
@@ -75,6 +76,7 @@ func (c *ObjectPatchCollector) DeleteNonCascading(apiVersion string, kind string
 
 func (c *ObjectPatchCollector) delete(operation DeleteOperation, apiVersion string, kind string, namespace string, name string) {
 	p := &Patch{
+		kind: operationDelete,
 		patchValues: map[string]any{
 			"operation":  operation,
 			"apiVersion": apiVersion,
@@ -109,6 +111,7 @@ func (c *ObjectPatchCollector) PatchWithJQ(jqfilter string, apiVersion string, k
 
 func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	p := &Patch{
+		kind: operationPatch,
 		patchValues: map[string]any{
 			"operation":  operation,
 			"apiVersion": apiVersion,
@@ -146,6 +149,7 @@ func (c *ObjectPatchCollector) JQFilter(filter string, apiVersion string, kind s
 
 func (c *ObjectPatchCollector) filter(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	p := &Patch{
+		kind: operationFilter,
 		patchValues: map[string]any{
 			"operation":  JQPatch,
 			"apiVersion": apiVersion,

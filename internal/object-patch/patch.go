@@ -4,12 +4,26 @@ import "github.com/deckhouse/module-sdk/pkg"
 
 var _ pkg.PatchCollectorOptionApplier = (*Patch)(nil)
 
+type operationKind int
+
+const (
+	operationCreate operationKind = iota
+	operationDelete
+	operationPatch
+	operationFilter
+)
+
 type Patch struct {
+	kind        operationKind
 	patchValues map[string]any
 }
 
 func (p *Patch) Description() string {
 	return p.patchValues["operation"].(string)
+}
+
+func (p *Patch) Kind() int {
+	return int(p.kind)
 }
 
 func (p *Patch) WithSubresource(subresource string) {
