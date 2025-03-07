@@ -31,19 +31,19 @@ func (c *ObjectPatchCollector) collect(payload *Patch) {
 	c.dataStorage = append(c.dataStorage, *payload)
 }
 
-func (c *ObjectPatchCollector) Create(obj any, opts ...pkg.PatchCollectorCreateOption) {
-	c.create(Create, obj, opts...)
+func (c *ObjectPatchCollector) Create(obj any) {
+	c.create(Create, obj)
 }
 
-func (c *ObjectPatchCollector) CreateOrUpdate(obj any, opts ...pkg.PatchCollectorCreateOption) {
-	c.create(CreateOrUpdate, obj, opts...)
+func (c *ObjectPatchCollector) CreateOrUpdate(obj any) {
+	c.create(CreateOrUpdate, obj)
 }
 
-func (c *ObjectPatchCollector) CreateIfNotExists(obj any, opts ...pkg.PatchCollectorCreateOption) {
-	c.create(CreateIfNotExists, obj, opts...)
+func (c *ObjectPatchCollector) CreateIfNotExists(obj any) {
+	c.create(CreateIfNotExists, obj)
 }
 
-func (c *ObjectPatchCollector) create(operation CreateOperation, obj any, opts ...pkg.PatchCollectorCreateOption) {
+func (c *ObjectPatchCollector) create(operation CreateOperation, obj any) {
 	processed, err := utils.ToUnstructured(obj)
 	if err != nil {
 		c.logger.Error("cannot convert data to unstructured object", log.Err(err))
@@ -58,26 +58,22 @@ func (c *ObjectPatchCollector) create(operation CreateOperation, obj any, opts .
 		},
 	}
 
-	for _, opt := range opts {
-		opt.Apply(p)
-	}
-
 	c.collect(p)
 }
 
-func (c *ObjectPatchCollector) Delete(apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorDeleteOption) {
-	c.delete(Delete, apiVersion, kind, namespace, name, opts...)
+func (c *ObjectPatchCollector) Delete(apiVersion string, kind string, namespace string, name string) {
+	c.delete(Delete, apiVersion, kind, namespace, name)
 }
 
-func (c *ObjectPatchCollector) DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorDeleteOption) {
-	c.delete(DeleteInBackground, apiVersion, kind, namespace, name, opts...)
+func (c *ObjectPatchCollector) DeleteInBackground(apiVersion string, kind string, namespace string, name string) {
+	c.delete(DeleteInBackground, apiVersion, kind, namespace, name)
 }
 
-func (c *ObjectPatchCollector) DeleteNonCascading(apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorDeleteOption) {
-	c.delete(DeleteNonCascading, apiVersion, kind, namespace, name, opts...)
+func (c *ObjectPatchCollector) DeleteNonCascading(apiVersion string, kind string, namespace string, name string) {
+	c.delete(DeleteNonCascading, apiVersion, kind, namespace, name)
 }
 
-func (c *ObjectPatchCollector) delete(operation DeleteOperation, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorDeleteOption) {
+func (c *ObjectPatchCollector) delete(operation DeleteOperation, apiVersion string, kind string, namespace string, name string) {
 	p := &Patch{
 		patchValues: map[string]any{
 			"operation":  operation,
@@ -88,22 +84,30 @@ func (c *ObjectPatchCollector) delete(operation DeleteOperation, apiVersion stri
 		},
 	}
 
-	for _, opt := range opts {
-		opt.Apply(p)
-	}
-
 	c.collect(p)
 }
 
-func (c *ObjectPatchCollector) MergePatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
+func (c *ObjectPatchCollector) MergePatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	c.patch(MergePatch, patch, apiVersion, kind, namespace, name, opts...)
 }
 
-func (c *ObjectPatchCollector) JSONPatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
+func (c *ObjectPatchCollector) JSONPatch(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	c.patch(JSONPatch, patch, apiVersion, kind, namespace, name, opts...)
 }
 
-func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorPatchOption) {
+func (c *ObjectPatchCollector) PatchWithJSON(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
+	c.patch(JSONPatch, jsonPatch, apiVersion, kind, namespace, name, opts...)
+}
+
+func (c *ObjectPatchCollector) PatchWithMerge(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
+	c.patch(MergePatch, mergePatch, apiVersion, kind, namespace, name, opts...)
+}
+
+func (c *ObjectPatchCollector) PatchWithJQ(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
+	c.filter(jqfilter, apiVersion, kind, namespace, name, opts...)
+}
+
+func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	p := &Patch{
 		patchValues: map[string]any{
 			"operation":  operation,
@@ -136,11 +140,11 @@ func (c *ObjectPatchCollector) patch(operation PatchOperation, patch any, apiVer
 	c.collect(p)
 }
 
-func (c *ObjectPatchCollector) JQFilter(filter string, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorFilterOption) {
+func (c *ObjectPatchCollector) JQFilter(filter string, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	c.filter(filter, apiVersion, kind, namespace, name, opts...)
 }
 
-func (c *ObjectPatchCollector) filter(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorFilterOption) {
+func (c *ObjectPatchCollector) filter(patch any, apiVersion string, kind string, namespace string, name string, opts ...pkg.PatchCollectorOption) {
 	p := &Patch{
 		patchValues: map[string]any{
 			"operation":  JQPatch,

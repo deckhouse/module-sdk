@@ -68,16 +68,16 @@ type PatchCollectorMock struct {
 	beforeJQFilterCounter uint64
 	JQFilterMock          mPatchCollectorMockJQFilter
 
-	funcJSONPatch          func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)
+	funcJSONPatch          func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
 	funcJSONPatchOrigin    string
-	inspectFuncJSONPatch   func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)
+	inspectFuncJSONPatch   func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
 	afterJSONPatchCounter  uint64
 	beforeJSONPatchCounter uint64
 	JSONPatchMock          mPatchCollectorMockJSONPatch
 
-	funcMergePatch          func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)
+	funcMergePatch          func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
 	funcMergePatchOrigin    string
-	inspectFuncMergePatch   func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)
+	inspectFuncMergePatch   func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)
 	afterMergePatchCounter  uint64
 	beforeMergePatchCounter uint64
 	MergePatchMock          mPatchCollectorMockMergePatch
@@ -2921,7 +2921,7 @@ type PatchCollectorMockJSONPatchParams struct {
 	kind       string
 	namespace  string
 	name       string
-	opts       []mm_pkg.PatchCollectorPatchOption
+	opts       []mm_pkg.PatchCollectorOption
 }
 
 // PatchCollectorMockJSONPatchParamPtrs contains pointers to parameters of the EMPatchCollector.JSONPatch
@@ -2931,7 +2931,7 @@ type PatchCollectorMockJSONPatchParamPtrs struct {
 	kind       *string
 	namespace  *string
 	name       *string
-	opts       *[]mm_pkg.PatchCollectorPatchOption
+	opts       *[]mm_pkg.PatchCollectorOption
 }
 
 // PatchCollectorMockJSONPatchOrigins contains origins of expectations of the EMPatchCollector.JSONPatch
@@ -2956,7 +2956,7 @@ func (mmJSONPatch *mPatchCollectorMockJSONPatch) Optional() *mPatchCollectorMock
 }
 
 // Expect sets up expected params for EMPatchCollector.JSONPatch
-func (mmJSONPatch *mPatchCollectorMockJSONPatch) Expect(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption) *mPatchCollectorMockJSONPatch {
+func (mmJSONPatch *mPatchCollectorMockJSONPatch) Expect(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockJSONPatch {
 	if mmJSONPatch.mock.funcJSONPatch != nil {
 		mmJSONPatch.mock.t.Fatalf("PatchCollectorMock.JSONPatch mock is already set by Set")
 	}
@@ -3096,7 +3096,7 @@ func (mmJSONPatch *mPatchCollectorMockJSONPatch) ExpectNameParam5(name string) *
 }
 
 // ExpectOptsParam6 sets up expected param opts for EMPatchCollector.JSONPatch
-func (mmJSONPatch *mPatchCollectorMockJSONPatch) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorPatchOption) *mPatchCollectorMockJSONPatch {
+func (mmJSONPatch *mPatchCollectorMockJSONPatch) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockJSONPatch {
 	if mmJSONPatch.mock.funcJSONPatch != nil {
 		mmJSONPatch.mock.t.Fatalf("PatchCollectorMock.JSONPatch mock is already set by Set")
 	}
@@ -3119,7 +3119,7 @@ func (mmJSONPatch *mPatchCollectorMockJSONPatch) ExpectOptsParam6(opts ...mm_pkg
 }
 
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.JSONPatch
-func (mmJSONPatch *mPatchCollectorMockJSONPatch) Inspect(f func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)) *mPatchCollectorMockJSONPatch {
+func (mmJSONPatch *mPatchCollectorMockJSONPatch) Inspect(f func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *mPatchCollectorMockJSONPatch {
 	if mmJSONPatch.mock.inspectFuncJSONPatch != nil {
 		mmJSONPatch.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.JSONPatch")
 	}
@@ -3144,7 +3144,7 @@ func (mmJSONPatch *mPatchCollectorMockJSONPatch) Return() *PatchCollectorMock {
 }
 
 // Set uses given function f to mock the EMPatchCollector.JSONPatch method
-func (mmJSONPatch *mPatchCollectorMockJSONPatch) Set(f func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)) *PatchCollectorMock {
+func (mmJSONPatch *mPatchCollectorMockJSONPatch) Set(f func(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *PatchCollectorMock {
 	if mmJSONPatch.defaultExpectation != nil {
 		mmJSONPatch.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.JSONPatch method")
 	}
@@ -3160,7 +3160,7 @@ func (mmJSONPatch *mPatchCollectorMockJSONPatch) Set(f func(jsonPatch any, apiVe
 
 // When sets expectation for the EMPatchCollector.JSONPatch which will trigger the result defined by the following
 // Then helper
-func (mmJSONPatch *mPatchCollectorMockJSONPatch) When(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption) *PatchCollectorMockJSONPatchExpectation {
+func (mmJSONPatch *mPatchCollectorMockJSONPatch) When(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *PatchCollectorMockJSONPatchExpectation {
 	if mmJSONPatch.mock.funcJSONPatch != nil {
 		mmJSONPatch.mock.t.Fatalf("PatchCollectorMock.JSONPatch mock is already set by Set")
 	}
@@ -3202,7 +3202,7 @@ func (mmJSONPatch *mPatchCollectorMockJSONPatch) invocationsDone() bool {
 }
 
 // JSONPatch implements mm_pkg.EMPatchCollector
-func (mmJSONPatch *PatchCollectorMock) JSONPatch(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption) {
+func (mmJSONPatch *PatchCollectorMock) JSONPatch(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) {
 	mm_atomic.AddUint64(&mmJSONPatch.beforeJSONPatchCounter, 1)
 	defer mm_atomic.AddUint64(&mmJSONPatch.afterJSONPatchCounter, 1)
 
@@ -3380,7 +3380,7 @@ type PatchCollectorMockMergePatchParams struct {
 	kind       string
 	namespace  string
 	name       string
-	opts       []mm_pkg.PatchCollectorPatchOption
+	opts       []mm_pkg.PatchCollectorOption
 }
 
 // PatchCollectorMockMergePatchParamPtrs contains pointers to parameters of the EMPatchCollector.MergePatch
@@ -3390,7 +3390,7 @@ type PatchCollectorMockMergePatchParamPtrs struct {
 	kind       *string
 	namespace  *string
 	name       *string
-	opts       *[]mm_pkg.PatchCollectorPatchOption
+	opts       *[]mm_pkg.PatchCollectorOption
 }
 
 // PatchCollectorMockMergePatchOrigins contains origins of expectations of the EMPatchCollector.MergePatch
@@ -3415,7 +3415,7 @@ func (mmMergePatch *mPatchCollectorMockMergePatch) Optional() *mPatchCollectorMo
 }
 
 // Expect sets up expected params for EMPatchCollector.MergePatch
-func (mmMergePatch *mPatchCollectorMockMergePatch) Expect(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption) *mPatchCollectorMockMergePatch {
+func (mmMergePatch *mPatchCollectorMockMergePatch) Expect(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockMergePatch {
 	if mmMergePatch.mock.funcMergePatch != nil {
 		mmMergePatch.mock.t.Fatalf("PatchCollectorMock.MergePatch mock is already set by Set")
 	}
@@ -3555,7 +3555,7 @@ func (mmMergePatch *mPatchCollectorMockMergePatch) ExpectNameParam5(name string)
 }
 
 // ExpectOptsParam6 sets up expected param opts for EMPatchCollector.MergePatch
-func (mmMergePatch *mPatchCollectorMockMergePatch) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorPatchOption) *mPatchCollectorMockMergePatch {
+func (mmMergePatch *mPatchCollectorMockMergePatch) ExpectOptsParam6(opts ...mm_pkg.PatchCollectorOption) *mPatchCollectorMockMergePatch {
 	if mmMergePatch.mock.funcMergePatch != nil {
 		mmMergePatch.mock.t.Fatalf("PatchCollectorMock.MergePatch mock is already set by Set")
 	}
@@ -3578,7 +3578,7 @@ func (mmMergePatch *mPatchCollectorMockMergePatch) ExpectOptsParam6(opts ...mm_p
 }
 
 // Inspect accepts an inspector function that has same arguments as the EMPatchCollector.MergePatch
-func (mmMergePatch *mPatchCollectorMockMergePatch) Inspect(f func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)) *mPatchCollectorMockMergePatch {
+func (mmMergePatch *mPatchCollectorMockMergePatch) Inspect(f func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *mPatchCollectorMockMergePatch {
 	if mmMergePatch.mock.inspectFuncMergePatch != nil {
 		mmMergePatch.mock.t.Fatalf("Inspect function is already set for PatchCollectorMock.MergePatch")
 	}
@@ -3603,7 +3603,7 @@ func (mmMergePatch *mPatchCollectorMockMergePatch) Return() *PatchCollectorMock 
 }
 
 // Set uses given function f to mock the EMPatchCollector.MergePatch method
-func (mmMergePatch *mPatchCollectorMockMergePatch) Set(f func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption)) *PatchCollectorMock {
+func (mmMergePatch *mPatchCollectorMockMergePatch) Set(f func(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption)) *PatchCollectorMock {
 	if mmMergePatch.defaultExpectation != nil {
 		mmMergePatch.mock.t.Fatalf("Default expectation is already set for the EMPatchCollector.MergePatch method")
 	}
@@ -3619,7 +3619,7 @@ func (mmMergePatch *mPatchCollectorMockMergePatch) Set(f func(mergePatch any, ap
 
 // When sets expectation for the EMPatchCollector.MergePatch which will trigger the result defined by the following
 // Then helper
-func (mmMergePatch *mPatchCollectorMockMergePatch) When(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption) *PatchCollectorMockMergePatchExpectation {
+func (mmMergePatch *mPatchCollectorMockMergePatch) When(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) *PatchCollectorMockMergePatchExpectation {
 	if mmMergePatch.mock.funcMergePatch != nil {
 		mmMergePatch.mock.t.Fatalf("PatchCollectorMock.MergePatch mock is already set by Set")
 	}
@@ -3661,7 +3661,7 @@ func (mmMergePatch *mPatchCollectorMockMergePatch) invocationsDone() bool {
 }
 
 // MergePatch implements mm_pkg.EMPatchCollector
-func (mmMergePatch *PatchCollectorMock) MergePatch(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorPatchOption) {
+func (mmMergePatch *PatchCollectorMock) MergePatch(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...mm_pkg.PatchCollectorOption) {
 	mm_atomic.AddUint64(&mmMergePatch.beforeMergePatchCounter, 1)
 	defer mm_atomic.AddUint64(&mmMergePatch.afterMergePatchCounter, 1)
 

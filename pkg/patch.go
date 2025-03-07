@@ -12,18 +12,24 @@ type EMPatchCollector interface {
 }
 
 type PatchCollector interface {
-	Create(object any, opts ...PatchCollectorCreateOption)
-	CreateIfNotExists(object any, opts ...PatchCollectorCreateOption)
-	CreateOrUpdate(object any, opts ...PatchCollectorCreateOption)
+	Create(object any)
+	CreateIfNotExists(object any)
+	CreateOrUpdate(object any)
 
-	Delete(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
-	DeleteInBackground(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
-	DeleteNonCascading(apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorDeleteOption)
+	Delete(apiVersion string, kind string, namespace string, name string)
+	DeleteInBackground(apiVersion string, kind string, namespace string, name string)
+	DeleteNonCascading(apiVersion string, kind string, namespace string, name string)
 
-	JQFilter(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorFilterOption)
+	// deprecated use PatchWithJSON instead
+	JSONPatch(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
+	// deprecated use PatchWithMerge instead
+	MergePatch(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
+	// deprecated use PatchWithJQ instead
+	JQFilter(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
 
-	JSONPatch(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
-	MergePatch(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorPatchOption)
+	PatchWithJSON(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
+	PatchWithMerge(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
+	PatchWithJQ(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
 
 	Operations() []PatchCollectorOperation
 }
@@ -81,7 +87,7 @@ func DeleteWithSubresource(subresource string) DeleteOption {
 	}
 }
 
-type PatchCollectorPatchOption interface {
+type PatchCollectorOption interface {
 	Apply(PatchCollectorPatchOptionApplier)
 }
 

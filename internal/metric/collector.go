@@ -12,7 +12,7 @@ import (
 )
 
 var _ pkg.MetricsCollector = (*Collector)(nil)
-var _ pkg.MetricsCollectorOptionApplier = (*Collector)(nil)
+var _ MetricsCollectorOptionApplier = (*Collector)(nil)
 
 type Collector struct {
 	defaultGroup string
@@ -20,7 +20,7 @@ type Collector struct {
 	metrics []metric.Operation
 }
 
-func NewCollector(opts ...pkg.MetricsCollectorOption) *Collector {
+func NewCollector(opts ...MetricsCollectorOption) *Collector {
 	c := &Collector{metrics: make([]metric.Operation, 0)}
 
 	for _, opt := range opts {
@@ -35,12 +35,12 @@ func (mc *Collector) WithDefaultGroup(group string) {
 }
 
 // Inc increments specified Counter metric
-func (mc *Collector) Inc(name string, labels map[string]string, opts ...pkg.Option) {
+func (mc *Collector) Inc(name string, labels map[string]string, opts ...pkg.MetricCollectorOption) {
 	mc.Add(name, 1, labels, opts...)
 }
 
 // Add adds custom value for Counter metric
-func (mc *Collector) Add(name string, value float64, labels map[string]string, options ...pkg.Option) {
+func (mc *Collector) Add(name string, value float64, labels map[string]string, options ...pkg.MetricCollectorOption) {
 	m := metric.Operation{
 		Name:   name,
 		Group:  mc.defaultGroup,
@@ -57,7 +57,7 @@ func (mc *Collector) Add(name string, value float64, labels map[string]string, o
 }
 
 // Set specifies custom value for Gauge metric
-func (mc *Collector) Set(name string, value float64, labels map[string]string, options ...pkg.Option) {
+func (mc *Collector) Set(name string, value float64, labels map[string]string, options ...pkg.MetricCollectorOption) {
 	m := metric.Operation{
 		Name:   name,
 		Group:  mc.defaultGroup,
