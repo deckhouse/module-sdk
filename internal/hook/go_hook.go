@@ -10,6 +10,7 @@ import (
 	metric "github.com/deckhouse/module-sdk/internal/metric"
 	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"
 	"github.com/deckhouse/module-sdk/pkg"
+	patchablevalues "github.com/deckhouse/module-sdk/pkg/patchable-values"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
@@ -70,7 +71,7 @@ func (h *Hook) Execute(ctx context.Context, req HookRequest) (*HookResult, error
 		return nil, fmt.Errorf("get values: %w", err)
 	}
 
-	patchableValues, err := NewPatchableValues(rawValues)
+	patchableValues, err := patchablevalues.NewPatchableValues(rawValues)
 	if err != nil {
 		h.logger.Error("new patchable values", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("get patchable values: %w", err)
@@ -82,7 +83,7 @@ func (h *Hook) Execute(ctx context.Context, req HookRequest) (*HookResult, error
 		return nil, fmt.Errorf("get config values: %w", err)
 	}
 
-	patchableConfigValues, err := NewPatchableValues(rawConfigValues)
+	patchableConfigValues, err := patchablevalues.NewPatchableValues(rawConfigValues)
 	if err != nil {
 		h.logger.Error("new patchable config values", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("get patchable config values: %w", err)
