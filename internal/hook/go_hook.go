@@ -129,7 +129,7 @@ func (h *Hook) Execute(ctx context.Context, req HookRequest) (*HookResult, error
 	}
 
 	return &HookResult{
-		Patches: map[utils.ValuesPatchType]pkg.PatchableValuesCollector{
+		Patches: map[utils.ValuesPatchType]pkg.EMPatchableValuesCollector{
 			utils.MemoryValuesPatch: patchableValues,
 			utils.ConfigMapPatch:    patchableConfigValues,
 		},
@@ -145,7 +145,7 @@ func (h *Hook) Run(ctx context.Context, input *pkg.HookInput) error {
 
 // HookResult returns result of a hook execution
 type HookResult struct {
-	Patches map[utils.ValuesPatchType]pkg.PatchableValuesCollector
+	Patches map[utils.ValuesPatchType]pkg.EMPatchableValuesCollector
 
 	ObjectPatcherOperations pkg.EMPatchCollector
 	Metrics                 pkg.EMMetricsCollector
