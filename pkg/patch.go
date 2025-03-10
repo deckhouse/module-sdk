@@ -11,6 +11,11 @@ type EMPatchCollector interface {
 	Outputer
 }
 
+type EMPatchableValuesCollector interface {
+	PatchableValuesCollector
+	Outputer
+}
+
 type PatchCollector interface {
 	Create(object any)
 	CreateIfNotExists(object any)
@@ -57,33 +62,7 @@ type PatchCollectorOptionApplier interface {
 	WithIgnoreHookError(update bool)
 }
 
-type PatchOption func(o PatchCollectorOptionApplier)
-
-func (opt PatchOption) Apply(o PatchCollectorOptionApplier) {
-	opt(o)
-}
-
-func WithSubresource(subresource string) PatchOption {
-	return func(o PatchCollectorOptionApplier) {
-		o.WithSubresource(subresource)
-	}
-}
-
-func WithIgnoreMissingObject(ignore bool) PatchOption {
-	return func(o PatchCollectorOptionApplier) {
-		o.WithIgnoreMissingObject(ignore)
-	}
-}
-
-func WithIgnoreHookError(ignore bool) PatchOption {
-	return func(o PatchCollectorOptionApplier) {
-		o.WithIgnoreHookError(ignore)
-	}
-}
-
 type PatchableValuesCollector interface {
-	Outputer
-
 	ArrayCount(path string) (int, error)
 	Exists(path string) bool
 	Get(path string) gjson.Result
