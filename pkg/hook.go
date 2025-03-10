@@ -21,9 +21,9 @@ type ReconcileFunc func(ctx context.Context, input *HookInput) error
 type HookInput struct {
 	Snapshots Snapshots
 
-	Values           PatchableValuesCollector
-	ConfigValues     PatchableValuesCollector
-	PatchCollector   PatchCollector
+	Values           EMPatchableValuesCollector
+	ConfigValues     EMPatchableValuesCollector
+	PatchCollector   EMPatchCollector
 	MetricsCollector MetricsCollector
 
 	DC DependencyContainer

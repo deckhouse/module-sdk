@@ -1,4 +1,4 @@
-package hook
+package patchablevalues
 
 import (
 	"encoding/json"
@@ -47,7 +47,7 @@ func (p *PatchableValues) GetOk(path string) (gjson.Result, bool) {
 }
 
 // GetRaw get empty interface
-func (p *PatchableValues) GetRaw(path string) any {
+func (p *PatchableValues) GetRaw(path string) interface{} {
 	return p.values.Get(path).Value()
 }
 
@@ -66,12 +66,14 @@ func (p *PatchableValues) ArrayCount(path string) (int, error) {
 	return len(v.Array()), nil
 }
 
-func (p *PatchableValues) Set(path string, value any) {
+func (p *PatchableValues) Set(path string, value interface{}) {
 	data, err := json.Marshal(value)
 	if err != nil {
 		// The struct returned from a Go hook expected to be marshalable in all cases.
 		// TODO(nabokihms): return a meaningful error.
-		log.Error("patch path", slog.String("path", path), slog.String("error", err.Error()))
+		log.Error("patch path",
+			slog.String("path", path),
+			log.Err(err))
 		return
 	}
 
