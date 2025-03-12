@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -21,7 +22,11 @@ var _ = Describe("k8s client hook example", func() {
 		When("all services works correctly", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.MustGetK8sClientMock.Set(func(options ...pkg.KubernetesOption) (k1 pkg.KubernetesClient) {
-				return mock.NewKubernetesClientMock(GinkgoT()).GetMock.Set(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) (err error) {
+				k8sClient := mock.NewKubernetesClientMock(GinkgoT()).SchemeMock.Set(func() (sp1 *runtime.Scheme) {
+					return runtime.NewScheme()
+				})
+
+				k8sClient.GetMock.Set(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) (err error) {
 					pod := obj.(*corev1.Pod)
 
 					pod.Name = "found-pod"
@@ -29,6 +34,8 @@ var _ = Describe("k8s client hook example", func() {
 
 					return nil
 				})
+
+				return k8sClient
 			})
 
 			var input = &pkg.HookInput{
@@ -45,9 +52,15 @@ var _ = Describe("k8s client hook example", func() {
 		When("kubernetes client has an error", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 			dc.MustGetK8sClientMock.Set(func(options ...pkg.KubernetesOption) (k1 pkg.KubernetesClient) {
-				return mock.NewKubernetesClientMock(GinkgoT()).GetMock.Set(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) (err error) {
+				k8sClient := mock.NewKubernetesClientMock(GinkgoT()).SchemeMock.Set(func() (sp1 *runtime.Scheme) {
+					return runtime.NewScheme()
+				})
+
+				k8sClient.GetMock.Set(func(ctx context.Context, key client.ObjectKey, obj client.Object, opts ...client.GetOption) (err error) {
 					return errors.New("error")
 				})
+
+				return k8sClient
 			})
 
 			var input = &pkg.HookInput{

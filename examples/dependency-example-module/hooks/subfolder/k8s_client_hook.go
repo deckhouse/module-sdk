@@ -23,8 +23,15 @@ func HandlerKubernetesClient(ctx context.Context, input *pkg.HookInput) error {
 		podName      = "test-pod"
 	)
 
+	// our kubernetes client already know default CRDS
+	// this is just for testing purpose
+	err := corev1.AddToScheme(k8sClient.Scheme())
+	if err != nil {
+		return fmt.Errorf("add to scheme: %v", err)
+	}
+
 	pod := new(corev1.Pod)
-	err := k8sClient.Get(ctx, types.NamespacedName{Namespace: podNamespace, Name: podName}, pod)
+	err = k8sClient.Get(ctx, types.NamespacedName{Namespace: podNamespace, Name: podName}, pod)
 	if err != nil {
 		return fmt.Errorf("get pod: %w", err)
 	}
