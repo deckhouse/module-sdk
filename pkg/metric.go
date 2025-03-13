@@ -1,6 +1,6 @@
 package pkg
 
-type EMMetricsCollector interface {
+type OutputMetricsCollector interface {
 	MetricsCollector
 	Outputer
 }
