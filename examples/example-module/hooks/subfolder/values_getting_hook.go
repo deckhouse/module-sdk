@@ -67,8 +67,8 @@ func valuesGetExamples(_ context.Context, input *pkg.HookInput) {
 	//	Number, for JSON numbers
 	//	string, for JSON string literals
 	//	nil, for JSON null
-	//	map[string]interface{}, for JSON objects
-	//	[]interface{}, for JSON arrays
+	//	map[string]any, for JSON objects
+	//	[]any, for JSON arrays
 	//
 	rawFloat := input.Values.GetRaw("some.path.to.field.someInt")
 	someFloat, ok := rawFloat.(float64)

@@ -1,19 +1,23 @@
 package metric
 
-import (
-	"github.com/deckhouse/module-sdk/pkg"
-)
+type MetricsCollectorOption interface {
+	Apply(op MetricsCollectorOptionApplier)
+}
 
-var _ pkg.MetricsCollectorOption = (Option)(nil)
+type MetricsCollectorOptionApplier interface {
+	WithDefaultGroup(group string)
+}
 
-type Option func(o pkg.MetricsCollectorOptionApplier)
+var _ MetricsCollectorOption = (Option)(nil)
 
-func (opt Option) Apply(o pkg.MetricsCollectorOptionApplier) {
+type Option func(o MetricsCollectorOptionApplier)
+
+func (opt Option) Apply(o MetricsCollectorOptionApplier) {
 	opt(o)
 }
 
 func WithDefaultGroup(group string) Option {
-	return func(o pkg.MetricsCollectorOptionApplier) {
+	return func(o MetricsCollectorOptionApplier) {
 		o.WithDefaultGroup(group)
 	}
 }

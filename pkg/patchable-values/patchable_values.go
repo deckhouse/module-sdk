@@ -1,4 +1,4 @@
-package hook
+package patchablevalues
 
 import (
 	"encoding/json"
@@ -71,7 +71,9 @@ func (p *PatchableValues) Set(path string, value any) {
 	if err != nil {
 		// The struct returned from a Go hook expected to be marshalable in all cases.
 		// TODO(nabokihms): return a meaningful error.
-		log.Error("patch path", slog.String("path", path), slog.String("error", err.Error()))
+		log.Error("patch path",
+			slog.String("path", path),
+			log.Err(err))
 		return
 	}
 
