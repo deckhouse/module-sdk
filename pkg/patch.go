@@ -6,12 +6,12 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
-type EMPatchCollector interface {
+type OutputPatchCollector interface {
 	PatchCollector
 	Outputer
 }
 
-type EMPatchableValuesCollector interface {
+type OutputPatchableValuesCollector interface {
 	PatchableValuesCollector
 	Outputer
 }
