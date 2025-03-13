@@ -47,7 +47,7 @@ func (p *PatchableValues) GetOk(path string) (gjson.Result, bool) {
 }
 
 // GetRaw get empty interface
-func (p *PatchableValues) GetRaw(path string) interface{} {
+func (p *PatchableValues) GetRaw(path string) any {
 	return p.values.Get(path).Value()
 }
 
@@ -66,7 +66,7 @@ func (p *PatchableValues) ArrayCount(path string) (int, error) {
 	return len(v.Array()), nil
 }
 
-func (p *PatchableValues) Set(path string, value interface{}) {
+func (p *PatchableValues) Set(path string, value any) {
 	data, err := json.Marshal(value)
 	if err != nil {
 		// The struct returned from a Go hook expected to be marshalable in all cases.

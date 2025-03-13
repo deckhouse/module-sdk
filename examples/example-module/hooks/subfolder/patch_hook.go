@@ -88,7 +88,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 	)
 
 	// PATCH
-	statusPatch := map[string]interface{}{
+	statusPatch := map[string]any{
 		"/status": "newStatus",
 	}
 

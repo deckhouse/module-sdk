@@ -73,12 +73,12 @@ func Test_RequestGetValues(t *testing.T) {
 				filesPermissions: 0777,
 			},
 			wants: wants{
-				configValues: map[string]interface{}{
-					"global": map[string]interface{}{
-						"modules": map[string]interface{}{
+				configValues: map[string]any{
+					"global": map[string]any{
+						"modules": map[string]any{
 							"publicDomainTemplate": "%s.com"},
 					},
-					"some-module": map[string]interface{}{},
+					"some-module": map[string]any{},
 				},
 			},
 		},
@@ -223,12 +223,12 @@ func Test_RequestGetConfigValues(t *testing.T) {
 				filesPermissions: 0777,
 			},
 			wants: wants{
-				configValues: map[string]interface{}{
-					"global": map[string]interface{}{
-						"modules": map[string]interface{}{
+				configValues: map[string]any{
+					"global": map[string]any{
+						"modules": map[string]any{
 							"publicDomainTemplate": "%s.com"},
 					},
-					"some-module": map[string]interface{}{},
+					"some-module": map[string]any{},
 				},
 			},
 		},
