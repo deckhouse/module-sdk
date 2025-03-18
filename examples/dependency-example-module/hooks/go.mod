@@ -4,7 +4,7 @@ go 1.23.1
 
 require (
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241205040953-7b376bae249c
-	github.com/deckhouse/module-sdk v0.1.1-0.20250120111136-999e90a6c402
+	github.com/deckhouse/module-sdk v0.2.1-0.20250318154719-092522b89f96
 	github.com/gojuno/minimock/v3 v3.4.3
 	github.com/google/go-containerregistry v0.17.0
 	github.com/onsi/ginkgo v1.16.5

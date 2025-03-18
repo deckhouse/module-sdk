@@ -7,6 +7,7 @@ import (
 )
 
 type OutputPatchCollector interface {
+	// Deprecated: use PatchWithMerge instead
 	PatchCollector
 	Outputer
 }
@@ -36,11 +37,11 @@ type PatchCollector interface {
 	// Orphans the dependents.
 	DeleteNonCascading(apiVersion string, kind string, namespace string, name string)
 
-	// deprecated use PatchWithJSON instead
+	// Deprecated: use PatchWithJSON instead
 	JSONPatch(jsonPatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
-	// deprecated use PatchWithMerge instead
+	// Deprecated: use PatchWithMerge instead
 	MergePatch(mergePatch any, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
-	// deprecated use PatchWithJQ instead
+	// Deprecated: use PatchWithJQ instead
 	JQFilter(jqfilter string, apiVersion string, kind string, namespace string, name string, opts ...PatchCollectorOption)
 
 	// JSONPatch is a PatchType indicating the patch should be interpreted as a RFC6902 JSON Patch.
