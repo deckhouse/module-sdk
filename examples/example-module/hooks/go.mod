@@ -4,7 +4,7 @@ go 1.23.1
 
 require (
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20241205040953-7b376bae249c
-	github.com/deckhouse/module-sdk v0.1.1-0.20250304110238-4358baa2c736
+	github.com/deckhouse/module-sdk v0.2.1-0.20250318154719-092522b89f96
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.35.1
 	github.com/tidwall/gjson v1.14.4

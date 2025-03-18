@@ -7,7 +7,7 @@ import (
 )
 
 type OutputPatchCollector interface {
-	// deprecated use PatchWithMerge instead
+	// Deprecated: use PatchWithMerge instead
 	PatchCollector
 	Outputer
 }
