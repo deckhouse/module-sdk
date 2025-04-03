@@ -17,7 +17,6 @@ limitations under the License.
 package tlscertificate
 
 import (
-	"bytes"
 	"context"
 	"crypto/x509"
 	"encoding/json"
@@ -376,7 +375,7 @@ func GenerateSelfSignedTLSIfNeeded(
 
 		// In case of errors, both these flags are false to avoid regeneration loop for the
 		// certificate.
-		mustGenerate = caOutdated || certOutdatedOrIrrelevant
+		mustGenerate = mustGenerate || caOutdated || certOutdatedOrIrrelevant
 	}
 
 	if mustGenerate {
@@ -525,8 +524,8 @@ func isIrrelevantCert(
 	}
 
 	// IPAddresses
-	ipCompare := func(a, b net.IP) int { return bytes.Compare(a, b) }
-	ipEq := func(a, b net.IP) bool { return bytes.Equal(a, b) }
+	ipCompare := func(a, b net.IP) int { return strings.Compare(a.String(), b.String()) }
+	ipEq := func(a, b net.IP) bool { return net.IP.Equal(a, b) }
 	slices.SortFunc(ipAddrs, ipCompare)
 	slices.SortFunc(cert.IPAddresses, ipCompare)
 	if !slices.EqualFunc(ipAddrs, cert.IPAddresses, ipEq) {
@@ -543,7 +542,7 @@ func isIrrelevantCert(
 
 	for _, kuStr := range conf.UsagesStrings() {
 		if ku, ok := config.KeyUsage[kuStr]; ok {
-			expectedKeyUsage &= ku
+			expectedKeyUsage |= ku
 		} else if eku, ok := config.ExtKeyUsage[kuStr]; ok {
 			expectedExtKeyUsages = append(expectedExtKeyUsages, eku)
 		}
