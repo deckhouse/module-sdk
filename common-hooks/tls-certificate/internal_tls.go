@@ -363,7 +363,7 @@ func GenerateSelfSignedTLSIfNeeded(
 
 		// if common ca and cert ca are not equal - regenerate cert
 		if useCommonCA && !slices.Equal(auth.Cert, currentCert.CA) {
-			input.Logger.Warn("common ca is not equal cert ca")
+			input.Logger.Info("common ca is not equal cert ca")
 
 			caOutdated = true
 		}
