@@ -281,7 +281,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 			}
 		}
 
-		var cert *certificate.Certificate
+		cert := &certificate.Certificate{}
 
 		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, InternalTLSSnapshotKey)
 		if err != nil {
@@ -301,7 +301,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 }
 
 // New self-signed certificate will be generated when any of below is true:
-//   - currentCert is nil
+//   - len(currentCert.Cert) == 0
 //   - conf.CommonCAValuesPath is not empty and it's CA is not found in values,
 //     outdated, or doesn't match currentCert.CA
 //   - currentCert.Cert is outdated, or doesn't match important values from
@@ -333,7 +333,7 @@ func GenerateSelfSignedTLSIfNeeded(
 	if useCommonCA {
 		auth, err = getCommonCA(input, conf)
 		if err != nil {
-			input.Logger.Debug("getCommonCA error", log.Err(err))
+			input.Logger.Info("getCommonCA error", log.Err(err))
 
 			auth, err = certificate.GenerateCA(
 				conf.CommonCACanonicalName,
@@ -351,7 +351,7 @@ func GenerateSelfSignedTLSIfNeeded(
 	}
 
 	// if no certificate - regenerate
-	if currentCert == nil {
+	if len(currentCert.Cert) == 0 {
 		mustGenerate = true
 	} else {
 		// update certificate if less than 6 month left. We create certificate for 10 years, so it looks acceptable
@@ -432,6 +432,10 @@ func getCommonCA(input *pkg.HookInput, conf GenSelfSignedTLSHookConf) (*certific
 	err := json.Unmarshal([]byte(ca.String()), auth)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(auth.Cert) == 0 {
+		input.Logger.Info("empty auth.Cert", "ca", ca, "caString", ca.String(), "path", conf.CommonCAPath())
 	}
 
 	outdated, err := isOutdatedCA(auth.Cert, conf.CertOutdatedDuration)
