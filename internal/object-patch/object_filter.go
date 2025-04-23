@@ -17,7 +17,7 @@ func (s Snapshots) Get(key string) []pkg.Snapshot {
 
 type Snapshot json.RawMessage
 
-func (snap Snapshot) UnmarhalTo(v any) error {
+func (snap Snapshot) UnmarshalTo(v any) error {
 	buf := bytes.NewBuffer(snap)
 
 	err := json.NewDecoder(buf).Decode(v)
