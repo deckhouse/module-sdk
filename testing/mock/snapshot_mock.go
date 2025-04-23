@@ -2,7 +2,7 @@
 
 package mock
 
-//go:generate minimock -i module-sdk/pkg.Snapshot -o snapshot_mock.go -n SnapshotMock -p mock
+//go:generate minimock -i github.com/deckhouse/module-sdk/pkg.Snapshot -o snapshot_mock.go -n SnapshotMock -p mock
 
 import (
 	"sync"
