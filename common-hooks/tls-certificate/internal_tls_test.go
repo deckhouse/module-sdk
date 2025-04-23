@@ -143,7 +143,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
 			[]pkg.Snapshot{
-				mock.NewSnapshotMock(t).UnmarhalToMock.Set(func(v any) (err error) {
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) (err error) {
 					ca, err := certificate.GenerateCA(
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
@@ -240,7 +240,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
 			[]pkg.Snapshot{
-				mock.NewSnapshotMock(t).UnmarhalToMock.Set(func(v any) (err error) {
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) (err error) {
 					ca, err := certificate.GenerateCA(
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
@@ -337,7 +337,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
 			[]pkg.Snapshot{
-				mock.NewSnapshotMock(t).UnmarhalToMock.Set(func(v any) (err error) {
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) (err error) {
 					ca, err := certificate.GenerateCA(
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),

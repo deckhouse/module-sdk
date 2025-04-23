@@ -28,7 +28,7 @@ func SnapshotIter[T any](snaps []pkg.Snapshot) iter.Seq2[T, error] {
 		for _, snap := range snaps {
 			obj := new(T)
 
-			err := snap.UnmarhalTo(obj)
+			err := snap.UnmarshalTo(obj)
 			if err != nil {
 				err = fmt.Errorf("unmarshal to: %w", err)
 			}

@@ -32,6 +32,7 @@ var config = &pkg.HookConfig{
 				MatchLabels: map[string]string{"component": "kube-apiserver"},
 			},
 			JqFilter: ".metadata.name",
+			Queue: "myqueue",
 		},
 	},
 }
