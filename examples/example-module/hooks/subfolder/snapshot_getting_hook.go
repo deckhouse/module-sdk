@@ -57,7 +57,7 @@ func HandlerHookSnapshots(_ context.Context, input *pkg.HookInput) error {
 	for _, o := range nodes {
 		nodeInfo := new(NodeInfo)
 
-		err := o.UnmarhalTo(nodeInfo)
+		err := o.UnmarshalTo(nodeInfo)
 		if err != nil {
 			return fmt.Errorf("unmarshal to: %w", err)
 		}
