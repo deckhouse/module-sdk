@@ -23,7 +23,7 @@ var _ = Describe("snapshot alternative example", func() {
 			snapshots := mock.NewSnapshotsMock(GinkgoT())
 			snapshots.GetMock.When(subfolder.NodeInfoSnapshotName).Then(
 				[]pkg.Snapshot{
-					mock.NewSnapshotMock(GinkgoT()).UnmarhalToMock.Set(func(v any) (err error) {
+					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
 						node := v.(*subfolder.NodeInfo)
 						*node = subfolder.NodeInfo{
 							APIVersion: "v1",
@@ -37,7 +37,7 @@ var _ = Describe("snapshot alternative example", func() {
 
 						return nil
 					}),
-					mock.NewSnapshotMock(GinkgoT()).UnmarhalToMock.Set(func(v any) (err error) {
+					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
 						node := v.(*subfolder.NodeInfo)
 						*node = subfolder.NodeInfo{
 							APIVersion: "v1",
@@ -88,7 +88,7 @@ var _ = Describe("snapshot alternative example", func() {
 			snapshots := mock.NewSnapshotsMock(GinkgoT())
 			snapshots.GetMock.When(subfolder.NodeInfoSnapshotName).Then(
 				[]pkg.Snapshot{
-					mock.NewSnapshotMock(GinkgoT()).UnmarhalToMock.Set(func(v any) (err error) {
+					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
 						return errors.New("error")
 					}),
 				},

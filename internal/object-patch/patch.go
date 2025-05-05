@@ -2,19 +2,24 @@ package objectpatch
 
 import "github.com/deckhouse/module-sdk/pkg"
 
-var _ pkg.PatchCollectorPatchOptionApplier = (Patch)(nil)
-var _ pkg.PatchCollectorDeleteOptionApplier = (Patch)(nil)
+var _ pkg.PatchCollectorOptionApplier = (*Patch)(nil)
 
-type Patch map[string]any
-
-func (p Patch) Operation() string {
-	return p["operation"].(string)
+type Patch struct {
+	patchValues map[string]any
 }
 
-func (p Patch) WithSubresource(subresource string) {
-	p["subresource"] = subresource
+func (p *Patch) Description() string {
+	return p.patchValues["operation"].(string)
 }
 
-func (p Patch) WithIgnoreMissingObjects(ignore bool) {
-	p["ignoreMissingObjects"] = ignore
+func (p *Patch) WithSubresource(subresource string) {
+	p.patchValues["subresource"] = subresource
+}
+
+func (p *Patch) WithIgnoreMissingObject(ignore bool) {
+	p.patchValues["ignoreMissingObjects"] = ignore
+}
+
+func (p *Patch) WithIgnoreHookError(ignore bool) {
+	p.patchValues["ignoreHookError"] = ignore
 }

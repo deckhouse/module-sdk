@@ -21,13 +21,13 @@ var _ = Describe("handle hook single file example", func() {
 	snapshots := mock.NewSnapshotsMock(GinkgoT())
 	snapshots.GetMock.When(singlefileexample.SnapshotKey).Then(
 		[]pkg.Snapshot{
-			mock.NewSnapshotMock(GinkgoT()).UnmarhalToMock.Set(func(v any) (err error) {
+			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
 				str := v.(*string)
 				*str = firstSnapshot
 
 				return nil
 			}),
-			mock.NewSnapshotMock(GinkgoT()).UnmarhalToMock.Set(func(v any) (err error) {
+			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
 				str := v.(*string)
 				*str = secondSnapshot
 

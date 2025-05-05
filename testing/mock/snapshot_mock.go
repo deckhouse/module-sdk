@@ -24,12 +24,12 @@ type SnapshotMock struct {
 	beforeStringCounter uint64
 	StringMock          mSnapshotMockString
 
-	funcUnmarhalTo          func(v any) (err error)
-	funcUnmarhalToOrigin    string
-	inspectFuncUnmarhalTo   func(v any)
-	afterUnmarhalToCounter  uint64
-	beforeUnmarhalToCounter uint64
-	UnmarhalToMock          mSnapshotMockUnmarhalTo
+	funcUnmarshalTo          func(v any) (err error)
+	funcUnmarshalToOrigin    string
+	inspectFuncUnmarshalTo   func(v any)
+	afterUnmarshalToCounter  uint64
+	beforeUnmarshalToCounter uint64
+	UnmarshalToMock          mSnapshotMockUnmarshalTo
 }
 
 // NewSnapshotMock returns a mock for mm_pkg.Snapshot
@@ -42,8 +42,8 @@ func NewSnapshotMock(t minimock.Tester) *SnapshotMock {
 
 	m.StringMock = mSnapshotMockString{mock: m}
 
-	m.UnmarhalToMock = mSnapshotMockUnmarhalTo{mock: m}
-	m.UnmarhalToMock.callArgs = []*SnapshotMockUnmarhalToParams{}
+	m.UnmarshalToMock = mSnapshotMockUnmarshalTo{mock: m}
+	m.UnmarshalToMock.callArgs = []*SnapshotMockUnmarshalToParams{}
 
 	t.Cleanup(m.MinimockFinish)
 
@@ -236,47 +236,47 @@ func (m *SnapshotMock) MinimockStringInspect() {
 	}
 }
 
-type mSnapshotMockUnmarhalTo struct {
+type mSnapshotMockUnmarshalTo struct {
 	optional           bool
 	mock               *SnapshotMock
-	defaultExpectation *SnapshotMockUnmarhalToExpectation
-	expectations       []*SnapshotMockUnmarhalToExpectation
+	defaultExpectation *SnapshotMockUnmarshalToExpectation
+	expectations       []*SnapshotMockUnmarshalToExpectation
 
-	callArgs []*SnapshotMockUnmarhalToParams
+	callArgs []*SnapshotMockUnmarshalToParams
 	mutex    sync.RWMutex
 
 	expectedInvocations       uint64
 	expectedInvocationsOrigin string
 }
 
-// SnapshotMockUnmarhalToExpectation specifies expectation struct of the Snapshot.UnmarhalTo
-type SnapshotMockUnmarhalToExpectation struct {
+// SnapshotMockUnmarshalToExpectation specifies expectation struct of the Snapshot.UnmarshalTo
+type SnapshotMockUnmarshalToExpectation struct {
 	mock               *SnapshotMock
-	params             *SnapshotMockUnmarhalToParams
-	paramPtrs          *SnapshotMockUnmarhalToParamPtrs
-	expectationOrigins SnapshotMockUnmarhalToExpectationOrigins
-	results            *SnapshotMockUnmarhalToResults
+	params             *SnapshotMockUnmarshalToParams
+	paramPtrs          *SnapshotMockUnmarshalToParamPtrs
+	expectationOrigins SnapshotMockUnmarshalToExpectationOrigins
+	results            *SnapshotMockUnmarshalToResults
 	returnOrigin       string
 	Counter            uint64
 }
 
-// SnapshotMockUnmarhalToParams contains parameters of the Snapshot.UnmarhalTo
-type SnapshotMockUnmarhalToParams struct {
+// SnapshotMockUnmarshalToParams contains parameters of the Snapshot.UnmarshalTo
+type SnapshotMockUnmarshalToParams struct {
 	v any
 }
 
-// SnapshotMockUnmarhalToParamPtrs contains pointers to parameters of the Snapshot.UnmarhalTo
-type SnapshotMockUnmarhalToParamPtrs struct {
+// SnapshotMockUnmarshalToParamPtrs contains pointers to parameters of the Snapshot.UnmarshalTo
+type SnapshotMockUnmarshalToParamPtrs struct {
 	v *any
 }
 
-// SnapshotMockUnmarhalToResults contains results of the Snapshot.UnmarhalTo
-type SnapshotMockUnmarhalToResults struct {
+// SnapshotMockUnmarshalToResults contains results of the Snapshot.UnmarshalTo
+type SnapshotMockUnmarshalToResults struct {
 	err error
 }
 
-// SnapshotMockUnmarhalToOrigins contains origins of expectations of the Snapshot.UnmarhalTo
-type SnapshotMockUnmarhalToExpectationOrigins struct {
+// SnapshotMockUnmarshalToOrigins contains origins of expectations of the Snapshot.UnmarshalTo
+type SnapshotMockUnmarshalToExpectationOrigins struct {
 	origin  string
 	originV string
 }
@@ -286,264 +286,264 @@ type SnapshotMockUnmarhalToExpectationOrigins struct {
 // Optional() makes method check to work in '0 or more' mode.
 // It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
 // catch the problems when the expected method call is totally skipped during test run.
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Optional() *mSnapshotMockUnmarhalTo {
-	mmUnmarhalTo.optional = true
-	return mmUnmarhalTo
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Optional() *mSnapshotMockUnmarshalTo {
+	mmUnmarshalTo.optional = true
+	return mmUnmarshalTo
 }
 
-// Expect sets up expected params for Snapshot.UnmarhalTo
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Expect(v any) *mSnapshotMockUnmarhalTo {
-	if mmUnmarhalTo.mock.funcUnmarhalTo != nil {
-		mmUnmarhalTo.mock.t.Fatalf("SnapshotMock.UnmarhalTo mock is already set by Set")
+// Expect sets up expected params for Snapshot.UnmarshalTo
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Expect(v any) *mSnapshotMockUnmarshalTo {
+	if mmUnmarshalTo.mock.funcUnmarshalTo != nil {
+		mmUnmarshalTo.mock.t.Fatalf("SnapshotMock.UnmarshalTo mock is already set by Set")
 	}
 
-	if mmUnmarhalTo.defaultExpectation == nil {
-		mmUnmarhalTo.defaultExpectation = &SnapshotMockUnmarhalToExpectation{}
+	if mmUnmarshalTo.defaultExpectation == nil {
+		mmUnmarshalTo.defaultExpectation = &SnapshotMockUnmarshalToExpectation{}
 	}
 
-	if mmUnmarhalTo.defaultExpectation.paramPtrs != nil {
-		mmUnmarhalTo.mock.t.Fatalf("SnapshotMock.UnmarhalTo mock is already set by ExpectParams functions")
+	if mmUnmarshalTo.defaultExpectation.paramPtrs != nil {
+		mmUnmarshalTo.mock.t.Fatalf("SnapshotMock.UnmarshalTo mock is already set by ExpectParams functions")
 	}
 
-	mmUnmarhalTo.defaultExpectation.params = &SnapshotMockUnmarhalToParams{v}
-	mmUnmarhalTo.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
-	for _, e := range mmUnmarhalTo.expectations {
-		if minimock.Equal(e.params, mmUnmarhalTo.defaultExpectation.params) {
-			mmUnmarhalTo.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmUnmarhalTo.defaultExpectation.params)
+	mmUnmarshalTo.defaultExpectation.params = &SnapshotMockUnmarshalToParams{v}
+	mmUnmarshalTo.defaultExpectation.expectationOrigins.origin = minimock.CallerInfo(1)
+	for _, e := range mmUnmarshalTo.expectations {
+		if minimock.Equal(e.params, mmUnmarshalTo.defaultExpectation.params) {
+			mmUnmarshalTo.mock.t.Fatalf("Expectation set by When has same params: %#v", *mmUnmarshalTo.defaultExpectation.params)
 		}
 	}
 
-	return mmUnmarhalTo
+	return mmUnmarshalTo
 }
 
-// ExpectVParam1 sets up expected param v for Snapshot.UnmarhalTo
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) ExpectVParam1(v any) *mSnapshotMockUnmarhalTo {
-	if mmUnmarhalTo.mock.funcUnmarhalTo != nil {
-		mmUnmarhalTo.mock.t.Fatalf("SnapshotMock.UnmarhalTo mock is already set by Set")
+// ExpectVParam1 sets up expected param v for Snapshot.UnmarshalTo
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) ExpectVParam1(v any) *mSnapshotMockUnmarshalTo {
+	if mmUnmarshalTo.mock.funcUnmarshalTo != nil {
+		mmUnmarshalTo.mock.t.Fatalf("SnapshotMock.UnmarshalTo mock is already set by Set")
 	}
 
-	if mmUnmarhalTo.defaultExpectation == nil {
-		mmUnmarhalTo.defaultExpectation = &SnapshotMockUnmarhalToExpectation{}
+	if mmUnmarshalTo.defaultExpectation == nil {
+		mmUnmarshalTo.defaultExpectation = &SnapshotMockUnmarshalToExpectation{}
 	}
 
-	if mmUnmarhalTo.defaultExpectation.params != nil {
-		mmUnmarhalTo.mock.t.Fatalf("SnapshotMock.UnmarhalTo mock is already set by Expect")
+	if mmUnmarshalTo.defaultExpectation.params != nil {
+		mmUnmarshalTo.mock.t.Fatalf("SnapshotMock.UnmarshalTo mock is already set by Expect")
 	}
 
-	if mmUnmarhalTo.defaultExpectation.paramPtrs == nil {
-		mmUnmarhalTo.defaultExpectation.paramPtrs = &SnapshotMockUnmarhalToParamPtrs{}
+	if mmUnmarshalTo.defaultExpectation.paramPtrs == nil {
+		mmUnmarshalTo.defaultExpectation.paramPtrs = &SnapshotMockUnmarshalToParamPtrs{}
 	}
-	mmUnmarhalTo.defaultExpectation.paramPtrs.v = &v
-	mmUnmarhalTo.defaultExpectation.expectationOrigins.originV = minimock.CallerInfo(1)
+	mmUnmarshalTo.defaultExpectation.paramPtrs.v = &v
+	mmUnmarshalTo.defaultExpectation.expectationOrigins.originV = minimock.CallerInfo(1)
 
-	return mmUnmarhalTo
+	return mmUnmarshalTo
 }
 
-// Inspect accepts an inspector function that has same arguments as the Snapshot.UnmarhalTo
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Inspect(f func(v any)) *mSnapshotMockUnmarhalTo {
-	if mmUnmarhalTo.mock.inspectFuncUnmarhalTo != nil {
-		mmUnmarhalTo.mock.t.Fatalf("Inspect function is already set for SnapshotMock.UnmarhalTo")
+// Inspect accepts an inspector function that has same arguments as the Snapshot.UnmarshalTo
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Inspect(f func(v any)) *mSnapshotMockUnmarshalTo {
+	if mmUnmarshalTo.mock.inspectFuncUnmarshalTo != nil {
+		mmUnmarshalTo.mock.t.Fatalf("Inspect function is already set for SnapshotMock.UnmarshalTo")
 	}
 
-	mmUnmarhalTo.mock.inspectFuncUnmarhalTo = f
+	mmUnmarshalTo.mock.inspectFuncUnmarshalTo = f
 
-	return mmUnmarhalTo
+	return mmUnmarshalTo
 }
 
-// Return sets up results that will be returned by Snapshot.UnmarhalTo
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Return(err error) *SnapshotMock {
-	if mmUnmarhalTo.mock.funcUnmarhalTo != nil {
-		mmUnmarhalTo.mock.t.Fatalf("SnapshotMock.UnmarhalTo mock is already set by Set")
+// Return sets up results that will be returned by Snapshot.UnmarshalTo
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Return(err error) *SnapshotMock {
+	if mmUnmarshalTo.mock.funcUnmarshalTo != nil {
+		mmUnmarshalTo.mock.t.Fatalf("SnapshotMock.UnmarshalTo mock is already set by Set")
 	}
 
-	if mmUnmarhalTo.defaultExpectation == nil {
-		mmUnmarhalTo.defaultExpectation = &SnapshotMockUnmarhalToExpectation{mock: mmUnmarhalTo.mock}
+	if mmUnmarshalTo.defaultExpectation == nil {
+		mmUnmarshalTo.defaultExpectation = &SnapshotMockUnmarshalToExpectation{mock: mmUnmarshalTo.mock}
 	}
-	mmUnmarhalTo.defaultExpectation.results = &SnapshotMockUnmarhalToResults{err}
-	mmUnmarhalTo.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
-	return mmUnmarhalTo.mock
+	mmUnmarshalTo.defaultExpectation.results = &SnapshotMockUnmarshalToResults{err}
+	mmUnmarshalTo.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmUnmarshalTo.mock
 }
 
-// Set uses given function f to mock the Snapshot.UnmarhalTo method
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Set(f func(v any) (err error)) *SnapshotMock {
-	if mmUnmarhalTo.defaultExpectation != nil {
-		mmUnmarhalTo.mock.t.Fatalf("Default expectation is already set for the Snapshot.UnmarhalTo method")
+// Set uses given function f to mock the Snapshot.UnmarshalTo method
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Set(f func(v any) (err error)) *SnapshotMock {
+	if mmUnmarshalTo.defaultExpectation != nil {
+		mmUnmarshalTo.mock.t.Fatalf("Default expectation is already set for the Snapshot.UnmarshalTo method")
 	}
 
-	if len(mmUnmarhalTo.expectations) > 0 {
-		mmUnmarhalTo.mock.t.Fatalf("Some expectations are already set for the Snapshot.UnmarhalTo method")
+	if len(mmUnmarshalTo.expectations) > 0 {
+		mmUnmarshalTo.mock.t.Fatalf("Some expectations are already set for the Snapshot.UnmarshalTo method")
 	}
 
-	mmUnmarhalTo.mock.funcUnmarhalTo = f
-	mmUnmarhalTo.mock.funcUnmarhalToOrigin = minimock.CallerInfo(1)
-	return mmUnmarhalTo.mock
+	mmUnmarshalTo.mock.funcUnmarshalTo = f
+	mmUnmarshalTo.mock.funcUnmarshalToOrigin = minimock.CallerInfo(1)
+	return mmUnmarshalTo.mock
 }
 
-// When sets expectation for the Snapshot.UnmarhalTo which will trigger the result defined by the following
+// When sets expectation for the Snapshot.UnmarshalTo which will trigger the result defined by the following
 // Then helper
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) When(v any) *SnapshotMockUnmarhalToExpectation {
-	if mmUnmarhalTo.mock.funcUnmarhalTo != nil {
-		mmUnmarhalTo.mock.t.Fatalf("SnapshotMock.UnmarhalTo mock is already set by Set")
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) When(v any) *SnapshotMockUnmarshalToExpectation {
+	if mmUnmarshalTo.mock.funcUnmarshalTo != nil {
+		mmUnmarshalTo.mock.t.Fatalf("SnapshotMock.UnmarshalTo mock is already set by Set")
 	}
 
-	expectation := &SnapshotMockUnmarhalToExpectation{
-		mock:               mmUnmarhalTo.mock,
-		params:             &SnapshotMockUnmarhalToParams{v},
-		expectationOrigins: SnapshotMockUnmarhalToExpectationOrigins{origin: minimock.CallerInfo(1)},
+	expectation := &SnapshotMockUnmarshalToExpectation{
+		mock:               mmUnmarshalTo.mock,
+		params:             &SnapshotMockUnmarshalToParams{v},
+		expectationOrigins: SnapshotMockUnmarshalToExpectationOrigins{origin: minimock.CallerInfo(1)},
 	}
-	mmUnmarhalTo.expectations = append(mmUnmarhalTo.expectations, expectation)
+	mmUnmarshalTo.expectations = append(mmUnmarshalTo.expectations, expectation)
 	return expectation
 }
 
-// Then sets up Snapshot.UnmarhalTo return parameters for the expectation previously defined by the When method
-func (e *SnapshotMockUnmarhalToExpectation) Then(err error) *SnapshotMock {
-	e.results = &SnapshotMockUnmarhalToResults{err}
+// Then sets up Snapshot.UnmarshalTo return parameters for the expectation previously defined by the When method
+func (e *SnapshotMockUnmarshalToExpectation) Then(err error) *SnapshotMock {
+	e.results = &SnapshotMockUnmarshalToResults{err}
 	return e.mock
 }
 
-// Times sets number of times Snapshot.UnmarhalTo should be invoked
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Times(n uint64) *mSnapshotMockUnmarhalTo {
+// Times sets number of times Snapshot.UnmarshalTo should be invoked
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Times(n uint64) *mSnapshotMockUnmarshalTo {
 	if n == 0 {
-		mmUnmarhalTo.mock.t.Fatalf("Times of SnapshotMock.UnmarhalTo mock can not be zero")
+		mmUnmarshalTo.mock.t.Fatalf("Times of SnapshotMock.UnmarshalTo mock can not be zero")
 	}
-	mm_atomic.StoreUint64(&mmUnmarhalTo.expectedInvocations, n)
-	mmUnmarhalTo.expectedInvocationsOrigin = minimock.CallerInfo(1)
-	return mmUnmarhalTo
+	mm_atomic.StoreUint64(&mmUnmarshalTo.expectedInvocations, n)
+	mmUnmarshalTo.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmUnmarshalTo
 }
 
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) invocationsDone() bool {
-	if len(mmUnmarhalTo.expectations) == 0 && mmUnmarhalTo.defaultExpectation == nil && mmUnmarhalTo.mock.funcUnmarhalTo == nil {
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) invocationsDone() bool {
+	if len(mmUnmarshalTo.expectations) == 0 && mmUnmarshalTo.defaultExpectation == nil && mmUnmarshalTo.mock.funcUnmarshalTo == nil {
 		return true
 	}
 
-	totalInvocations := mm_atomic.LoadUint64(&mmUnmarhalTo.mock.afterUnmarhalToCounter)
-	expectedInvocations := mm_atomic.LoadUint64(&mmUnmarhalTo.expectedInvocations)
+	totalInvocations := mm_atomic.LoadUint64(&mmUnmarshalTo.mock.afterUnmarshalToCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmUnmarshalTo.expectedInvocations)
 
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// UnmarhalTo implements mm_pkg.Snapshot
-func (mmUnmarhalTo *SnapshotMock) UnmarhalTo(v any) (err error) {
-	mm_atomic.AddUint64(&mmUnmarhalTo.beforeUnmarhalToCounter, 1)
-	defer mm_atomic.AddUint64(&mmUnmarhalTo.afterUnmarhalToCounter, 1)
+// UnmarshalTo implements mm_pkg.Snapshot
+func (mmUnmarshalTo *SnapshotMock) UnmarshalTo(v any) (err error) {
+	mm_atomic.AddUint64(&mmUnmarshalTo.beforeUnmarshalToCounter, 1)
+	defer mm_atomic.AddUint64(&mmUnmarshalTo.afterUnmarshalToCounter, 1)
 
-	mmUnmarhalTo.t.Helper()
+	mmUnmarshalTo.t.Helper()
 
-	if mmUnmarhalTo.inspectFuncUnmarhalTo != nil {
-		mmUnmarhalTo.inspectFuncUnmarhalTo(v)
+	if mmUnmarshalTo.inspectFuncUnmarshalTo != nil {
+		mmUnmarshalTo.inspectFuncUnmarshalTo(v)
 	}
 
-	mm_params := SnapshotMockUnmarhalToParams{v}
+	mm_params := SnapshotMockUnmarshalToParams{v}
 
 	// Record call args
-	mmUnmarhalTo.UnmarhalToMock.mutex.Lock()
-	mmUnmarhalTo.UnmarhalToMock.callArgs = append(mmUnmarhalTo.UnmarhalToMock.callArgs, &mm_params)
-	mmUnmarhalTo.UnmarhalToMock.mutex.Unlock()
+	mmUnmarshalTo.UnmarshalToMock.mutex.Lock()
+	mmUnmarshalTo.UnmarshalToMock.callArgs = append(mmUnmarshalTo.UnmarshalToMock.callArgs, &mm_params)
+	mmUnmarshalTo.UnmarshalToMock.mutex.Unlock()
 
-	for _, e := range mmUnmarhalTo.UnmarhalToMock.expectations {
+	for _, e := range mmUnmarshalTo.UnmarshalToMock.expectations {
 		if minimock.Equal(*e.params, mm_params) {
 			mm_atomic.AddUint64(&e.Counter, 1)
 			return e.results.err
 		}
 	}
 
-	if mmUnmarhalTo.UnmarhalToMock.defaultExpectation != nil {
-		mm_atomic.AddUint64(&mmUnmarhalTo.UnmarhalToMock.defaultExpectation.Counter, 1)
-		mm_want := mmUnmarhalTo.UnmarhalToMock.defaultExpectation.params
-		mm_want_ptrs := mmUnmarhalTo.UnmarhalToMock.defaultExpectation.paramPtrs
+	if mmUnmarshalTo.UnmarshalToMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmUnmarshalTo.UnmarshalToMock.defaultExpectation.Counter, 1)
+		mm_want := mmUnmarshalTo.UnmarshalToMock.defaultExpectation.params
+		mm_want_ptrs := mmUnmarshalTo.UnmarshalToMock.defaultExpectation.paramPtrs
 
-		mm_got := SnapshotMockUnmarhalToParams{v}
+		mm_got := SnapshotMockUnmarshalToParams{v}
 
 		if mm_want_ptrs != nil {
 
 			if mm_want_ptrs.v != nil && !minimock.Equal(*mm_want_ptrs.v, mm_got.v) {
-				mmUnmarhalTo.t.Errorf("SnapshotMock.UnmarhalTo got unexpected parameter v, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-					mmUnmarhalTo.UnmarhalToMock.defaultExpectation.expectationOrigins.originV, *mm_want_ptrs.v, mm_got.v, minimock.Diff(*mm_want_ptrs.v, mm_got.v))
+				mmUnmarshalTo.t.Errorf("SnapshotMock.UnmarshalTo got unexpected parameter v, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+					mmUnmarshalTo.UnmarshalToMock.defaultExpectation.expectationOrigins.originV, *mm_want_ptrs.v, mm_got.v, minimock.Diff(*mm_want_ptrs.v, mm_got.v))
 			}
 
 		} else if mm_want != nil && !minimock.Equal(*mm_want, mm_got) {
-			mmUnmarhalTo.t.Errorf("SnapshotMock.UnmarhalTo got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
-				mmUnmarhalTo.UnmarhalToMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
+			mmUnmarshalTo.t.Errorf("SnapshotMock.UnmarshalTo got unexpected parameters, expected at\n%s:\nwant: %#v\n got: %#v%s\n",
+				mmUnmarshalTo.UnmarshalToMock.defaultExpectation.expectationOrigins.origin, *mm_want, mm_got, minimock.Diff(*mm_want, mm_got))
 		}
 
-		mm_results := mmUnmarhalTo.UnmarhalToMock.defaultExpectation.results
+		mm_results := mmUnmarshalTo.UnmarshalToMock.defaultExpectation.results
 		if mm_results == nil {
-			mmUnmarhalTo.t.Fatal("No results are set for the SnapshotMock.UnmarhalTo")
+			mmUnmarshalTo.t.Fatal("No results are set for the SnapshotMock.UnmarshalTo")
 		}
 		return (*mm_results).err
 	}
-	if mmUnmarhalTo.funcUnmarhalTo != nil {
-		return mmUnmarhalTo.funcUnmarhalTo(v)
+	if mmUnmarshalTo.funcUnmarshalTo != nil {
+		return mmUnmarshalTo.funcUnmarshalTo(v)
 	}
-	mmUnmarhalTo.t.Fatalf("Unexpected call to SnapshotMock.UnmarhalTo. %v", v)
+	mmUnmarshalTo.t.Fatalf("Unexpected call to SnapshotMock.UnmarshalTo. %v", v)
 	return
 }
 
-// UnmarhalToAfterCounter returns a count of finished SnapshotMock.UnmarhalTo invocations
-func (mmUnmarhalTo *SnapshotMock) UnmarhalToAfterCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmUnmarhalTo.afterUnmarhalToCounter)
+// UnmarshalToAfterCounter returns a count of finished SnapshotMock.UnmarshalTo invocations
+func (mmUnmarshalTo *SnapshotMock) UnmarshalToAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmUnmarshalTo.afterUnmarshalToCounter)
 }
 
-// UnmarhalToBeforeCounter returns a count of SnapshotMock.UnmarhalTo invocations
-func (mmUnmarhalTo *SnapshotMock) UnmarhalToBeforeCounter() uint64 {
-	return mm_atomic.LoadUint64(&mmUnmarhalTo.beforeUnmarhalToCounter)
+// UnmarshalToBeforeCounter returns a count of SnapshotMock.UnmarshalTo invocations
+func (mmUnmarshalTo *SnapshotMock) UnmarshalToBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmUnmarshalTo.beforeUnmarshalToCounter)
 }
 
-// Calls returns a list of arguments used in each call to SnapshotMock.UnmarhalTo.
+// Calls returns a list of arguments used in each call to SnapshotMock.UnmarshalTo.
 // The list is in the same order as the calls were made (i.e. recent calls have a higher index)
-func (mmUnmarhalTo *mSnapshotMockUnmarhalTo) Calls() []*SnapshotMockUnmarhalToParams {
-	mmUnmarhalTo.mutex.RLock()
+func (mmUnmarshalTo *mSnapshotMockUnmarshalTo) Calls() []*SnapshotMockUnmarshalToParams {
+	mmUnmarshalTo.mutex.RLock()
 
-	argCopy := make([]*SnapshotMockUnmarhalToParams, len(mmUnmarhalTo.callArgs))
-	copy(argCopy, mmUnmarhalTo.callArgs)
+	argCopy := make([]*SnapshotMockUnmarshalToParams, len(mmUnmarshalTo.callArgs))
+	copy(argCopy, mmUnmarshalTo.callArgs)
 
-	mmUnmarhalTo.mutex.RUnlock()
+	mmUnmarshalTo.mutex.RUnlock()
 
 	return argCopy
 }
 
-// MinimockUnmarhalToDone returns true if the count of the UnmarhalTo invocations corresponds
+// MinimockUnmarshalToDone returns true if the count of the UnmarshalTo invocations corresponds
 // the number of defined expectations
-func (m *SnapshotMock) MinimockUnmarhalToDone() bool {
-	if m.UnmarhalToMock.optional {
+func (m *SnapshotMock) MinimockUnmarshalToDone() bool {
+	if m.UnmarshalToMock.optional {
 		// Optional methods provide '0 or more' call count restriction.
 		return true
 	}
 
-	for _, e := range m.UnmarhalToMock.expectations {
+	for _, e := range m.UnmarshalToMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
 			return false
 		}
 	}
 
-	return m.UnmarhalToMock.invocationsDone()
+	return m.UnmarshalToMock.invocationsDone()
 }
 
-// MinimockUnmarhalToInspect logs each unmet expectation
-func (m *SnapshotMock) MinimockUnmarhalToInspect() {
-	for _, e := range m.UnmarhalToMock.expectations {
+// MinimockUnmarshalToInspect logs each unmet expectation
+func (m *SnapshotMock) MinimockUnmarshalToInspect() {
+	for _, e := range m.UnmarshalToMock.expectations {
 		if mm_atomic.LoadUint64(&e.Counter) < 1 {
-			m.t.Errorf("Expected call to SnapshotMock.UnmarhalTo at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
+			m.t.Errorf("Expected call to SnapshotMock.UnmarshalTo at\n%s with params: %#v", e.expectationOrigins.origin, *e.params)
 		}
 	}
 
-	afterUnmarhalToCounter := mm_atomic.LoadUint64(&m.afterUnmarhalToCounter)
+	afterUnmarshalToCounter := mm_atomic.LoadUint64(&m.afterUnmarshalToCounter)
 	// if default expectation was set then invocations count should be greater than zero
-	if m.UnmarhalToMock.defaultExpectation != nil && afterUnmarhalToCounter < 1 {
-		if m.UnmarhalToMock.defaultExpectation.params == nil {
-			m.t.Errorf("Expected call to SnapshotMock.UnmarhalTo at\n%s", m.UnmarhalToMock.defaultExpectation.returnOrigin)
+	if m.UnmarshalToMock.defaultExpectation != nil && afterUnmarshalToCounter < 1 {
+		if m.UnmarshalToMock.defaultExpectation.params == nil {
+			m.t.Errorf("Expected call to SnapshotMock.UnmarshalTo at\n%s", m.UnmarshalToMock.defaultExpectation.returnOrigin)
 		} else {
-			m.t.Errorf("Expected call to SnapshotMock.UnmarhalTo at\n%s with params: %#v", m.UnmarhalToMock.defaultExpectation.expectationOrigins.origin, *m.UnmarhalToMock.defaultExpectation.params)
+			m.t.Errorf("Expected call to SnapshotMock.UnmarshalTo at\n%s with params: %#v", m.UnmarshalToMock.defaultExpectation.expectationOrigins.origin, *m.UnmarshalToMock.defaultExpectation.params)
 		}
 	}
 	// if func was set then invocations count should be greater than zero
-	if m.funcUnmarhalTo != nil && afterUnmarhalToCounter < 1 {
-		m.t.Errorf("Expected call to SnapshotMock.UnmarhalTo at\n%s", m.funcUnmarhalToOrigin)
+	if m.funcUnmarshalTo != nil && afterUnmarshalToCounter < 1 {
+		m.t.Errorf("Expected call to SnapshotMock.UnmarshalTo at\n%s", m.funcUnmarshalToOrigin)
 	}
 
-	if !m.UnmarhalToMock.invocationsDone() && afterUnmarhalToCounter > 0 {
-		m.t.Errorf("Expected %d calls to SnapshotMock.UnmarhalTo at\n%s but found %d calls",
-			mm_atomic.LoadUint64(&m.UnmarhalToMock.expectedInvocations), m.UnmarhalToMock.expectedInvocationsOrigin, afterUnmarhalToCounter)
+	if !m.UnmarshalToMock.invocationsDone() && afterUnmarshalToCounter > 0 {
+		m.t.Errorf("Expected %d calls to SnapshotMock.UnmarshalTo at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.UnmarshalToMock.expectedInvocations), m.UnmarshalToMock.expectedInvocationsOrigin, afterUnmarshalToCounter)
 	}
 }
 
@@ -553,7 +553,7 @@ func (m *SnapshotMock) MinimockFinish() {
 		if !m.minimockDone() {
 			m.MinimockStringInspect()
 
-			m.MinimockUnmarhalToInspect()
+			m.MinimockUnmarshalToInspect()
 		}
 	})
 }
@@ -578,5 +578,5 @@ func (m *SnapshotMock) minimockDone() bool {
 	done := true
 	return done &&
 		m.MinimockStringDone() &&
-		m.MinimockUnmarhalToDone()
+		m.MinimockUnmarshalToDone()
 }

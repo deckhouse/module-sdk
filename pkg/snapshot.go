@@ -5,6 +5,6 @@ type Snapshots interface {
 }
 
 type Snapshot interface {
-	UnmarhalTo(v any) error
+	UnmarshalTo(v any) error
 	String() string
 }

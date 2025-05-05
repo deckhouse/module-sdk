@@ -37,6 +37,15 @@ func NewFromSnapshot(snapshots []pkg.Snapshot) (*Set, error) {
 	return s, nil
 }
 
+// NewFromValues expects values array to contain only strings, otherwise it panics
+func NewFromValues(values pkg.PatchableValuesCollector, path string) Set {
+	s := Set{}
+	for _, m := range values.Get(path).Array() {
+		s.Add(m.String())
+	}
+	return s
+}
+
 func New(xs ...string) Set {
 	s := Set{}
 	for _, x := range xs {
