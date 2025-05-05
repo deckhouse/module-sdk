@@ -82,7 +82,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 			[]pkg.Snapshot{},
 		)
 
-		values := mock.NewOutputPatchableValuesCollectorMock(t)
+		values := mock.NewPatchableValuesCollectorMock(t)
 
 		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
 		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})
@@ -182,7 +182,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 			},
 		)
 
-		values := mock.NewOutputPatchableValuesCollectorMock(t)
+		values := mock.NewPatchableValuesCollectorMock(t)
 
 		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
 		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})
@@ -279,7 +279,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 			},
 		)
 
-		values := mock.NewOutputPatchableValuesCollectorMock(t)
+		values := mock.NewPatchableValuesCollectorMock(t)
 
 		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
 		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})
@@ -376,7 +376,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 			},
 		)
 
-		values := mock.NewOutputPatchableValuesCollectorMock(t)
+		values := mock.NewPatchableValuesCollectorMock(t)
 
 		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
 		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})

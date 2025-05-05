@@ -84,8 +84,8 @@ type OutputPatchableValuesCollectorMock struct {
 	WriteOutputMock          mOutputPatchableValuesCollectorMockWriteOutput
 }
 
-// NewOutputPatchableValuesCollectorMock returns a mock for mm_pkg.OutputPatchableValuesCollector
-func NewOutputPatchableValuesCollectorMock(t minimock.Tester) *OutputPatchableValuesCollectorMock {
+// NewPatchableValuesCollectorMock returns a mock for mm_pkg.OutputPatchableValuesCollector
+func NewPatchableValuesCollectorMock(t minimock.Tester) *OutputPatchableValuesCollectorMock {
 	m := &OutputPatchableValuesCollectorMock{t: t}
 
 	if controller, ok := t.(minimock.MockController); ok {
