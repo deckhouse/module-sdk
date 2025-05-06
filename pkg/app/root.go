@@ -127,8 +127,7 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Short:  "Check readiness",
 		Long:   `Run readiness hook for module`,
 		Hidden: true,
-		Args:   cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			ctx := cmd.Context()
 
 			err := c.controller.RunReadiness(ctx)
