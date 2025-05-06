@@ -16,8 +16,8 @@ type GoHookMetadata struct {
 }
 
 type BatchHookConfig struct {
-	Hooks     []*HookConfig `yaml:"hooks" json:"hooks"`
-	Readiness *HookConfig   `yaml:"readiness,omitempty" json:"readiness,omitempty"`
+	Hooks     []HookConfig `yaml:"hooks" json:"hooks"`
+	Readiness *HookConfig  `yaml:"readiness,omitempty" json:"readiness,omitempty"`
 }
 
 type HookConfig struct {

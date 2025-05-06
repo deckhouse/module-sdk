@@ -135,10 +135,10 @@ func (c *HookController) PrintHookConfigs() error {
 		return ErrNoHooksRegistered
 	}
 
-	configs := make([]*gohook.HookConfig, 0, 1)
+	configs := make([]gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Hooks() {
-		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
+		configs = append(configs, *remapHookConfigToHookConfig(hook.GetConfig()))
 	}
 
 	cfg := &gohook.BatchHookConfig{
@@ -181,10 +181,10 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return fmt.Errorf("open file: %w", err)
 	}
 
-	configs := make([]*gohook.HookConfig, 0, 1)
+	configs := make([]gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Hooks() {
-		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
+		configs = append(configs, *remapHookConfigToHookConfig(hook.GetConfig()))
 	}
 
 	cfg := &gohook.BatchHookConfig{
