@@ -5,6 +5,7 @@ import (
 	"runtime/debug"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/internal/controller"
 )
 

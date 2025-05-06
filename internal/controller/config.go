@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
 )

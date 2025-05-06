@@ -23,14 +23,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
+
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
 	mock "github.com/deckhouse/module-sdk/testing/mock"
-	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/gjson"
 )
 
 func Test_JQFilterTLS(t *testing.T) {
