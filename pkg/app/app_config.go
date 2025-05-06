@@ -7,6 +7,7 @@ import (
 	env "github.com/caarlos0/env/v11"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/internal/controller"
 	"github.com/deckhouse/module-sdk/pkg"
 )
@@ -37,10 +38,6 @@ type readinessConfig struct {
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
-func newreadinessConfig() *readinessConfig {
-	return &readinessConfig{}
-}
-
 type config struct {
 	HookConfig      *hookConfig
 	ReadinessConfig *readinessConfig
@@ -51,8 +48,7 @@ type config struct {
 
 func newConfig() *config {
 	return &config{
-		HookConfig:      newHookConfig(),
-		ReadinessConfig: newreadinessConfig(),
+		HookConfig: newHookConfig(),
 	}
 }
 

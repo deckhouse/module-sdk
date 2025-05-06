@@ -21,12 +21,15 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strconv"
 
-	"github.com/deckhouse/module-sdk/pkg"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 func GetModuleGVK() *schema.GroupVersionResource {
@@ -46,7 +49,7 @@ type ReadinessHookConfig struct {
 
 func NewReadinessHookEM(cfg *ReadinessHookConfig) (*pkg.HookConfig, pkg.ReconcileFunc) {
 	if cfg == nil {
-		panic("empty config")
+		panic("empty readiness config")
 	}
 
 	return NewReadinessConfig(cfg), CheckModuleReadiness(cfg)
@@ -68,10 +71,22 @@ func NewReadinessConfig(cfg *ReadinessHookConfig) *pkg.HookConfig {
 }
 
 const (
-	conditionStatusIsReady = "IsReady"
+	moduleReleaseIsReadyLabel = "modules.deckhouse.io/is-ready"
 )
 
 func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
+	if cfg.ModuleName == "" {
+		panic("empty readiness module name")
+	}
+
+	if cfg.ProbeFunc == nil {
+		cfg.ProbeFunc = func(ctx context.Context, input *pkg.HookInput) error {
+			input.Logger.Info("default probe function")
+
+			return nil
+		}
+	}
+
 	return func(ctx context.Context, input *pkg.HookInput) error {
 		logger := input.Logger.With(slog.String("module", cfg.ModuleName))
 		logger.Info("check readiness")
@@ -90,51 +105,36 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return errors.New("unstructured object is nil")
 		}
 
-		// Run probe and get status
-		probeStatus := string(corev1.ConditionTrue)
-		probeMessage := "Module is ready"
-		if err := cfg.ProbeFunc(ctx, input); err != nil {
-			probeStatus = string(corev1.ConditionFalse)
-			probeMessage = fmt.Sprintf("probe failed: %s", err)
-		}
-
-		// Get conditions
-		uConditions, ok, err := unstructured.NestedSlice(uModule.Object, "status", "conditions")
+		labels, ok, err := unstructured.NestedStringMap(uModule.Object, "metadata", "labels")
 		if err != nil {
-			return fmt.Errorf("nested slice: %w", err)
+			return fmt.Errorf("nested string map: failed to get metadata.labels %w", err)
 		}
 
 		if !ok {
-			return errors.New("can't find status.conditions")
+			return errors.New("can't find metadata.labels")
 		}
 
-		if len(uConditions) == 0 {
-			return errors.New("status.conditions is empty")
+		isReady := labels[moduleReleaseIsReadyLabel]
+
+		// Run probe
+		err = cfg.ProbeFunc(ctx, input)
+		if err != nil {
+			logger.Warn("probe function failed", log.Err(err))
 		}
 
-		// Update IsReady condition
-		conditionUpdated := false
-		for idx, rawCond := range uConditions {
-			cond := rawCond.(map[string]interface{})
-			if cond["type"].(string) == conditionStatusIsReady {
-				cond["status"] = probeStatus
-				cond["message"] = probeMessage
-				uConditions[idx] = cond
-				conditionUpdated = true
-				break
-			}
+		resultLabel := strconv.FormatBool(err == nil)
+		if isReady == resultLabel {
+			return nil
 		}
 
-		if !conditionUpdated {
-			return fmt.Errorf("condition %s not found", conditionStatusIsReady)
-		}
+		labels[moduleReleaseIsReadyLabel] = resultLabel
 
 		// Update module status
-		if err := unstructured.SetNestedSlice(uModule.Object, uConditions, "status", "conditions"); err != nil {
-			return fmt.Errorf("failed to change status.conditions: %w", err)
+		if err := unstructured.SetNestedStringMap(uModule.Object, labels, "metadata", "labels"); err != nil {
+			return fmt.Errorf("failed to change metadata.labels: %w", err)
 		}
 
-		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
+		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).Update(ctx, uModule, metav1.UpdateOptions{}); err != nil {
 			return fmt.Errorf("update module resource: %w", err)
 		}
 

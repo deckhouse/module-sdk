@@ -11,10 +11,18 @@ type RunConfigOption func(c *config)
 
 // WithLogLevel sets the log level for the application.
 func WithReadiness(cfg *ReadinessConfig) RunConfigOption {
+	if cfg == nil {
+		return func(c *config) {
+			c.ReadinessConfig = nil
+		}
+	}
+
 	return func(c *config) {
-		c.ReadinessConfig.ModuleName = cfg.ModuleName
-		c.ReadinessConfig.IntervalInSeconds = cfg.IntervalInSeconds
-		c.ReadinessConfig.ProbeFunc = cfg.ProbeFunc
+		c.ReadinessConfig = &readinessConfig{
+			ModuleName:        cfg.ModuleName,
+			IntervalInSeconds: cfg.IntervalInSeconds,
+			ProbeFunc:         cfg.ProbeFunc,
+		}
 	}
 }
 

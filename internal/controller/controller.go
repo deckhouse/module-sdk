@@ -10,12 +10,13 @@ import (
 	"path/filepath"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
 	"github.com/deckhouse/module-sdk/internal/registry"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/dependency"
-	"github.com/deckhouse/module-sdk/pkg/hook"
+	gohook "github.com/deckhouse/module-sdk/pkg/hook"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
@@ -40,7 +41,9 @@ func NewHookController(cfg *Config, logger *log.Logger) *HookController {
 	reg := registry.NewHookRegistry(logger)
 	reg.Add(outerRegistry.Registry().Hooks()...)
 
-	addReadinessHook(reg, cfg.ReadinessConfig)
+	if cfg.ReadinessConfig != nil {
+		addReadinessHook(reg, cfg.ReadinessConfig)
+	}
 
 	return &HookController{
 		registry: reg,
@@ -61,7 +64,7 @@ func addReadinessHook(reg *registry.HookRegistry, cfg *ReadinessConfig) {
 	config.Metadata.Name = "readiness"
 	config.Metadata.Path = "common-hooks/readiness"
 
-	reg.Add(&pkg.Hook{Config: config, ReconcileFunc: f})
+	reg.SetReadinessHook(&pkg.Hook{Config: config, ReconcileFunc: f})
 }
 
 func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
@@ -101,6 +104,30 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 	return nil
 }
 
+var ErrReadinessHookDoesNotExists = errors.New("readiness hook does not exists")
+
+func (c *HookController) RunReadiness(ctx context.Context) error {
+	hook := c.registry.Readiness()
+
+	if hook == nil {
+		return ErrReadinessHookDoesNotExists
+	}
+
+	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
+
+	hookRes, err := hook.Execute(ctx, transport.NewRequest())
+	if err != nil {
+		return fmt.Errorf("execute: %w", err)
+	}
+
+	err = transport.NewResponse().Send(hookRes)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	return nil
+}
+
 var ErrNoHooksRegistered = errors.New("no hooks registered")
 
 func (c *HookController) PrintHookConfigs() error {
@@ -108,14 +135,19 @@ func (c *HookController) PrintHookConfigs() error {
 		return ErrNoHooksRegistered
 	}
 
-	configs := make([]*hook.HookConfig, 0, 1)
+	configs := make([]*gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Hooks() {
 		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
 	}
 
+	cfg := &gohook.BatchHookConfig{
+		Hooks:     configs,
+		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
+	}
+
 	buf := bytes.NewBuffer([]byte{})
-	err := json.NewEncoder(buf).Encode(configs)
+	err := json.NewEncoder(buf).Encode(cfg)
 	if err != nil {
 		return fmt.Errorf("json encode: %w", err)
 	}
@@ -149,13 +181,18 @@ func (c *HookController) WriteHookConfigsInFile() error {
 		return fmt.Errorf("open file: %w", err)
 	}
 
-	configs := make([]*hook.HookConfig, 0, 1)
+	configs := make([]*gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Hooks() {
 		configs = append(configs, remapHookConfigToHookConfig(hook.GetConfig()))
 	}
 
-	err = json.NewEncoder(f).Encode(configs)
+	cfg := &gohook.BatchHookConfig{
+		Hooks:     configs,
+		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
+	}
+
+	err = json.NewEncoder(f).Encode(cfg)
 	if err != nil {
 		return fmt.Errorf("json marshall: %w", err)
 	}
@@ -163,25 +200,25 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	return nil
 }
 
-func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
-	newHookConfig := &hook.HookConfig{
+func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *gohook.HookConfig {
+	newHookConfig := &gohook.HookConfig{
 		ConfigVersion: "v1",
-		Metadata:      hook.GoHookMetadata(cfg.Metadata),
+		Metadata:      gohook.GoHookMetadata(cfg.Metadata),
 	}
 
 	for _, scfg := range cfg.Schedule {
-		newHookConfig.Schedule = append(newHookConfig.Schedule, hook.ScheduleConfig{
+		newHookConfig.Schedule = append(newHookConfig.Schedule, gohook.ScheduleConfig{
 			Name:    scfg.Name,
 			Crontab: scfg.Crontab,
 		})
 	}
 
 	for _, shcfg := range cfg.Kubernetes {
-		newShCfg := hook.KubernetesConfig{
+		newShCfg := gohook.KubernetesConfig{
 			APIVersion:                   shcfg.APIVersion,
 			Kind:                         shcfg.Kind,
 			Name:                         shcfg.Name,
-			NameSelector:                 (*hook.NameSelector)(shcfg.NameSelector),
+			NameSelector:                 (*gohook.NameSelector)(shcfg.NameSelector),
 			LabelSelector:                shcfg.LabelSelector,
 			ExecuteHookOnEvents:          shcfg.ExecuteHookOnEvents,
 			ExecuteHookOnSynchronization: shcfg.ExecuteHookOnSynchronization,
@@ -198,14 +235,14 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 		}
 
 		if shcfg.NameSelector != nil {
-			newShCfg.NameSelector = &hook.NameSelector{
+			newShCfg.NameSelector = &gohook.NameSelector{
 				MatchNames: shcfg.NameSelector.MatchNames,
 			}
 		}
 
 		if shcfg.NamespaceSelector != nil {
-			newShCfg.NamespaceSelector = &hook.NamespaceSelector{
-				NameSelector: &hook.NameSelector{
+			newShCfg.NamespaceSelector = &gohook.NamespaceSelector{
+				NameSelector: &gohook.NameSelector{
 					MatchNames: shcfg.NamespaceSelector.NameSelector.MatchNames,
 				},
 				LabelSelector: shcfg.NamespaceSelector.LabelSelector,
@@ -213,12 +250,12 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *hook.HookConfig {
 		}
 
 		if shcfg.FieldSelector != nil {
-			fs := &hook.FieldSelector{
-				MatchExpressions: make([]hook.FieldSelectorRequirement, 0, len(shcfg.FieldSelector.MatchExpressions)),
+			fs := &gohook.FieldSelector{
+				MatchExpressions: make([]gohook.FieldSelectorRequirement, 0, len(shcfg.FieldSelector.MatchExpressions)),
 			}
 
 			for _, expr := range shcfg.FieldSelector.MatchExpressions {
-				fs.MatchExpressions = append(fs.MatchExpressions, hook.FieldSelectorRequirement(expr))
+				fs.MatchExpressions = append(fs.MatchExpressions, gohook.FieldSelectorRequirement(expr))
 			}
 
 			newShCfg.FieldSelector = fs
