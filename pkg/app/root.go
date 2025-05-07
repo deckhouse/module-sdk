@@ -122,5 +122,22 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		},
 	})
 
+	hooksCmd.AddCommand(&cobra.Command{
+		Use:    "ready",
+		Short:  "Check readiness",
+		Long:   `Run readiness hook for module`,
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			ctx := cmd.Context()
+
+			err := c.controller.RunReadiness(ctx)
+			if err != nil {
+				return fmt.Errorf("run readiness hook error: %w", err)
+			}
+
+			return nil
+		},
+	})
+
 	return hooksCmd
 }

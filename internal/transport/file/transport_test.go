@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	fileTransport "github.com/deckhouse/module-sdk/internal/transport/file"
 )

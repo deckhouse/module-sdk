@@ -1,8 +1,9 @@
 package patchablevalues
 
 import (
-	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/tidwall/gjson"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 func getFirstDefined(values pkg.PatchableValuesCollector, keys ...string) (gjson.Result, bool) {
