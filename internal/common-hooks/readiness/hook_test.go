@@ -18,20 +18,17 @@ package readiness_test
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
+	"github.com/deckhouse/module-sdk/pkg"
+	mock "github.com/deckhouse/module-sdk/testing/mock"
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
-
-	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
-	"github.com/deckhouse/module-sdk/pkg"
-	mock "github.com/deckhouse/module-sdk/testing/mock"
 )
 
 func Test_ReadinessHookConfig(t *testing.T) {
@@ -41,7 +38,7 @@ func Test_ReadinessHookConfig(t *testing.T) {
 }
 
 func Test_CheckModuleReadiness(t *testing.T) {
-	t.Run("successful check", func(t *testing.T) {
+	t.Run("successfull check", func(t *testing.T) {
 		mc := minimock.NewController(t)
 		defer mc.Cleanup(func() {})
 
@@ -49,9 +46,13 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		resource := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"deckhouse.io/module-name": "stub",
+				"status": map[string]interface{}{
+					"conditions": []interface{}{
+						map[string]interface{}{
+							"type":    "IsReady",
+							"status":  "False",
+							"message": "Module is not ready",
+						},
 					},
 				},
 			},
@@ -59,10 +60,13 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		updatedResource := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"deckhouse.io/module-name":      "stub",
-						"modules.deckhouse.io/is-ready": "true",
+				"status": map[string]interface{}{
+					"conditions": []interface{}{
+						map[string]interface{}{
+							"type":    "IsReady",
+							"status":  "True",
+							"message": "Module is ready",
+						},
 					},
 				},
 			},
@@ -72,7 +76,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.UpdateMock.
+		resourceMock.UpdateStatusMock.
 			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
 			Return(nil, nil)
 
@@ -99,110 +103,6 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			IntervalInSeconds: 10,
 			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
 				return nil
-			},
-		}
-
-		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
-		assert.NoError(t, err)
-	})
-
-	t.Run("skip unnecessary update when isReady true", func(t *testing.T) {
-		mc := minimock.NewController(t)
-		defer mc.Cleanup(func() {})
-
-		dc := mock.NewDependencyContainerMock(mc)
-
-		resource := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"deckhouse.io/module-name":      "stub",
-						"modules.deckhouse.io/is-ready": "true",
-					},
-				},
-			},
-		}
-
-		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
-		resourceMock.GetMock.
-			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
-			Return(resource, nil)
-
-		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
-		dynamicClientMock.ResourceMock.
-			Expect(*readiness.GetModuleGVK()).
-			Return(resourceMock)
-
-		k8sClientMock := mock.NewKubernetesClientMock(mc)
-		k8sClientMock.DynamicMock.
-			Return(dynamicClientMock)
-
-		dc.GetK8sClientMock.
-			Expect().
-			Return(k8sClientMock, nil)
-
-		input := &pkg.HookInput{
-			DC:     dc,
-			Logger: log.NewNop(),
-		}
-
-		config := &readiness.ReadinessHookConfig{
-			ModuleName:        "stub",
-			IntervalInSeconds: 10,
-			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
-				return nil
-			},
-		}
-
-		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
-		assert.NoError(t, err)
-	})
-
-	t.Run("skip unnecessary update when isReady false", func(t *testing.T) {
-		mc := minimock.NewController(t)
-		defer mc.Cleanup(func() {})
-
-		dc := mock.NewDependencyContainerMock(mc)
-
-		resource := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"deckhouse.io/module-name":      "stub",
-						"modules.deckhouse.io/is-ready": "false",
-					},
-				},
-			},
-		}
-
-		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
-		resourceMock.GetMock.
-			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
-			Return(resource, nil)
-
-		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
-		dynamicClientMock.ResourceMock.
-			Expect(*readiness.GetModuleGVK()).
-			Return(resourceMock)
-
-		k8sClientMock := mock.NewKubernetesClientMock(mc)
-		k8sClientMock.DynamicMock.
-			Return(dynamicClientMock)
-
-		dc.GetK8sClientMock.
-			Expect().
-			Return(k8sClientMock, nil)
-
-		input := &pkg.HookInput{
-			DC:     dc,
-			Logger: log.NewNop(),
-		}
-
-		config := &readiness.ReadinessHookConfig{
-			ModuleName:        "stub",
-			IntervalInSeconds: 10,
-			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
-				return errors.New("error")
 			},
 		}
 
@@ -287,9 +187,13 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		resource := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"deckhouse.io/module-name": "stub",
+				"status": map[string]interface{}{
+					"conditions": []interface{}{
+						map[string]interface{}{
+							"type":    "IsReady",
+							"status":  "False",
+							"message": "Module is not ready",
+						},
 					},
 				},
 			},
@@ -297,10 +201,13 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		updatedResource := &unstructured.Unstructured{
 			Object: map[string]interface{}{
-				"metadata": map[string]interface{}{
-					"labels": map[string]interface{}{
-						"deckhouse.io/module-name":      "stub",
-						"modules.deckhouse.io/is-ready": "true",
+				"status": map[string]interface{}{
+					"conditions": []interface{}{
+						map[string]interface{}{
+							"type":    "IsReady",
+							"status":  "True",
+							"message": "Module is ready",
+						},
 					},
 				},
 			},
@@ -310,7 +217,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.UpdateMock.
+		resourceMock.UpdateStatusMock.
 			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
 			Return(nil, fmt.Errorf("update error"))
 

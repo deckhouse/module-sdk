@@ -142,6 +142,7 @@ func (c *HookController) PrintHookConfigs() error {
 	}
 
 	cfg := &gohook.BatchHookConfig{
+		Version:   "v1",
 		Hooks:     configs,
 		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
 	}
@@ -188,6 +189,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	}
 
 	cfg := &gohook.BatchHookConfig{
+		Version:   "v1",
 		Hooks:     configs,
 		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
 	}

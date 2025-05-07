@@ -35,7 +35,9 @@ func newHookConfig() *hookConfig {
 type readinessConfig struct {
 	ModuleName        string
 	IntervalInSeconds int
-	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
+	Threshold         int
+	// TODO: стянуть с kubernetes с проб
+	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
 type config struct {
