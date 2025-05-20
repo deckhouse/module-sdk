@@ -15,6 +15,12 @@ type GoHookMetadata struct {
 	Path string `yaml:"path" json:"path"`
 }
 
+type BatchHookConfig struct {
+	Version   string       `yaml:"version" json:"version"`
+	Hooks     []HookConfig `yaml:"hooks" json:"hooks"`
+	Readiness *HookConfig  `yaml:"readiness,omitempty" json:"readiness,omitempty"`
+}
+
 type HookConfig struct {
 	ConfigVersion string             `yaml:"configVersion" json:"configVersion"`
 	Metadata      GoHookMetadata     `yaml:"metadata" json:"metadata"`
@@ -32,6 +38,14 @@ type HookConfig struct {
 	Settings *HookConfigSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
 
 	LogLevelRaw string `yaml:"logLevel,omitempty" json:"logLevel,omitempty"`
+}
+
+type ReadinessConfig struct {
+	// ModuleName is a name of module to check
+	ModuleName string `yaml:"moduleName" json:"moduleName"`
+	// IntervalInSeconds is a time interval between checks
+	// Default value is 1 second
+	IntervalInSeconds int `yaml:"interval,omitempty" json:"interval,omitempty"`
 }
 
 type HookConfigSettings struct {

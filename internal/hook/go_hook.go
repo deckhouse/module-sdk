@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	metric "github.com/deckhouse/module-sdk/internal/metric"
 	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"

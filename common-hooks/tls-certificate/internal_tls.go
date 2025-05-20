@@ -31,6 +31,7 @@ import (
 	"k8s.io/utils/net"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
@@ -247,7 +248,6 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		if useCommonCA {
 			auth, err = getCommonCA(input, conf.CommonCAPath())
 			if err != nil {
-
 				commonCACanonicalName := conf.CommonCACanonicalName
 
 				if len(commonCACanonicalName) == 0 {

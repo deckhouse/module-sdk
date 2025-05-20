@@ -10,6 +10,7 @@ import (
 	"github.com/tidwall/gjson"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	service "github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
