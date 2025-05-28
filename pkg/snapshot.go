@@ -6,5 +6,8 @@ type Snapshots interface {
 
 type Snapshot interface {
 	UnmarshalTo(v any) error
+	// returns pure form of object
+	// can contains special symbols
+	// to receive string values - use UnmarshalTo method
 	String() string
 }
