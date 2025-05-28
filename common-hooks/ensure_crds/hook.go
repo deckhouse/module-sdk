@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:staticcheck
 package ensure_crds
 
 import (
@@ -23,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/pkg"
 	crdinstaller "github.com/deckhouse/module-sdk/pkg/crd-installer"
 	"github.com/deckhouse/module-sdk/pkg/registry"

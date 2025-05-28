@@ -33,13 +33,8 @@ import (
 )
 
 var (
-	defaultDC    pkg.DependencyContainer
 	TestTimeZone = time.UTC
 )
-
-func init() {
-	defaultDC = NewDependencyContainer()
-}
 
 // NewDependencyContainer creates new Dependency container with external clients
 func NewDependencyContainer() pkg.DependencyContainer {

@@ -13,7 +13,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/hashicorp/go-multierror"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachineryv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -343,7 +342,7 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 }
 
 func (cp *CRDsInstaller) GetCRDFromCluster(ctx context.Context, crdName string) (*apiextensionsv1.CustomResourceDefinition, error) {
-	crd := &v1.CustomResourceDefinition{}
+	crd := &apiextensionsv1.CustomResourceDefinition{}
 
 	o, err := cp.k8sClient.Resource(crdGVR).Get(ctx, crdName, apimachineryv1.GetOptions{})
 	if err != nil {

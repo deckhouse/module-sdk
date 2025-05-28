@@ -5,11 +5,11 @@ import (
 	"runtime/debug"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/internal/controller"
-	"github.com/deckhouse/module-sdk/internal/transport/file"
 )
 
-func Run() {
+func Run(opts ...RunConfigOption) {
 	logger := log.Default()
 
 	defer func() {
@@ -30,22 +30,11 @@ func Run() {
 
 	logger.SetLevel(cfg.LogLevel)
 
-	fConfig := &file.Config{
-		BindingContextPath: cfg.HookConfig.BindingContextPath,
-		ValuesPath:         cfg.HookConfig.ValuesPath,
-		ConfigValuesPath:   cfg.HookConfig.ConfigValuesPath,
-
-		HookConfigPath: cfg.HookConfig.HookConfigPath,
-
-		MetricsPath:          cfg.HookConfig.MetricsPath,
-		KubernetesPath:       cfg.HookConfig.KubernetesPath,
-		ValuesJSONPath:       cfg.HookConfig.ValuesJSONPath,
-		ConfigValuesJSONPath: cfg.HookConfig.ConfigValuesJSONPath,
-
-		CreateFilesByYourself: cfg.HookConfig.CreateFilesByYourself,
+	for _, opt := range opts {
+		opt(cfg)
 	}
 
-	controller := controller.NewHookController(fConfig, logger.Named("hook-controller"))
+	controller := controller.NewHookController(remapConfigToControllerConfig(cfg), logger.Named("hook-controller"))
 
 	c := newCMD(controller)
 
