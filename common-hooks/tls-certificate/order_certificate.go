@@ -86,8 +86,8 @@ var JQFilterApplyCertificateSecret = `{
 
 // RegisterOrderCertificateHookEM must be used for external modules
 func RegisterOrderCertificateHookEM(requests []OrderCertificateRequest) bool {
-	var namespaces []string
-	var secretNames []string
+	namespaces := make([]string, 0, len(requests))
+	secretNames := make([]string, 0, len(requests))
 
 	for _, request := range requests {
 		namespaces = append(namespaces, request.Namespace)

@@ -1,18 +1,25 @@
 version: "2"
 run:
-  timeout: 10m
+  timeout: 15m
 
 linters:
   default: none
   enable:
+    - asciicheck
+    - bodyclose
     - copyloopvar
+    # - depguard
     - dogsled
+    - durationcheck
     - errcheck
+    - gochecknoinits
     - gocritic
+    - goprintffuncname
     - govet
     - ineffassign
     - misspell
     - musttag
+    - nolintlint
     - nonamedreturns
     - prealloc
     - revive
@@ -20,6 +27,8 @@ linters:
     - staticcheck
     - unconvert
     - unparam
+    - unused
+    - usestdlibvars
     - whitespace
   settings:
     errcheck:

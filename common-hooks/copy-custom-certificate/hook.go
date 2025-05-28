@@ -70,7 +70,7 @@ func RegisterHook(moduleName string) bool {
 }
 
 func copyCustomCertificatesHandler(moduleName string) func(ctx context.Context, input *pkg.HookInput) error {
-	return func(ctx context.Context, input *pkg.HookInput) error {
+	return func(_ context.Context, input *pkg.HookInput) error {
 		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, snapshotKey)
 		if err != nil {
 			return fmt.Errorf("unmarshal to struct: %w", err)

@@ -53,7 +53,7 @@ type HookConfigSettings struct {
 	ExecutionBurst       int           `yaml:"executionBurst,omitempty" json:"executionBurst,omitempty"`
 	// EnableSchedulesOnStartup
 	// set to true, if you need to run 'Schedule' hooks without waiting addon-operator readiness
-	EnableSchedulesOnStartup *bool
+	EnableSchedulesOnStartup *bool `yaml:"enableSchedulesOnStartup,omitempty" json:"enableSchedulesOnStartup,omitempty"`
 }
 
 type ScheduleConfig struct {

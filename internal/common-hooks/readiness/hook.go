@@ -22,11 +22,12 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/deckhouse/module-sdk/pkg"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 func GetModuleGVK() *schema.GroupVersionResource {
@@ -79,7 +80,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 	}
 
 	if cfg.ProbeFunc == nil {
-		cfg.ProbeFunc = func(ctx context.Context, input *pkg.HookInput) error {
+		cfg.ProbeFunc = func(_ context.Context, input *pkg.HookInput) error {
 			input.Logger.Info("default probe function")
 
 			return nil

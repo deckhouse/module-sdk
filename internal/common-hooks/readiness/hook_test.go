@@ -21,14 +21,16 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
-	"github.com/deckhouse/module-sdk/pkg"
-	mock "github.com/deckhouse/module-sdk/testing/mock"
 	"github.com/gojuno/minimock/v3"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
+	"github.com/deckhouse/module-sdk/pkg"
+	mock "github.com/deckhouse/module-sdk/testing/mock"
 )
 
 func Test_ReadinessHookConfig(t *testing.T) {
@@ -38,7 +40,7 @@ func Test_ReadinessHookConfig(t *testing.T) {
 }
 
 func Test_CheckModuleReadiness(t *testing.T) {
-	t.Run("successfull check", func(t *testing.T) {
+	t.Run("successful check", func(t *testing.T) {
 		mc := minimock.NewController(t)
 		defer mc.Cleanup(func() {})
 
@@ -101,7 +103,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
 			IntervalInSeconds: 10,
-			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+			ProbeFunc: func(_ context.Context, _ *pkg.HookInput) error {
 				return nil
 			},
 		}
@@ -127,7 +129,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
 			IntervalInSeconds: 10,
-			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+			ProbeFunc: func(_ context.Context, _ *pkg.HookInput) error {
 				return nil
 			},
 		}
@@ -169,7 +171,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
 			IntervalInSeconds: 10,
-			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+			ProbeFunc: func(_ context.Context, _ *pkg.HookInput) error {
 				return nil
 			},
 		}
@@ -242,7 +244,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
 			IntervalInSeconds: 10,
-			ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+			ProbeFunc: func(_ context.Context, _ *pkg.HookInput) error {
 				return nil
 			},
 		}
