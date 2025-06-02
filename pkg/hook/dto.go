@@ -15,6 +15,12 @@ type GoHookMetadata struct {
 	Path string `yaml:"path" json:"path"`
 }
 
+type BatchHookConfig struct {
+	Version   string       `yaml:"version" json:"version"`
+	Hooks     []HookConfig `yaml:"hooks" json:"hooks"`
+	Readiness *HookConfig  `yaml:"readiness,omitempty" json:"readiness,omitempty"`
+}
+
 type HookConfig struct {
 	ConfigVersion string             `yaml:"configVersion" json:"configVersion"`
 	Metadata      GoHookMetadata     `yaml:"metadata" json:"metadata"`
@@ -34,12 +40,20 @@ type HookConfig struct {
 	LogLevelRaw string `yaml:"logLevel,omitempty" json:"logLevel,omitempty"`
 }
 
+type ReadinessConfig struct {
+	// ModuleName is a name of module to check
+	ModuleName string `yaml:"moduleName" json:"moduleName"`
+	// IntervalInSeconds is a time interval between checks
+	// Default value is 1 second
+	IntervalInSeconds int `yaml:"interval,omitempty" json:"interval,omitempty"`
+}
+
 type HookConfigSettings struct {
 	ExecutionMinInterval time.Duration `yaml:"executionMinInterval,omitempty" json:"executionMinInterval,omitempty"`
 	ExecutionBurst       int           `yaml:"executionBurst,omitempty" json:"executionBurst,omitempty"`
 	// EnableSchedulesOnStartup
 	// set to true, if you need to run 'Schedule' hooks without waiting addon-operator readiness
-	EnableSchedulesOnStartup *bool
+	EnableSchedulesOnStartup *bool `yaml:"enableSchedulesOnStartup,omitempty" json:"enableSchedulesOnStartup,omitempty"`
 }
 
 type ScheduleConfig struct {

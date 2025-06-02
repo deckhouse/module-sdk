@@ -22,10 +22,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
-	"github.com/stretchr/testify/assert"
 )
 
 func Test_JQFilterApplyCertificateSecret(t *testing.T) {

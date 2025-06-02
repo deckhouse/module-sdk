@@ -5,15 +5,17 @@ import (
 	"encoding/json"
 	"errors"
 
-	subfolder "example-module/subfolder"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/pkg/utils"
-	"github.com/deckhouse/module-sdk/testing/mock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/tidwall/gjson"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/utils"
+	"github.com/deckhouse/module-sdk/testing/mock"
+
+	subfolder "example-module/subfolder"
 )
 
 var _ = Describe("values example", func() {

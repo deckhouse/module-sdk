@@ -14,6 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+//nolint:staticcheck
 package external_auth
 
 import (
@@ -81,7 +82,7 @@ func setExternalAuthValues(input *pkg.HookInput, settings Settings) error {
 }
 
 func wrapSetExternalAuthValues(settings Settings) func(ctx context.Context, input *pkg.HookInput) error {
-	return func(ctx context.Context, input *pkg.HookInput) error {
+	return func(_ context.Context, input *pkg.HookInput) error {
 		return setExternalAuthValues(input, settings)
 	}
 }

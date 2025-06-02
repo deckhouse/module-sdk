@@ -85,8 +85,8 @@ func (mc *Collector) Expire(group string) {
 	})
 }
 
-func (dms *Collector) CollectedMetrics() []metric.Operation {
-	return dms.metrics
+func (mc *Collector) CollectedMetrics() []metric.Operation {
+	return mc.metrics
 }
 
 func (mc *Collector) WriteOutput(w io.Writer) error {

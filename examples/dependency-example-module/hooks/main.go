@@ -1,9 +1,9 @@
 package main
 
 import (
-	_ "dependency-example-module/subfolder"
-
 	"github.com/deckhouse/module-sdk/pkg/app"
+
+	_ "dependency-example-module/subfolder"
 )
 
 func main() {

@@ -20,6 +20,11 @@ var RegisterFunc = func(config *pkg.HookConfig, f pkg.ReconcileFunc) bool {
 	return true
 }
 
+var RegisterReadinessFunc = func(config *pkg.HookConfig, f pkg.ReconcileFunc) bool {
+	Registry().Add(&pkg.Hook{Config: config, ReconcileFunc: f})
+	return true
+}
+
 type HookRegistry struct {
 	m     sync.Mutex
 	hooks []*pkg.Hook

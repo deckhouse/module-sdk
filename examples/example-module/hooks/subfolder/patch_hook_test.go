@@ -6,14 +6,16 @@ import (
 	"strings"
 	"time"
 
-	subfolder "example-module/subfolder"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/testing/mock"
+
+	subfolder "example-module/subfolder"
 )
 
 var _ = Describe("patch hook", func() {
