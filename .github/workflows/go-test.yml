@@ -24,36 +24,30 @@ jobs:
           git diff --exit-code go.mod
           git diff --exit-code go.sum
 
-  lint:
+  detect-modules:
     runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: lint
-        uses: golangci/golangci-lint-action@v8
-        with:
-          version: ${{ env.GOLANGCI_LINT_VERSION }}
+      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work # kludge
+      - id: set-modules
+        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
 
-  tests:
-    needs: lint
+  go-test:
+    needs: detect-modules
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - name: Run tests
-        run: go test ./... -race
-
-  tests-examples:
-    needs: tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-      - name: Submodules test
-        run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work && find . -name go.mod -execdir go test ./... -race \;
+      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work # kludge
+      - run: go test ./... -race
+        working-directory: ${{ matrix.modules }}
