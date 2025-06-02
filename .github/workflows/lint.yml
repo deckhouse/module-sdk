@@ -19,7 +19,7 @@ jobs: # example from https://github.com/golangci/golangci-lint-action/tree/main
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
-      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work
+      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work # kludge
       - id: set-modules
         run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
 
@@ -34,6 +34,7 @@ jobs: # example from https://github.com/golangci/golangci-lint-action/tree/main
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work # kludge
       - name: golangci-lint ${{ matrix.modules }}
         uses: golangci/golangci-lint-action@v8
         with:
