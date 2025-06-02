@@ -19,6 +19,7 @@ jobs: # example from https://github.com/golangci/golangci-lint-action/tree/main
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work
       - id: set-modules
         run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
 
