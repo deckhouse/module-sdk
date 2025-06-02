@@ -1,4 +1,4 @@
-name: CI
+name: golangci-lint
 
 on:
   push:
