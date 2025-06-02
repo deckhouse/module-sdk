@@ -36,7 +36,7 @@ jobs:
           version: v2.1
 
   tests:
-    needs: golangci-lint
+    # needs: golangci-lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,13 @@ jobs:
       - name: Run tests
         run: go test ./... -race
 
+  submodules-tests:
+    # needs: golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
       - name: Submodules test
         run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work && find . -name go.mod -execdir go test ./... -race \;
-
-
