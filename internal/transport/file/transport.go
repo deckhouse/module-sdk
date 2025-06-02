@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	"github.com/deckhouse/module-sdk/internal/hook"
 	"github.com/deckhouse/module-sdk/pkg"

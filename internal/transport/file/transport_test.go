@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
 	fileTransport "github.com/deckhouse/module-sdk/internal/transport/file"
 )
@@ -66,7 +67,7 @@ func Test_RequestGetValues(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					valuesFilePath: {
-						Name:    generateFileNameWithTs(valuesFilePath),
+						Name:    generateFileNameWithTS(valuesFilePath),
 						Content: values,
 					},
 				},
@@ -105,7 +106,7 @@ func Test_RequestGetValues(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					valuesFilePath: {
-						Name:    generateFileNameWithTs(valuesFilePath),
+						Name:    generateFileNameWithTS(valuesFilePath),
 						Content: values,
 					},
 				},
@@ -125,7 +126,7 @@ func Test_RequestGetValues(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					valuesFilePath: {
-						Name:    generateFileNameWithTs(valuesFilePath),
+						Name:    generateFileNameWithTS(valuesFilePath),
 						Content: badJSON,
 					},
 				},
@@ -216,7 +217,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					configValuesFilePath: {
-						Name:    generateFileNameWithTs(configValuesFilePath),
+						Name:    generateFileNameWithTS(configValuesFilePath),
 						Content: configValues,
 					},
 				},
@@ -255,7 +256,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					configValuesFilePath: {
-						Name:    generateFileNameWithTs(configValuesFilePath),
+						Name:    generateFileNameWithTS(configValuesFilePath),
 						Content: configValues,
 					},
 				},
@@ -275,7 +276,7 @@ func Test_RequestGetConfigValues(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					configValuesFilePath: {
-						Name:    generateFileNameWithTs(configValuesFilePath),
+						Name:    generateFileNameWithTS(configValuesFilePath),
 						Content: badJSON,
 					},
 				},
@@ -431,7 +432,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					bindingContextsFilePath: {
-						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Name:    generateFileNameWithTS(bindingContextsFilePath),
 						Content: bindingContextObject,
 					},
 				},
@@ -475,7 +476,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					bindingContextsFilePath: {
-						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Name:    generateFileNameWithTS(bindingContextsFilePath),
 						Content: bindingContextEmptySnapshotsObjects,
 					},
 				},
@@ -504,7 +505,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					bindingContextsFilePath: {
-						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Name:    generateFileNameWithTS(bindingContextsFilePath),
 						Content: bindingContextEmptyObjectAndFilterResult,
 					},
 				},
@@ -533,7 +534,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					bindingContextsFilePath: {
-						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Name:    generateFileNameWithTS(bindingContextsFilePath),
 						Content: bindingContextBadJSON,
 					},
 				},
@@ -553,7 +554,7 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 			args: args{
 				filesContent: map[string]file{
 					bindingContextsFilePath: {
-						Name:    generateFileNameWithTs(bindingContextsFilePath),
+						Name:    generateFileNameWithTS(bindingContextsFilePath),
 						Content: bindingContextObject,
 					},
 				},
@@ -604,6 +605,6 @@ func Test_Request_GetBindingContexts(t *testing.T) {
 	}
 }
 
-func generateFileNameWithTs(defaultPath string) string {
+func generateFileNameWithTS(defaultPath string) string {
 	return fmt.Sprintf("%s-%s", uuid.New().String(), defaultPath)
 }

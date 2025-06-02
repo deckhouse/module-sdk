@@ -37,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
@@ -56,7 +57,7 @@ func IsCertificateExpiringSoon(cert []byte, durationLeft time.Duration) (bool, e
 // modified client-go@v0.29.8/util/certificate/csr/csr.go
 //
 // WaitForCertificate waits for a certificate to be issued until timeout, or returns an error.
-func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqName string, reqUID types.UID, logger pkg.Logger) (certData []byte, err error) {
+func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqName string, reqUID types.UID, logger pkg.Logger) ([]byte, error) {
 	c, ok := clientWOWatch.(client.WithWatch)
 	if !ok {
 		return nil, errors.New("client without watch")
@@ -68,7 +69,8 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 	var obj runtime.Object
 	for {
 		// see if the v1 API is available
-		if err := c.List(ctx, &certificatesv1.CertificateSigningRequestList{}, fieldSelector); err == nil {
+		err := c.List(ctx, &certificatesv1.CertificateSigningRequestList{}, fieldSelector)
+		if err == nil {
 			// watch v1 objects
 			obj = &certificatesv1.CertificateSigningRequest{}
 			lw = &cache.ListWatch{
@@ -124,7 +126,7 @@ func WaitForCertificate(ctx context.Context, clientWOWatch client.Client, reqNam
 	}
 
 	var issuedCertificate []byte
-	_, err = watchtools.UntilWithSync(
+	_, err := watchtools.UntilWithSync(
 		ctx,
 		lw,
 		obj,

@@ -23,14 +23,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/tidwall/gjson"
+
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
 	"github.com/deckhouse/module-sdk/pkg/jq"
 	mock "github.com/deckhouse/module-sdk/testing/mock"
-	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/gjson"
 )
 
 func Test_JQFilterTLS(t *testing.T) {
@@ -143,7 +145,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
 			[]pkg.Snapshot{
-				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) (err error) {
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) error {
 					ca, err := certificate.GenerateCA(
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
@@ -240,7 +242,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
 			[]pkg.Snapshot{
-				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) (err error) {
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) error {
 					ca, err := certificate.GenerateCA(
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
@@ -337,7 +339,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		snapshots := mock.NewSnapshotsMock(t)
 		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
 			[]pkg.Snapshot{
-				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) (err error) {
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) error {
 					ca, err := certificate.GenerateCA(
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
