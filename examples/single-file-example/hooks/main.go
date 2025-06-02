@@ -7,11 +7,12 @@ import (
 	"log/slog"
 	"net/http"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/app"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 const (
@@ -56,7 +57,7 @@ func main() {
 	readinessConfig := &app.ReadinessConfig{
 		ModuleName:        "test-module",
 		IntervalInSeconds: 12,
-		ProbeFunc: func(ctx context.Context, input *pkg.HookInput) error {
+		ProbeFunc: func(_ context.Context, input *pkg.HookInput) error {
 			input.Logger.Info("start user logic for readiness probe")
 
 			c := input.DC.GetHTTPClient()

@@ -3,11 +3,12 @@ package hookinfolder
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/deckhouse/module-sdk/pkg"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = registry.RegisterFunc(configPatch, HandlerHookPatch)
@@ -16,7 +17,7 @@ var configPatch = &pkg.HookConfig{
 	OnBeforeHelm: &pkg.OrderedConfig{Order: 1},
 }
 
-func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
+func HandlerHookPatch(_ context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("hello from patch hook")
 
 	// CREATE
@@ -92,7 +93,7 @@ func HandlerHookPatch(ctx context.Context, input *pkg.HookInput) error {
 		"/status": "newStatus",
 	}
 
-	input.PatchCollector.MergePatch(
+	input.PatchCollector.PatchWithMerge(
 		statusPatch,
 		thirdPod.APIVersion,
 		thirdPod.Kind,

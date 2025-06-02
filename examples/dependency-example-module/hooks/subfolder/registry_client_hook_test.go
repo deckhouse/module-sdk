@@ -5,15 +5,17 @@ import (
 	"errors"
 	"fmt"
 
-	subfolder "dependency-example-module/subfolder"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
 	"github.com/gojuno/minimock/v3"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/testing/mock"
+
+	subfolder "dependency-example-module/subfolder"
 )
 
 const (
@@ -27,7 +29,7 @@ var _ = Describe("registry client hook example", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(ctx context.Context) (sa1 []string, err error) {
+			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
 				return []string{
 					firstTag, secondTag,
 				}, nil
@@ -63,7 +65,7 @@ var _ = Describe("registry client hook example", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(ctx context.Context) (sa1 []string, err error) {
+			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
 				return []string{}, nil
 			})
 
@@ -85,7 +87,7 @@ var _ = Describe("registry client hook example", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(ctx context.Context) (sa1 []string, err error) {
+			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
 				return nil, errors.New("error")
 			})
 
@@ -97,7 +99,7 @@ var _ = Describe("registry client hook example", func() {
 				Logger: log.NewNop(),
 			}
 
-			It("error has occured", func() {
+			It("error has occurred", func() {
 				err := subfolder.HandlerRegistryClient(context.Background(), input)
 				Expect(err).Should(HaveOccurred())
 				Expect(err).Should(Equal(fmt.Errorf("list tags: %w", errors.New("error"))))
@@ -108,7 +110,7 @@ var _ = Describe("registry client hook example", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(ctx context.Context) (sa1 []string, err error) {
+			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
 				return []string{
 					firstTag, secondTag,
 				}, nil
@@ -125,7 +127,7 @@ var _ = Describe("registry client hook example", func() {
 				Logger: log.NewNop(),
 			}
 
-			It("error has occured", func() {
+			It("error has occurred", func() {
 				err := subfolder.HandlerRegistryClient(context.Background(), input)
 				Expect(err).Should(HaveOccurred())
 				Expect(err).Should(Equal(fmt.Errorf("image: %w", errors.New("error"))))
@@ -136,7 +138,7 @@ var _ = Describe("registry client hook example", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(ctx context.Context) (sa1 []string, err error) {
+			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
 				return []string{
 					firstTag, secondTag,
 				}, nil
@@ -154,7 +156,7 @@ var _ = Describe("registry client hook example", func() {
 				Logger: log.NewNop(),
 			}
 
-			It("error has occured", func() {
+			It("error has occurred", func() {
 				err := subfolder.HandlerRegistryClient(context.Background(), input)
 				Expect(err).Should(HaveOccurred())
 				Expect(err).Should(Equal(fmt.Errorf("config name: %w", errors.New("error"))))
@@ -165,7 +167,7 @@ var _ = Describe("registry client hook example", func() {
 			dc := mock.NewDependencyContainerMock(GinkgoT())
 
 			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(ctx context.Context) (sa1 []string, err error) {
+			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
 				return []string{
 					firstTag, secondTag,
 				}, nil
@@ -185,7 +187,7 @@ var _ = Describe("registry client hook example", func() {
 				Logger: log.NewNop(),
 			}
 
-			It("error has occured", func() {
+			It("error has occurred", func() {
 				err := subfolder.HandlerRegistryClient(context.Background(), input)
 				Expect(err).Should(HaveOccurred())
 				Expect(err).Should(Equal(fmt.Errorf("digest: %w", errors.New("error"))))

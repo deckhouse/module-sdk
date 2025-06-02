@@ -8,13 +8,15 @@ import (
 	"strings"
 	"time"
 
-	subfolder "example-module/subfolder"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/testing/mock"
+
+	subfolder "example-module/subfolder"
 )
 
 var _ = Describe("snapshot alternative example", func() {
@@ -23,7 +25,7 @@ var _ = Describe("snapshot alternative example", func() {
 			snapshots := mock.NewSnapshotsMock(GinkgoT())
 			snapshots.GetMock.When(subfolder.NodeInfoSnapshotName).Then(
 				[]pkg.Snapshot{
-					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
+					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
 						node := v.(*subfolder.NodeInfo)
 						*node = subfolder.NodeInfo{
 							APIVersion: "v1",
@@ -37,7 +39,7 @@ var _ = Describe("snapshot alternative example", func() {
 
 						return nil
 					}),
-					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
+					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
 						node := v.(*subfolder.NodeInfo)
 						*node = subfolder.NodeInfo{
 							APIVersion: "v1",
@@ -88,7 +90,7 @@ var _ = Describe("snapshot alternative example", func() {
 			snapshots := mock.NewSnapshotsMock(GinkgoT())
 			snapshots.GetMock.When(subfolder.NodeInfoSnapshotName).Then(
 				[]pkg.Snapshot{
-					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
+					mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(_ any) error {
 						return errors.New("error")
 					}),
 				},

@@ -21,10 +21,15 @@ func HandlerHTTPClient(ctx context.Context, input *pkg.HookInput) error {
 		return fmt.Errorf("new request: %w", err)
 	}
 
-	_, err = httpClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("do request: %w", err)
 	}
+	defer func() {
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
 
 	return nil
 }

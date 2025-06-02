@@ -3,13 +3,15 @@ package main_test
 import (
 	"context"
 
-	singlefileexample "singlefileexample"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/testing/mock"
+
+	singlefileexample "singlefileexample"
 )
 
 const (
@@ -21,13 +23,13 @@ var _ = Describe("handle hook single file example", func() {
 	snapshots := mock.NewSnapshotsMock(GinkgoT())
 	snapshots.GetMock.When(singlefileexample.SnapshotKey).Then(
 		[]pkg.Snapshot{
-			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
+			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
 				str := v.(*string)
 				*str = firstSnapshot
 
 				return nil
 			}),
-			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) (err error) {
+			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
 				str := v.(*string)
 				*str = secondSnapshot
 
