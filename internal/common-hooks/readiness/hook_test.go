@@ -56,6 +56,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 							"message": "Module is not ready",
 						},
 					},
+					"phase": "Reconciling",
 				},
 			},
 		}
@@ -70,6 +71,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 							"message": "Module is ready",
 						},
 					},
+					"phase": "Ready",
 				},
 			},
 		}
@@ -197,6 +199,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 							"message": "Module is not ready",
 						},
 					},
+					"phase": "Reconciling",
 				},
 			},
 		}
@@ -211,6 +214,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 							"message": "Module is ready",
 						},
 					},
+					"phase": "Ready",
 				},
 			},
 		}
