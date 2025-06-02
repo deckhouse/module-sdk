@@ -43,11 +43,10 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
+      - run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work 
       - uses: golangci/golangci-lint-action@v8
         with:
           version: v2.1
-      - name: lint
-        run: go work init && find . -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work && find . -name go.mod -execdir golangci-lint run \;
 
   tests:
     needs: lint
