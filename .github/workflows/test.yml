@@ -26,6 +26,7 @@ jobs:
           git diff --exit-code go.sum
 
   go-test:
+    needs: go-mod
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +48,7 @@ jobs:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
 
   detect-modules: # ref: https://github.com/golangci/golangci-lint-action/tree/main
-    needs: golangci-lint
+    needs: [golangci-lint, go-test, go-mod]
     runs-on: ubuntu-latest
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
@@ -67,7 +68,7 @@ jobs:
         run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
 
   go-mod-examples:
-    needs: [detect-modules, go-mod]
+    needs: [detect-modules]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -87,7 +88,7 @@ jobs:
         working-directory: ${{ matrix.modules }}
 
   go-test-examples:
-    needs: detect-modules
+    needs: [detect-modules, go-mod-examples]
     runs-on: ubuntu-latest
     strategy:
       matrix:
