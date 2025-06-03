@@ -85,7 +85,7 @@ jobs:
         working-directory: ${{ matrix.modules }}
 
   golangci-lint-examples:
-    needs: detect-modules
+    needs: [detect-modules, go-test-examples]
     runs-on: ubuntu-latest
     strategy:
       matrix:
