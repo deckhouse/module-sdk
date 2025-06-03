@@ -83,3 +83,24 @@ jobs:
           name: go_work
       - run: go test ./...
         working-directory: ${{ matrix.modules }}
+
+  golangci-lint-examples:
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Download go.work from detect-modules
+        uses: actions/download-artifact@v4
+        with:
+          name: go_work
+      - name: golangci-lint ${{ matrix.modules }}
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+          working-directory: ${{ matrix.modules }}
