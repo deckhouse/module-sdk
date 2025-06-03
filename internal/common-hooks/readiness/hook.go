@@ -171,8 +171,17 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 
 		// Update condition
 		cond["status"] = probeStatus
+
 		cond["message"] = probeMessage
+		if probeMessage == "" {
+			delete(cond, "message")
+		}
+
 		cond["reason"] = probeReason
+		if probeReason == "" {
+			delete(cond, "reason")
+		}
+
 		uConditions[condIdx] = cond
 		// Update module status phase
 		phase = probePhase
