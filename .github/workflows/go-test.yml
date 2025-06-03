@@ -2,12 +2,12 @@ name: go-test
 
 on:
   pull_request:
-  push:
-    branches-ignore: [ main ]
-  workflow_run:
-    workflows: ["Test"]
-    types: 
-      - completed
+  # push:
+  #   branches-ignore: [ main ]
+  # workflow_run:
+  #   workflows: ["Test"]
+  #   types: 
+  #     - completed
 
 
 env:
