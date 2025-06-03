@@ -2,9 +2,10 @@ name: Lint
 
 on:
   workflow_run:
-    # workflows: [Test]
+    workflows: [Test]
     types: 
-      - completed
+      - requested
+    #   - completed
 
 env:
   GO_VERSION: '1.24'
@@ -13,7 +14,7 @@ env:
 jobs:
   golangci-lint:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
