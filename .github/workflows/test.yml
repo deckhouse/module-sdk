@@ -8,6 +8,7 @@ on:
 
 env:
   GO_VERSION: '1.24'
+  GOLANGCI_LINT_VERSION: 'v2.1'
 
 jobs:
   # Check if there is any dirty change for go mod tidy
@@ -32,3 +33,53 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - run: go test ./... -race
+
+  golangci-lint:
+    needs: go-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: ${{ env.GOLANGCI_LINT_VERSION }}
+
+  detect-modules: # ref: https://github.com/golangci/golangci-lint-action/tree/main
+    needs: golangci-lint
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.set-modules.outputs.modules }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Create go.work # Required for Go workspace mode to enable submodule checks and linting support (ref: https://go.dev/doc/tutorial/workspaces)
+        run: go work init && find . -mindepth 2 -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work
+      - name: Upload go.work
+        uses: actions/upload-artifact@v4
+        with:
+          name: go_work
+          path: go.work
+      - id: set-modules
+        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+
+  go-test-examples:
+    needs: detect-modules
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Download go.work from detect-modules
+        uses: actions/download-artifact@v4
+        with:
+          name: go_work
+      - run: go test ./...
+        working-directory: ${{ matrix.modules }}
