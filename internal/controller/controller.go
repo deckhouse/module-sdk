@@ -142,9 +142,12 @@ func (c *HookController) PrintHookConfigs() error {
 	}
 
 	cfg := &gohook.BatchHookConfig{
-		Version:   "v1",
-		Hooks:     configs,
-		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
+		Version: gohook.BatchHookConfigV1,
+		Hooks:   configs,
+	}
+
+	if c.registry.Readiness() != nil {
+		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
 	}
 
 	buf := bytes.NewBuffer([]byte{})
