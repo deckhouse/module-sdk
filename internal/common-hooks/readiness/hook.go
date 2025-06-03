@@ -136,12 +136,14 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 
 		// Run probe and get status
 		probeStatus := string(corev1.ConditionTrue)
-		probeMessage := "Module is ready"
+		probeMessage := ""
 		probePhase := modulePhaseReady
+		probeReason := ""
 		if err := cfg.ProbeFunc(ctx, input); err != nil {
 			probeStatus = string(corev1.ConditionFalse)
 			probeMessage = fmt.Sprintf("probe failed: %s", err)
 			probePhase = modulePhaseReconciling
+			probeReason = "Readiness probe"
 		}
 
 		// search IsReady condition
@@ -170,6 +172,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		// Update condition
 		cond["status"] = probeStatus
 		cond["message"] = probeMessage
+		cond["reason"] = probeReason
 		uConditions[condIdx] = cond
 		// Update module status phase
 		phase = probePhase
