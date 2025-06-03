@@ -96,9 +96,9 @@ var _ = Describe("patch hook", func() {
 				Expect(name).To(Equal("my-third-pod"))
 			})
 
-			// Set expectations for MergePatch
-			patchCollector.MergePatchMock.Set(func(patch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
-				patchMap, ok := patch.(map[string]any)
+			// Set expectations for PatchWithMerge
+			patchCollector.PatchWithMergeMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+				patchMap, ok := mergePatch.(map[string]any)
 				Expect(ok).To(BeTrue())
 				Expect(patchMap).To(HaveKeyWithValue("/status", "newStatus"))
 				Expect(apiVersion).To(Equal("v1"))
