@@ -68,8 +68,9 @@ func (cfg *config) Parse() error {
 
 	return nil
 }
+
 func remapConfigToControllerConfig(input *config) *controller.Config {
-	return &controller.Config{
+	cfg := &controller.Config{
 		HookConfig: &controller.HookConfig{
 			BindingContextPath:    input.HookConfig.BindingContextPath,
 			ValuesPath:            input.HookConfig.ValuesPath,
@@ -81,12 +82,18 @@ func remapConfigToControllerConfig(input *config) *controller.Config {
 			ConfigValuesJSONPath:  input.HookConfig.ConfigValuesJSONPath,
 			CreateFilesByYourself: input.HookConfig.CreateFilesByYourself,
 		},
-		ReadinessConfig: &controller.ReadinessConfig{
-			ModuleName:        input.ReadinessConfig.ModuleName,
-			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
-			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
-		},
+
 		LogLevelRaw: input.LogLevelRaw,
 		LogLevel:    input.LogLevel,
 	}
+
+	if input.ReadinessConfig != nil {
+		cfg.ReadinessConfig = &controller.ReadinessConfig{
+			ModuleName:        input.ReadinessConfig.ModuleName,
+			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
+			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
+		}
+	}
+
+	return cfg
 }
