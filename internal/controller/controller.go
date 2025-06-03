@@ -189,9 +189,12 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	}
 
 	cfg := &gohook.BatchHookConfig{
-		Version:   "v1",
-		Hooks:     configs,
-		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
+		Version: "v1",
+		Hooks:   configs,
+	}
+
+	if c.registry.Readiness() != nil {
+		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
 	}
 
 	err = json.NewEncoder(f).Encode(cfg)
