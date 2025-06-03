@@ -15,7 +15,7 @@ type GoHookMetadata struct {
 	Path string `yaml:"path" json:"path"`
 }
 
-const BatchHookConfigVersion = "v1"
+const BatchHookConfigV1 = "v1"
 
 type BatchHookConfig struct {
 	Version   string       `yaml:"version" json:"version"`
