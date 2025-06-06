@@ -101,9 +101,8 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 			return fmt.Errorf("encode error: %w", err)
 		}
 
-		fmt.Println(buf.String())
-
-		return nil
+		fmt.Fprintln(os.Stderr, buf.String())
+		os.Exit(1)
 	}
 
 	err = transport.NewResponse().Send(hookRes)
@@ -135,9 +134,8 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 			return fmt.Errorf("encode error: %w", err)
 		}
 
-		fmt.Println(buf.String())
-
-		return nil
+		fmt.Fprintln(os.Stderr, buf.String())
+		os.Exit(1)
 	}
 
 	err = transport.NewResponse().Send(hookRes)
