@@ -61,7 +61,7 @@ func NewReadinessConfig(cfg *ReadinessHookConfig) *pkg.HookConfig {
 	return &pkg.HookConfig{
 		Schedule: []pkg.ScheduleConfig{
 			{
-				Name:    "moduleReadinessSchedule",
+				Name:    cfg.ModuleName + "-moduleReadinessSchedule",
 				Crontab: fmt.Sprintf("*/%d * * * * *", cfg.IntervalInSeconds),
 			},
 		},

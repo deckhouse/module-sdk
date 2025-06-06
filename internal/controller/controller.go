@@ -93,7 +93,17 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
-		return fmt.Errorf("execute: %w", err)
+		outputError := &gohook.Error{Message: "execute: " + err.Error()}
+
+		buf := bytes.NewBuffer([]byte{})
+		err := json.NewEncoder(buf).Encode(outputError)
+		if err != nil {
+			return fmt.Errorf("encode error: %w", err)
+		}
+
+		fmt.Println(buf.String())
+
+		return nil
 	}
 
 	err = transport.NewResponse().Send(hookRes)
@@ -117,7 +127,17 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
-		return fmt.Errorf("execute: %w", err)
+		outputError := &gohook.Error{Message: "execute: " + err.Error()}
+
+		buf := bytes.NewBuffer([]byte{})
+		err := json.NewEncoder(buf).Encode(outputError)
+		if err != nil {
+			return fmt.Errorf("encode error: %w", err)
+		}
+
+		fmt.Println(buf.String())
+
+		return nil
 	}
 
 	err = transport.NewResponse().Send(hookRes)
