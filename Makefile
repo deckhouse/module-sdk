@@ -51,3 +51,7 @@ examples-lint: golangci-lint-check
 		echo "Running linter in $${dir}"; \
 		cd $(CURDIR)/$${dir} && $(GOLANGCI_LINT) run ./... --fix && cd $(CURDIR); \
 	done
+
+define error-if-empty
+@if [[ -z $(1) ]]; then echo "$(2) not installed"; false; fi
+endef
