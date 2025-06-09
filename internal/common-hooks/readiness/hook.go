@@ -21,7 +21,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"time"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -171,7 +170,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		}
 
 		if probeStatus != cond["status"] {
-			cond["lastTransitionTime"] = time.Now().Format("2006-01-02T15:04:05Z")
+			cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
 		}
 
 		// Update condition
