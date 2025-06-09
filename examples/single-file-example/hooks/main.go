@@ -85,7 +85,6 @@ func ReadinessFunc(_ context.Context, input *pkg.HookInput) error {
 
 func main() {
 	readinessConfig := &app.ReadinessConfig{
-		ModuleName:        "test-module",
 		IntervalInSeconds: 12,
 		ProbeFunc:         ReadinessFunc,
 	}

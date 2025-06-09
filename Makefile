@@ -26,8 +26,8 @@ test: go-check
 lint: golangci-lint-check
 	@$(GOLANGCI_LINT) run ./... --fix
 
-.PHONY: examples-test
-examples-test: go-check examples-mod examples-test examples-lint
+.PHONY: examples
+examples: go-check examples-mod examples-test examples-lint
 	@echo "Running examples tests and linting"
 	@$(GOLANGCI_LINT) run ./... --fix
 

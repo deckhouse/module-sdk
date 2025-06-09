@@ -41,7 +41,7 @@ func GetModuleGVK() *schema.GroupVersionResource {
 
 type ReadinessHookConfig struct {
 	ModuleName        string
-	IntervalInSeconds int
+	IntervalInSeconds uint8
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
@@ -55,7 +55,7 @@ func NewReadinessHookEM(cfg *ReadinessHookConfig) (*pkg.HookConfig, pkg.Reconcil
 
 func NewReadinessConfig(cfg *ReadinessHookConfig) *pkg.HookConfig {
 	if cfg.IntervalInSeconds == 0 {
-		cfg.IntervalInSeconds = 1
+		cfg.IntervalInSeconds = 15
 	}
 
 	return &pkg.HookConfig{
@@ -141,9 +141,9 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		probeReason := ""
 		if err := cfg.ProbeFunc(ctx, input); err != nil {
 			probeStatus = string(corev1.ConditionFalse)
-			probeMessage = fmt.Sprintf("probe failed: %s", err)
+			probeMessage = err.Error()
 			probePhase = modulePhaseReconciling
-			probeReason = "Readiness probe"
+			probeReason = "ReadinessProbeFailed"
 		}
 
 		// search IsReady condition

@@ -66,9 +66,8 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				"status": map[string]interface{}{
 					"conditions": []interface{}{
 						map[string]interface{}{
-							"type":    "IsReady",
-							"status":  "True",
-							"message": "Module is ready",
+							"type":   "IsReady",
+							"status": "True",
 						},
 					},
 					"phase": "Ready",
@@ -209,9 +208,8 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				"status": map[string]interface{}{
 					"conditions": []interface{}{
 						map[string]interface{}{
-							"type":    "IsReady",
-							"status":  "True",
-							"message": "Module is ready",
+							"type":   "IsReady",
+							"status": "True",
 						},
 					},
 					"phase": "Ready",

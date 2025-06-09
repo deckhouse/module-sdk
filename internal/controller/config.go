@@ -27,7 +27,7 @@ type HookConfig struct {
 
 type ReadinessConfig struct {
 	ModuleName        string
-	IntervalInSeconds int
+	IntervalInSeconds uint8
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
