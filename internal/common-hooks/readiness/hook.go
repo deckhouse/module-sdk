@@ -170,9 +170,12 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return nil
 		}
 
+		if probeStatus != cond["status"] {
+			cond["lastTransitionTime"] = time.Now().Format("2006-01-02T15:04:05Z")
+		}
+
 		// Update condition
 		cond["status"] = probeStatus
-		cond["lastTransitionTime"] = time.Now().Format("2006-01-02T15:04:05Z")
 
 		cond["message"] = probeMessage
 		if probeMessage == "" {
