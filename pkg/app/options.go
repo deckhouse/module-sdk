@@ -19,8 +19,11 @@ func WithReadiness(cfg *ReadinessConfig) RunConfigOption {
 
 	return func(c *config) {
 		c.ReadinessConfig = &readinessConfig{
-			IntervalInSeconds: cfg.IntervalInSeconds,
-			ProbeFunc:         cfg.ProbeFunc,
+			ProbeFunc: cfg.ProbeFunc,
+		}
+
+		if c.ReadinessConfig.IntervalInSeconds == 0 {
+			c.ReadinessConfig.IntervalInSeconds = cfg.IntervalInSeconds
 		}
 	}
 }

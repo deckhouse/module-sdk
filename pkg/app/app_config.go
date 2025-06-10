@@ -34,7 +34,7 @@ func newHookConfig() *hookConfig {
 
 type readinessConfig struct {
 	ModuleName        string
-	IntervalInSeconds uint8 `env:"INTERVAL_IN_SECONDS" envDefault:"15"`
+	IntervalInSeconds uint8 `env:"INTERVAL_IN_SECONDS"`
 	// TODO: not implemented
 	Threshold int
 	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
