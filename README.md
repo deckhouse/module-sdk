@@ -196,8 +196,19 @@ If you want to test your JQ filter, you can use JQ helper like in example [here]
 5) After executing hook, addon operator process hook output
 
 #### Calling hook
-1) Addon operator create temporary files for input and output data (see ENV for examples)
-2) Addon operator execute hook with corresponding ID and ENV variables pointed to files
-3) Hook reads all files and pass incoming data in HookInput
-4) Hook executes and write all resulting data from collectors contained in HookInput
+1) Addon operator creates temporary files for input and output data (see ENV for examples)
+2) Addon operator executes hook with corresponding ID and ENV variables pointed to files
+3) Hook reads all files and passes incoming data in HookInput
+4) Hook executes and writes all resulting data from collectors contained in HookInput
 5) Addon operator reads info from temporary output files
+
+### Development Commands
+
+Here are some useful commands from the Makefile to help with development:
+
+| Command | Description |
+| --- | --- |
+| `make test` | Run all tests |
+| `make lint` | Run linters to check code quality |
+| `make examples` | Test example modules |
+| `make go-module-version` | Get current commit "go get" command |
