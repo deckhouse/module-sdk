@@ -53,12 +53,12 @@ func HandlerHook(_ context.Context, input *pkg.HookInput) error {
 	return nil
 }
 
-func ReadinessFunc(_ context.Context, input *pkg.HookInput) error {
+func ReadinessFunc(ctx context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("start user logic for readiness probe")
 
 	c := input.DC.GetHTTPClient()
 
-	req, err := http.NewRequest(http.MethodGet, "http://127.0.0.1/readyz", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://127.0.0.1/readyz", nil)
 	if err != nil {
 		return fmt.Errorf("create request: %w", err)
 	}

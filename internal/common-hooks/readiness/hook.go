@@ -197,6 +197,9 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 				phase:        phase,
 			},
 		})
+		if err != nil {
+			return fmt.Errorf("patch marshal error: %w", err)
+		}
 
 		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).Patch(ctx, cfg.ModuleName, types.MergePatchType, patch, metav1.PatchOptions{}, "status"); err != nil {
 			return fmt.Errorf("patch module resource: %w", err)
