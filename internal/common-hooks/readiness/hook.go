@@ -200,7 +200,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return fmt.Errorf("failed to change status.conditions: %w", err)
 		}
 
-		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
+		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).ApplyStatus(ctx, cfg.ModuleName, uModule, metav1.ApplyOptions{}); err != nil {
 			return fmt.Errorf("update module resource: %w", err)
 		}
 
