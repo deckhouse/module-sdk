@@ -20,8 +20,10 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/gojuno/minimock/v3"
+	"github.com/jonboulle/clockwork"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -51,9 +53,10 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				"status": map[string]interface{}{
 					"conditions": []interface{}{
 						map[string]interface{}{
-							"type":    "IsReady",
-							"status":  "False",
-							"message": "Module is not ready",
+							"type":               "IsReady",
+							"status":             "False",
+							"message":            "Module is not ready",
+							"lastTransitionTime": "2005-01-02T15:04:05Z",
 						},
 					},
 					"phase": "Reconciling",
@@ -66,9 +69,9 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				"status": map[string]interface{}{
 					"conditions": []interface{}{
 						map[string]interface{}{
-							"type":    "IsReady",
-							"status":  "True",
-							"message": "Module is ready",
+							"type":               "IsReady",
+							"status":             "True",
+							"lastTransitionTime": "2006-01-02T15:04:05Z",
 						},
 					},
 					"phase": "Ready",
@@ -97,6 +100,13 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Expect().
 			Return(k8sClientMock, nil)
 
+		clockTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
+		assert.NoError(t, err)
+
+		dc.GetClockMock.
+			Expect().
+			Return(clockwork.NewFakeClockAt(clockTime))
+
 		input := &pkg.HookInput{
 			DC:     dc,
 			Logger: log.NewNop(),
@@ -110,7 +120,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			},
 		}
 
-		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
+		err = readiness.CheckModuleReadiness(config)(context.Background(), input)
 		assert.NoError(t, err)
 	})
 
@@ -194,9 +204,10 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				"status": map[string]interface{}{
 					"conditions": []interface{}{
 						map[string]interface{}{
-							"type":    "IsReady",
-							"status":  "False",
-							"message": "Module is not ready",
+							"type":               "IsReady",
+							"status":             "False",
+							"message":            "Module is not ready",
+							"lastTransitionTime": "2005-01-02T15:04:05Z",
 						},
 					},
 					"phase": "Reconciling",
@@ -209,9 +220,9 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				"status": map[string]interface{}{
 					"conditions": []interface{}{
 						map[string]interface{}{
-							"type":    "IsReady",
-							"status":  "True",
-							"message": "Module is ready",
+							"type":               "IsReady",
+							"status":             "True",
+							"lastTransitionTime": "2006-01-02T15:04:05Z",
 						},
 					},
 					"phase": "Ready",
@@ -240,6 +251,13 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Expect().
 			Return(k8sClientMock, nil)
 
+		clockTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
+		assert.NoError(t, err)
+
+		dc.GetClockMock.
+			Expect().
+			Return(clockwork.NewFakeClockAt(clockTime))
+
 		input := &pkg.HookInput{
 			DC:     dc,
 			Logger: log.NewNop(),
@@ -253,7 +271,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			},
 		}
 
-		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
+		err = readiness.CheckModuleReadiness(config)(context.Background(), input)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "update error")
 	})

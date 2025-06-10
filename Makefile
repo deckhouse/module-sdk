@@ -26,6 +26,32 @@ test: go-check
 lint: golangci-lint-check
 	@$(GOLANGCI_LINT) run ./... --fix
 
+.PHONY: examples
+examples: go-check examples-mod examples-test examples-lint
+	@echo "Running examples tests and linting"
+	@$(GOLANGCI_LINT) run ./... --fix
+
+.PHONY: examples-mod
+examples-mod: go-check
+	@for dir in $$(find . -mindepth 2 -name go.mod | sed -r 's/(.*)(go.mod)/\1/g'); do \
+		echo "Running go mod tidy in $${dir}"; \
+		cd $(CURDIR)/$${dir} && go mod tidy && cd $(CURDIR); \
+	done
+
+.PHONY: examples-test
+examples-test: go-check
+	@for dir in $$(find . -mindepth 2 -name go.mod | sed -r 's/(.*)(go.mod)/\1/g'); do \
+		echo "Running tests in $${dir}"; \
+		cd $(CURDIR)/$${dir} && $(GO) test --race --cover ./... && cd $(CURDIR); \
+	done
+
+.PHONY: examples-lint
+examples-lint: golangci-lint-check
+	@for dir in $$(find . -mindepth 2 -name go.mod | sed -r 's/(.*)(go.mod)/\1/g'); do \
+		echo "Running linter in $${dir}"; \
+		cd $(CURDIR)/$${dir} && $(GOLANGCI_LINT) run ./... --fix && cd $(CURDIR); \
+	done
+
 define error-if-empty
 @if [[ -z $(1) ]]; then echo "$(2) not installed"; false; fi
 endef

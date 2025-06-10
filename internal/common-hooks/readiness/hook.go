@@ -41,7 +41,7 @@ func GetModuleGVK() *schema.GroupVersionResource {
 
 type ReadinessHookConfig struct {
 	ModuleName        string
-	IntervalInSeconds int
+	IntervalInSeconds uint8
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
@@ -55,13 +55,13 @@ func NewReadinessHookEM(cfg *ReadinessHookConfig) (*pkg.HookConfig, pkg.Reconcil
 
 func NewReadinessConfig(cfg *ReadinessHookConfig) *pkg.HookConfig {
 	if cfg.IntervalInSeconds == 0 {
-		cfg.IntervalInSeconds = 1
+		cfg.IntervalInSeconds = 15
 	}
 
 	return &pkg.HookConfig{
 		Schedule: []pkg.ScheduleConfig{
 			{
-				Name:    "moduleReadinessSchedule",
+				Name:    cfg.ModuleName + "-moduleReadinessSchedule",
 				Crontab: fmt.Sprintf("*/%d * * * * *", cfg.IntervalInSeconds),
 			},
 		},
@@ -136,12 +136,14 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 
 		// Run probe and get status
 		probeStatus := string(corev1.ConditionTrue)
-		probeMessage := "Module is ready"
+		probeMessage := ""
 		probePhase := modulePhaseReady
+		probeReason := ""
 		if err := cfg.ProbeFunc(ctx, input); err != nil {
 			probeStatus = string(corev1.ConditionFalse)
-			probeMessage = fmt.Sprintf("probe failed: %s", err)
+			probeMessage = err.Error()
 			probePhase = modulePhaseReconciling
+			probeReason = "ReadinessProbeFailed"
 		}
 
 		// search IsReady condition
@@ -167,9 +169,23 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return nil
 		}
 
+		if probeStatus != cond["status"] {
+			cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
+		}
+
 		// Update condition
 		cond["status"] = probeStatus
+
 		cond["message"] = probeMessage
+		if probeMessage == "" {
+			delete(cond, "message")
+		}
+
+		cond["reason"] = probeReason
+		if probeReason == "" {
+			delete(cond, "reason")
+		}
+
 		uConditions[condIdx] = cond
 		// Update module status phase
 		phase = probePhase

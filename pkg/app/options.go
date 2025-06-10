@@ -19,15 +19,16 @@ func WithReadiness(cfg *ReadinessConfig) RunConfigOption {
 
 	return func(c *config) {
 		c.ReadinessConfig = &readinessConfig{
-			ModuleName:        cfg.ModuleName,
-			IntervalInSeconds: cfg.IntervalInSeconds,
-			ProbeFunc:         cfg.ProbeFunc,
+			ProbeFunc: cfg.ProbeFunc,
+		}
+
+		if c.ReadinessConfig.IntervalInSeconds == 0 {
+			c.ReadinessConfig.IntervalInSeconds = cfg.IntervalInSeconds
 		}
 	}
 }
 
 type ReadinessConfig struct {
-	ModuleName        string
-	IntervalInSeconds int
+	IntervalInSeconds uint8
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }

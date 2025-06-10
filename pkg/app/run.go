@@ -34,7 +34,7 @@ func Run(opts ...RunConfigOption) {
 		opt(cfg)
 	}
 
-	controller := controller.NewHookController(remapConfigToControllerConfig(cfg), logger.Named("hook-controller"))
+	controller := controller.NewHookController(remapConfigToControllerConfig(cfg), logger.Named("hook-controller").With("module", cfg.ModuleName))
 
 	c := newCMD(controller)
 

@@ -93,7 +93,16 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
-		return fmt.Errorf("execute: %w", err)
+		outputError := &gohook.Error{Message: "execute: " + err.Error()}
+
+		buf := bytes.NewBuffer([]byte{})
+		err := json.NewEncoder(buf).Encode(outputError)
+		if err != nil {
+			return fmt.Errorf("encode error: %w", err)
+		}
+
+		fmt.Fprintln(os.Stderr, buf.String())
+		os.Exit(1)
 	}
 
 	err = transport.NewResponse().Send(hookRes)
@@ -117,7 +126,16 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
-		return fmt.Errorf("execute: %w", err)
+		outputError := &gohook.Error{Message: "execute: " + err.Error()}
+
+		buf := bytes.NewBuffer([]byte{})
+		err := json.NewEncoder(buf).Encode(outputError)
+		if err != nil {
+			return fmt.Errorf("encode error: %w", err)
+		}
+
+		fmt.Fprintln(os.Stderr, buf.String())
+		os.Exit(1)
 	}
 
 	err = transport.NewResponse().Send(hookRes)
@@ -142,9 +160,12 @@ func (c *HookController) PrintHookConfigs() error {
 	}
 
 	cfg := &gohook.BatchHookConfig{
-		Version:   "v1",
-		Hooks:     configs,
-		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
+		Version: gohook.BatchHookConfigV1,
+		Hooks:   configs,
+	}
+
+	if c.registry.Readiness() != nil {
+		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
 	}
 
 	buf := bytes.NewBuffer([]byte{})
@@ -189,9 +210,12 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	}
 
 	cfg := &gohook.BatchHookConfig{
-		Version:   "v1",
-		Hooks:     configs,
-		Readiness: remapHookConfigToHookConfig(c.registry.Readiness().GetConfig()),
+		Version: "v1",
+		Hooks:   configs,
+	}
+
+	if c.registry.Readiness() != nil {
+		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
 	}
 
 	err = json.NewEncoder(f).Encode(cfg)

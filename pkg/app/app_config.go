@@ -34,15 +34,16 @@ func newHookConfig() *hookConfig {
 
 type readinessConfig struct {
 	ModuleName        string
-	IntervalInSeconds int
-	Threshold         int
-	// TODO: стянуть с kubernetes с проб
+	IntervalInSeconds uint8 `env:"INTERVAL_IN_SECONDS"`
+	// TODO: not implemented
+	Threshold int
 	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
 type config struct {
+	ModuleName      string `env:"MODULE_NAME" envDefault:"default-module"`
 	HookConfig      *hookConfig
-	ReadinessConfig *readinessConfig
+	ReadinessConfig *readinessConfig `envPrefix:"READINESS_"`
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
@@ -68,8 +69,10 @@ func (cfg *config) Parse() error {
 
 	return nil
 }
+
 func remapConfigToControllerConfig(input *config) *controller.Config {
-	return &controller.Config{
+	cfg := &controller.Config{
+		ModuleName: input.ModuleName,
 		HookConfig: &controller.HookConfig{
 			BindingContextPath:    input.HookConfig.BindingContextPath,
 			ValuesPath:            input.HookConfig.ValuesPath,
@@ -81,12 +84,18 @@ func remapConfigToControllerConfig(input *config) *controller.Config {
 			ConfigValuesJSONPath:  input.HookConfig.ConfigValuesJSONPath,
 			CreateFilesByYourself: input.HookConfig.CreateFilesByYourself,
 		},
-		ReadinessConfig: &controller.ReadinessConfig{
-			ModuleName:        input.ReadinessConfig.ModuleName,
-			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
-			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
-		},
+
 		LogLevelRaw: input.LogLevelRaw,
 		LogLevel:    input.LogLevel,
 	}
+
+	if input.ReadinessConfig != nil {
+		cfg.ReadinessConfig = &controller.ReadinessConfig{
+			ModuleName:        input.ModuleName,
+			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
+			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
+		}
+	}
+
+	return cfg
 }

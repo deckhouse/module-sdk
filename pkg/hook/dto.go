@@ -15,6 +15,8 @@ type GoHookMetadata struct {
 	Path string `yaml:"path" json:"path"`
 }
 
+const BatchHookConfigV1 = "v1"
+
 type BatchHookConfig struct {
 	Version   string       `yaml:"version" json:"version"`
 	Hooks     []HookConfig `yaml:"hooks" json:"hooks"`
@@ -120,4 +122,9 @@ type KubernetesConfig struct {
 	IncludeSnapshotsFrom []string `json:"includeSnapshotsFrom,omitempty"`
 
 	Queue string `json:"queue,omitempty"`
+}
+
+type Error struct {
+	Message string `json:"message"`
+	Code    int    `json:"code,omitempty"`
 }
