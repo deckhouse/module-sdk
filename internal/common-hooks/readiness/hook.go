@@ -194,7 +194,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		patch, err := json.Marshal(map[string]any{
 			"status": map[string]any{
 				"conditions": uConditions,
-				phase:        phase,
+				"phase":      phase,
 			},
 		})
 		if err != nil {
