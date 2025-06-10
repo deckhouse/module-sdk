@@ -18,6 +18,7 @@ package readiness
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -26,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/deckhouse/module-sdk/pkg"
 )
@@ -72,6 +74,7 @@ const (
 	conditionStatusIsReady = "IsReady"
 	modulePhaseReconciling = "Reconciling"
 	modulePhaseReady       = "Ready"
+	modulePhaseHookError   = "Error"
 )
 
 func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
@@ -128,7 +131,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return errors.New("can't find status.phase")
 		}
 
-		if phase != modulePhaseReconciling && phase != modulePhaseReady {
+		if phase != modulePhaseReconciling && phase != modulePhaseReady && phase != modulePhaseHookError {
 			logger.Debug("waiting for sustainable phase", slog.String("phase", phase))
 
 			return nil
@@ -164,44 +167,45 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			condIdx = len(uConditions) - 1
 		}
 
-		if cond["message"] == probeMessage && probePhase == phase {
-			logger.Debug("condition is unchanged")
-			return nil
-		}
+		cond["lastProbeTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
 
-		if probeStatus != cond["status"] {
-			cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
-		}
+		if cond["message"] != probeMessage || probePhase != phase {
+			// if probe status changed - update time
+			if probeStatus != cond["status"] {
+				cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
+			}
 
-		// Update condition
-		cond["status"] = probeStatus
+			cond["status"] = probeStatus
 
-		cond["message"] = probeMessage
-		if probeMessage == "" {
-			delete(cond, "message")
-		}
+			cond["message"] = probeMessage
+			if probeMessage == "" {
+				delete(cond, "message")
+			}
 
-		cond["reason"] = probeReason
-		if probeReason == "" {
-			delete(cond, "reason")
+			cond["reason"] = probeReason
+			if probeReason == "" {
+				delete(cond, "reason")
+			}
+
+			// Update module status phase
+			phase = probePhase
 		}
 
 		uConditions[condIdx] = cond
-		// Update module status phase
-		phase = probePhase
 
-		// Update module status phase
-		if err := unstructured.SetNestedField(uModule.Object, phase, "status", "phase"); err != nil {
-			return fmt.Errorf("failed to change status.phase: %w", err)
+		// creating patch
+		patch, err := json.Marshal(map[string]any{
+			"status": map[string]any{
+				"conditions": uConditions,
+				"phase":      phase,
+			},
+		})
+		if err != nil {
+			return fmt.Errorf("patch marshal error: %w", err)
 		}
 
-		// Update module status conditions
-		if err := unstructured.SetNestedSlice(uModule.Object, uConditions, "status", "conditions"); err != nil {
-			return fmt.Errorf("failed to change status.conditions: %w", err)
-		}
-
-		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
-			return fmt.Errorf("update module resource: %w", err)
+		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).Patch(ctx, cfg.ModuleName, types.MergePatchType, patch, metav1.PatchOptions{}, "status"); err != nil {
+			return fmt.Errorf("patch module resource: %w", err)
 		}
 
 		return nil

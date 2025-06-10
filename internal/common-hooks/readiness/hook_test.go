@@ -18,6 +18,7 @@ package readiness_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -27,6 +28,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 
@@ -64,27 +66,27 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			},
 		}
 
-		updatedResource := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"status": map[string]interface{}{
-					"conditions": []interface{}{
-						map[string]interface{}{
-							"type":               "IsReady",
-							"status":             "True",
-							"lastTransitionTime": "2006-01-02T15:04:05Z",
-						},
+		patch, err := json.Marshal(map[string]any{
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":               "IsReady",
+						"status":             "True",
+						"lastTransitionTime": "2006-01-02T15:04:05Z",
+						"lastProbeTime":      "2006-01-02T15:04:05Z",
 					},
-					"phase": "Ready",
 				},
+				"phase": "Ready",
 			},
-		}
+		})
+		assert.NoError(t, err)
 
 		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.UpdateStatusMock.
-			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
+		resourceMock.PatchMock.
+			Expect(minimock.AnyContext, "stub", types.MergePatchType, patch, metav1.PatchOptions{}, "status").
 			Return(nil, nil)
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
@@ -215,27 +217,27 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			},
 		}
 
-		updatedResource := &unstructured.Unstructured{
-			Object: map[string]interface{}{
-				"status": map[string]interface{}{
-					"conditions": []interface{}{
-						map[string]interface{}{
-							"type":               "IsReady",
-							"status":             "True",
-							"lastTransitionTime": "2006-01-02T15:04:05Z",
-						},
+		patch, err := json.Marshal(map[string]any{
+			"status": map[string]interface{}{
+				"conditions": []interface{}{
+					map[string]interface{}{
+						"type":               "IsReady",
+						"status":             "True",
+						"lastTransitionTime": "2006-01-02T15:04:05Z",
+						"lastProbeTime":      "2006-01-02T15:04:05Z",
 					},
-					"phase": "Ready",
 				},
+				"phase": "Ready",
 			},
-		}
+		})
+		assert.NoError(t, err)
 
 		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.UpdateStatusMock.
-			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
+		resourceMock.PatchMock.
+			Expect(minimock.AnyContext, "stub", types.MergePatchType, patch, metav1.PatchOptions{}, "status").
 			Return(nil, fmt.Errorf("update error"))
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
