@@ -170,11 +170,11 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		cond["lastProbeTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
 
 		if cond["message"] != probeMessage || probePhase != phase {
+			// if probe status changed - update time
 			if probeStatus != cond["status"] {
 				cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
 			}
 
-			// Update condition
 			cond["status"] = probeStatus
 
 			cond["message"] = probeMessage
