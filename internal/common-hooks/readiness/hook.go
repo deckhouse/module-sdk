@@ -18,6 +18,7 @@ package readiness
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -26,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/deckhouse/module-sdk/pkg"
 )
@@ -189,18 +191,15 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		// Update module status phase
 		phase = probePhase
 
-		// Update module status phase
-		if err := unstructured.SetNestedField(uModule.Object, phase, "status", "phase"); err != nil {
-			return fmt.Errorf("failed to change status.phase: %w", err)
-		}
+		patch, err := json.Marshal(map[string]any{
+			"status": map[string]any{
+				"conditions": uConditions,
+				phase:        phase,
+			},
+		})
 
-		// Update module status conditions
-		if err := unstructured.SetNestedSlice(uModule.Object, uConditions, "status", "conditions"); err != nil {
-			return fmt.Errorf("failed to change status.conditions: %w", err)
-		}
-
-		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
-			return fmt.Errorf("update module resource: %w", err)
+		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).Patch(ctx, cfg.ModuleName, types.MergePatchType, patch, metav1.PatchOptions{}, "status"); err != nil {
+			return fmt.Errorf("patch module resource: %w", err)
 		}
 
 		return nil
