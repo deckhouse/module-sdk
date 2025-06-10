@@ -186,12 +186,14 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			if probeReason == "" {
 				delete(cond, "reason")
 			}
+
+			// Update module status phase
+			phase = probePhase
 		}
 
 		uConditions[condIdx] = cond
-		// Update module status phase
-		phase = probePhase
 
+		// creating patch
 		patch, err := json.Marshal(map[string]any{
 			"status": map[string]any{
 				"conditions": uConditions,
