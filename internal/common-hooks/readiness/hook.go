@@ -74,6 +74,7 @@ const (
 	conditionStatusIsReady = "IsReady"
 	modulePhaseReconciling = "Reconciling"
 	modulePhaseReady       = "Ready"
+	modulePhaseHookError   = "HookError"
 )
 
 func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
@@ -130,7 +131,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return errors.New("can't find status.phase")
 		}
 
-		if phase != modulePhaseReconciling && phase != modulePhaseReady {
+		if phase != modulePhaseReconciling && phase != modulePhaseReady && phase != modulePhaseHookError {
 			logger.Debug("waiting for sustainable phase", slog.String("phase", phase))
 
 			return nil
