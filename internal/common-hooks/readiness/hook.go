@@ -74,7 +74,7 @@ const (
 	conditionStatusIsReady = "IsReady"
 	modulePhaseReconciling = "Reconciling"
 	modulePhaseReady       = "Ready"
-	modulePhaseHookError   = "HookError"
+	modulePhaseHookError   = "Error"
 )
 
 func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
