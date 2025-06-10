@@ -83,8 +83,8 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.UpdateStatusMock.
-			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
+		resourceMock.ApplyStatusMock.
+			Expect(minimock.AnyContext, "stub", updatedResource, metav1.ApplyOptions{}).
 			Return(nil, nil)
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
@@ -234,8 +234,8 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.UpdateStatusMock.
-			Expect(minimock.AnyContext, updatedResource, metav1.UpdateOptions{}).
+		resourceMock.ApplyStatusMock.
+			Expect(minimock.AnyContext, "stub", updatedResource, metav1.ApplyOptions{}).
 			Return(nil, fmt.Errorf("update error"))
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
