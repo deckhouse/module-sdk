@@ -164,26 +164,25 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			condIdx = len(uConditions) - 1
 		}
 
-		if cond["message"] == probeMessage && probePhase == phase {
-			logger.Debug("condition is unchanged")
-			return nil
-		}
+		cond["lastProbeTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
 
-		if probeStatus != cond["status"] {
-			cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
-		}
+		if cond["message"] != probeMessage || probePhase != phase {
+			if probeStatus != cond["status"] {
+				cond["lastTransitionTime"] = input.DC.GetClock().Now().Format("2006-01-02T15:04:05Z")
+			}
 
-		// Update condition
-		cond["status"] = probeStatus
+			// Update condition
+			cond["status"] = probeStatus
 
-		cond["message"] = probeMessage
-		if probeMessage == "" {
-			delete(cond, "message")
-		}
+			cond["message"] = probeMessage
+			if probeMessage == "" {
+				delete(cond, "message")
+			}
 
-		cond["reason"] = probeReason
-		if probeReason == "" {
-			delete(cond, "reason")
+			cond["reason"] = probeReason
+			if probeReason == "" {
+				delete(cond, "reason")
+			}
 		}
 
 		uConditions[condIdx] = cond
@@ -200,7 +199,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return fmt.Errorf("failed to change status.conditions: %w", err)
 		}
 
-		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).ApplyStatus(ctx, cfg.ModuleName, uModule, metav1.ApplyOptions{}); err != nil {
+		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).UpdateStatus(ctx, uModule, metav1.UpdateOptions{}); err != nil {
 			return fmt.Errorf("update module resource: %w", err)
 		}
 
