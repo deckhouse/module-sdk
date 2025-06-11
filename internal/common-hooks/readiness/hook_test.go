@@ -99,7 +99,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Return(k8sClientMock, nil)
 
 		patchCollector.PatchWithMergeMock.
-			Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+			Set(func(mergePatch any, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
 				assert.Equal(t, patch, mergePatch)
 				assert.Equal(t, apiVersion, readiness.GetModuleGVR().GroupVersion().String())
 				assert.Equal(t, kind, "Module")
@@ -258,7 +258,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Return(k8sClientMock, nil)
 
 		patchCollector.PatchWithMergeMock.
-			Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+			Set(func(mergePatch any, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
 				assert.Equal(t, patch, mergePatch)
 				assert.Equal(t, apiVersion, readiness.GetModuleGVR().GroupVersion().String())
 				assert.Equal(t, kind, "Module")
