@@ -91,7 +91,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
-			Expect(*readiness.GetModuleGVK()).
+			Expect(*readiness.GetModuleGVR()).
 			Return(resourceMock)
 
 		k8sClientMock := mock.NewKubernetesClientMock(mc)
@@ -166,7 +166,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
-			Expect(*readiness.GetModuleGVK()).
+			Expect(*readiness.GetModuleGVR()).
 			Return(resourceMock)
 
 		k8sClientMock := mock.NewKubernetesClientMock(mc)
@@ -242,7 +242,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
-			Expect(*readiness.GetModuleGVK()).
+			Expect(*readiness.GetModuleGVR()).
 			Return(resourceMock)
 
 		k8sClientMock := mock.NewKubernetesClientMock(mc)

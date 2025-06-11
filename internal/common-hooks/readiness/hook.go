@@ -31,7 +31,7 @@ import (
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 )
 
-func GetModuleGVK() *schema.GroupVersionResource {
+func GetModuleGVR() *schema.GroupVersionResource {
 	// ModuleGVR GroupVersionResource
 	return &schema.GroupVersionResource{
 		Group:    "deckhouse.io",
@@ -98,7 +98,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return fmt.Errorf("get k8s client: %w", err)
 		}
 
-		uModule, err := k8sClient.Dynamic().Resource(*GetModuleGVK()).Get(ctx, cfg.ModuleName, metav1.GetOptions{})
+		uModule, err := k8sClient.Dynamic().Resource(*GetModuleGVR()).Get(ctx, cfg.ModuleName, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("get module resource: %w", err)
 		}
@@ -200,7 +200,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			},
 		}
 
-		input.PatchCollector.PatchWithMerge(patch, GetModuleGVK().Version, GetModuleGVK().Resource, "", cfg.ModuleName, objectpatch.WithSubresource("/status"))
+		input.PatchCollector.PatchWithMerge(patch, GetModuleGVR().GroupVersion().String(), "Module", "", cfg.ModuleName, objectpatch.WithSubresource("/status"))
 
 		return nil
 	}
