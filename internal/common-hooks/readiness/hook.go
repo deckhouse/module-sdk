@@ -18,7 +18,6 @@ package readiness
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -27,12 +26,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/deckhouse/module-sdk/pkg"
+	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 )
 
-func GetModuleGVK() *schema.GroupVersionResource {
+func GetModuleGVR() *schema.GroupVersionResource {
 	// ModuleGVR GroupVersionResource
 	return &schema.GroupVersionResource{
 		Group:    "deckhouse.io",
@@ -99,7 +98,7 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			return fmt.Errorf("get k8s client: %w", err)
 		}
 
-		uModule, err := k8sClient.Dynamic().Resource(*GetModuleGVK()).Get(ctx, cfg.ModuleName, metav1.GetOptions{})
+		uModule, err := k8sClient.Dynamic().Resource(*GetModuleGVR()).Get(ctx, cfg.ModuleName, metav1.GetOptions{})
 		if err != nil {
 			return fmt.Errorf("get module resource: %w", err)
 		}
@@ -194,19 +193,21 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 		uConditions[condIdx] = cond
 
 		// creating patch
-		patch, err := json.Marshal(map[string]any{
+		patch := map[string]any{
 			"status": map[string]any{
 				"conditions": uConditions,
 				"phase":      phase,
 			},
-		})
-		if err != nil {
-			return fmt.Errorf("patch marshal error: %w", err)
 		}
 
-		if _, err = k8sClient.Dynamic().Resource(*GetModuleGVK()).Patch(ctx, cfg.ModuleName, types.MergePatchType, patch, metav1.PatchOptions{}, "status"); err != nil {
-			return fmt.Errorf("patch module resource: %w", err)
-		}
+		input.PatchCollector.PatchWithMerge(
+			patch,
+			GetModuleGVR().GroupVersion().String(),
+			"Module",
+			"",
+			cfg.ModuleName,
+			objectpatch.WithSubresource("/status"),
+		)
 
 		return nil
 	}
