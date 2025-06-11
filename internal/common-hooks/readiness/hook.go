@@ -200,7 +200,14 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 			},
 		}
 
-		input.PatchCollector.PatchWithMerge(patch, GetModuleGVR().GroupVersion().String(), "Module", "", cfg.ModuleName, objectpatch.WithSubresource("/status"))
+		input.PatchCollector.PatchWithMerge(
+			patch,
+			GetModuleGVR().GroupVersion().String(),
+			"Module",
+			"",
+			cfg.ModuleName,
+			objectpatch.WithSubresource("/status"),
+		)
 
 		return nil
 	}

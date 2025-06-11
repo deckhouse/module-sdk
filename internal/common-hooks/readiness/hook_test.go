@@ -18,7 +18,7 @@ package readiness_test
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -28,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 
@@ -49,6 +48,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		defer mc.Cleanup(func() {})
 
 		dc := mock.NewDependencyContainerMock(mc)
+		patchCollector := mock.NewPatchCollectorMock(t)
 
 		resource := &unstructured.Unstructured{
 			Object: map[string]interface{}{
@@ -66,7 +66,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			},
 		}
 
-		patch, err := json.Marshal(map[string]any{
+		patch := map[string]any{
 			"status": map[string]interface{}{
 				"conditions": []interface{}{
 					map[string]interface{}{
@@ -78,16 +78,12 @@ func Test_CheckModuleReadiness(t *testing.T) {
 				},
 				"phase": "Ready",
 			},
-		})
-		assert.NoError(t, err)
+		}
 
 		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.PatchMock.
-			Expect(minimock.AnyContext, "stub", types.MergePatchType, patch, metav1.PatchOptions{}, "status").
-			Return(nil, nil)
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
@@ -102,6 +98,15 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Expect().
 			Return(k8sClientMock, nil)
 
+		patchCollector.PatchWithMergeMock.
+			Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+				assert.Equal(t, patch, mergePatch)
+				assert.Equal(t, apiVersion, readiness.GetModuleGVR().GroupVersion().String())
+				assert.Equal(t, kind, "Module")
+				assert.Equal(t, namespace, "")
+				assert.Equal(t, name, "stub")
+			})
+
 		clockTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
 		assert.NoError(t, err)
 
@@ -110,8 +115,9 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Return(clockwork.NewFakeClockAt(clockTime))
 
 		input := &pkg.HookInput{
-			DC:     dc,
-			Logger: log.NewNop(),
+			DC:             dc,
+			PatchCollector: patchCollector,
+			Logger:         log.NewNop(),
 		}
 
 		config := &readiness.ReadinessHookConfig{
@@ -195,11 +201,12 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		assert.Contains(t, err.Error(), "get error")
 	})
 
-	t.Run("update status error", func(t *testing.T) {
+	t.Run("readiness error", func(t *testing.T) {
 		mc := minimock.NewController(t)
 		defer mc.Cleanup(func() {})
 
 		dc := mock.NewDependencyContainerMock(mc)
+		patchCollector := mock.NewPatchCollectorMock(t)
 
 		resource := &unstructured.Unstructured{
 			Object: map[string]interface{}{
@@ -207,8 +214,7 @@ func Test_CheckModuleReadiness(t *testing.T) {
 					"conditions": []interface{}{
 						map[string]interface{}{
 							"type":               "IsReady",
-							"status":             "False",
-							"message":            "Module is not ready",
+							"status":             "True",
 							"lastTransitionTime": "2005-01-02T15:04:05Z",
 						},
 					},
@@ -217,28 +223,26 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			},
 		}
 
-		patch, err := json.Marshal(map[string]any{
+		patch := map[string]any{
 			"status": map[string]interface{}{
 				"conditions": []interface{}{
 					map[string]interface{}{
 						"type":               "IsReady",
-						"status":             "True",
+						"status":             "False",
+						"message":            "readiness error",
+						"reason":             "ReadinessProbeFailed",
 						"lastTransitionTime": "2006-01-02T15:04:05Z",
 						"lastProbeTime":      "2006-01-02T15:04:05Z",
 					},
 				},
-				"phase": "Ready",
+				"phase": "Reconciling",
 			},
-		})
-		assert.NoError(t, err)
+		}
 
 		resourceMock := mock.NewKubernetesNamespaceableResourceInterfaceMock(mc)
 		resourceMock.GetMock.
 			Expect(minimock.AnyContext, "stub", metav1.GetOptions{}).
 			Return(resource, nil)
-		resourceMock.PatchMock.
-			Expect(minimock.AnyContext, "stub", types.MergePatchType, patch, metav1.PatchOptions{}, "status").
-			Return(nil, fmt.Errorf("update error"))
 
 		dynamicClientMock := mock.NewKubernetesDynamicClientMock(mc)
 		dynamicClientMock.ResourceMock.
@@ -253,6 +257,15 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Expect().
 			Return(k8sClientMock, nil)
 
+		patchCollector.PatchWithMergeMock.
+			Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+				assert.Equal(t, patch, mergePatch)
+				assert.Equal(t, apiVersion, readiness.GetModuleGVR().GroupVersion().String())
+				assert.Equal(t, kind, "Module")
+				assert.Equal(t, namespace, "")
+				assert.Equal(t, name, "stub")
+			})
+
 		clockTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
 		assert.NoError(t, err)
 
@@ -261,20 +274,20 @@ func Test_CheckModuleReadiness(t *testing.T) {
 			Return(clockwork.NewFakeClockAt(clockTime))
 
 		input := &pkg.HookInput{
-			DC:     dc,
-			Logger: log.NewNop(),
+			DC:             dc,
+			PatchCollector: patchCollector,
+			Logger:         log.NewNop(),
 		}
 
 		config := &readiness.ReadinessHookConfig{
 			ModuleName:        "stub",
 			IntervalInSeconds: 10,
 			ProbeFunc: func(_ context.Context, _ *pkg.HookInput) error {
-				return nil
+				return errors.New("readiness error")
 			},
 		}
 
 		err = readiness.CheckModuleReadiness(config)(context.Background(), input)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "update error")
+		assert.NoError(t, err)
 	})
 }
