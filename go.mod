@@ -3,7 +3,7 @@ module github.com/deckhouse/module-sdk
 go 1.23.8
 
 require (
-	github.com/caarlos0/env/v11 v11.2.2
+	github.com/caarlos0/env/v11 v11.3.1
 	github.com/cloudflare/cfssl v1.6.5
 	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20250424095005-9ab587d01d7a
 	github.com/ettle/strcase v0.2.0
