@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"
@@ -14,9 +15,9 @@ import (
 )
 
 // input snapshots must be in yaml format
-func PrepareHookSnapshots(t *testing.T, config *pkg.HookConfig, inputSnapshots map[string][]string) pkg.Snapshots {
+func PrepareHookSnapshots(t *testing.T, config *pkg.HookConfig, inputSnapshots map[string]string) pkg.Snapshots {
 	formattedSnapshots := make(objectpatch.Snapshots, len(inputSnapshots))
-	for snapBindingName, snaps := range inputSnapshots {
+	for snapBindingName, rawSnaps := range inputSnapshots {
 		var (
 			err   error
 			query *jq.Query
@@ -29,6 +30,8 @@ func PrepareHookSnapshots(t *testing.T, config *pkg.HookConfig, inputSnapshots m
 				assert.NoError(t, err, "Failed to create JQ query from filter: %s", v.JqFilter)
 			}
 		}
+
+		snaps := strings.Split(rawSnaps, "---")
 
 		for _, snap := range snaps {
 			var yml map[string]interface{}
