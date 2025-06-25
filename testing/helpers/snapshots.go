@@ -14,8 +14,11 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// input snapshots must be in yaml format
-func PrepareHookSnapshots(t *testing.T, config *pkg.HookConfig, inputSnapshots map[string]string) pkg.Snapshots {
+// input snapshots must be in the format: snapshotName: ["yaml1", "yaml2", ...]
+// it can handle multiple YAML documents in a single string, separated by "---"
+// it will apply the JQ filter from the hook config to each snapshot
+// and return a map of snapshot names to their filtered JSON representations
+func PrepareHookSnapshots(t *testing.T, config *pkg.HookConfig, inputSnapshots map[string][]string) pkg.Snapshots {
 	formattedSnapshots := make(objectpatch.Snapshots, len(inputSnapshots))
 	for snapBindingName, rawSnaps := range inputSnapshots {
 		var (
@@ -31,24 +34,26 @@ func PrepareHookSnapshots(t *testing.T, config *pkg.HookConfig, inputSnapshots m
 			}
 		}
 
-		snaps := strings.Split(rawSnaps, "---")
+		for _, rawSnap := range rawSnaps {
+			snaps := strings.Split(rawSnap, "---")
 
-		for _, snap := range snaps {
-			var yml map[string]interface{}
+			for _, snap := range snaps {
+				var yml map[string]interface{}
 
-			err := yaml.Unmarshal([]byte(snap), &yml)
-			assert.NoError(t, err, "Failed to unmarshal snapshot YAML: %s", snap)
+				err := yaml.Unmarshal([]byte(snap), &yml)
+				assert.NoError(t, err, "Failed to unmarshal snapshot YAML: %s", snap)
 
-			jsonSnap, err := json.Marshal(yml)
-			assert.NoError(t, err, "Failed to marshal snapshot to JSON: %s", snap)
+				jsonSnap, err := json.Marshal(yml)
+				assert.NoError(t, err, "Failed to marshal snapshot to JSON: %s", snap)
 
-			fmt.Println("JSON Snapshot:", string(jsonSnap))
+				fmt.Println("JSON Snapshot:", string(jsonSnap))
 
-			res, err := query.FilterStringObject(context.TODO(), string(jsonSnap))
-			assert.NoError(t, err, "Failed to filter snapshot with JQ query: %s", jsonSnap)
-			fmt.Println("JSON Snapshot:", string(res.String()))
+				res, err := query.FilterStringObject(context.TODO(), string(jsonSnap))
+				assert.NoError(t, err, "Failed to filter snapshot with JQ query: %s", jsonSnap)
+				fmt.Println("JSON Snapshot:", string(res.String()))
 
-			formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], objectpatch.Snapshot(res.String()))
+				formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], objectpatch.Snapshot(res.String()))
+			}
 		}
 	}
 

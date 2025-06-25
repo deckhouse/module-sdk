@@ -453,8 +453,9 @@ func Test_GenSelfSignedTLS_NewFramework(t *testing.T) {
 
 		hookConfig := tlscertificate.GenSelfSignedTLSConfig(tlsConfig)
 
-		snaps := helpers.PrepareHookSnapshots(t, hookConfig, map[string]string{
-			tlscertificate.InternalTLSSnapshotKey: `
+		snaps := helpers.PrepareHookSnapshots(t, hookConfig, map[string][]string{
+			tlscertificate.InternalTLSSnapshotKey: {
+				`
 apiVersion: v1
 data:
   ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJpRENDQVM2Z0F3SUJBZ0lVV3VXcVhMQ1ZnWXVSaVNmZVZvT3RHMG9vU3pZd0NnWUlLb1pJemowRUF3SXcKSWpFZ01CNEdBMVVFQXhNWFpHVmphMmh2ZFhObExtUTRMWE41YzNSbGJTNXpkbU13SGhjTk1qVXdOakU0TVRnMApOREF3V2hjTk16VXdOakUyTVRnME5EQXdXakFpTVNBd0hnWURWUVFERXhka1pXTnJhRzkxYzJVdVpEZ3RjM2x6CmRHVnRMbk4yWXpCWk1CTUdCeXFHU000OUFnRUdDQ3FHU000OUF3RUhBMElBQkM0N3h1WCs2VkhvVVVpaG9VSUsKbzY1QzR2OVU5UjV5dXZLQUN3SlJ3bFoxUGs1MGR2aXFFNHJjbXRsdTRsZkRPSW9qaFlJN3ZUS1piMVByVTY3MgpTSHVqUWpCQU1BNEdBMVVkRHdFQi93UUVBd0lCQmpBUEJnTlZIUk1CQWY4RUJUQURBUUgvTUIwR0ExVWREZ1FXCkJCVDF1U3JvYjNJeHpaNlJOc042dEFjTGlyUGt3REFLQmdncWhrak9QUVFEQWdOSUFEQkZBaUJ6YTVSS3p0RDYKRmJuT2NOTm5ncjhQazhrME4vcGtzTGNiemZXd3NCN0lVQUloQU5tMjNMSzczNVJ0c3F4TGhGNmtyTCtlZmJicgpBbU9jSmpWdGwvNWc5aEhhCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
@@ -485,7 +486,7 @@ metadata:
   name: admission-webhook-certs
   namespace: d8-system
 `,
-		})
+			}})
 
 		values := mock.NewPatchableValuesCollectorMock(t)
 

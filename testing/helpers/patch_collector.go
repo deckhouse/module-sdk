@@ -8,45 +8,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollector {
+type typedPatch struct {
+	wrapped any
+}
+
+func PreparePatchCollector(t *testing.T, patches ...*typedPatch) pkg.OutputPatchCollector {
 	pc := mock.NewPatchCollectorMock(t)
 
 	for _, patch := range patches {
-		switch p := patch.(type) {
-		case Create:
+		switch p := patch.wrapped.(type) {
+		case *create:
 			pc.CreateMock.Set(func(obj any) {
 				assert.Equal(t, p.Object, obj, "Create object mismatch")
 			})
-		case CreateIfNotExists:
+		case *createIfNotExists:
 			pc.CreateIfNotExistsMock.Set(func(obj any) {
 				assert.Equal(t, p.Object, obj, "CreateIfNotExists object mismatch")
 			})
-		case CreateOrUpdate:
+		case *createOrUpdate:
 			pc.CreateOrUpdateMock.Set(func(obj any) {
 				assert.Equal(t, p.Object, obj, "CreateOrUpdate object mismatch")
 			})
-		case Delete:
+		case *delete:
 			pc.DeleteMock.Set(func(apiVersion, kind, namespace, name string) {
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
 				assert.Equal(t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case DeleteInBackground:
+		case *deleteInBackground:
 			pc.DeleteInBackgroundMock.Set(func(apiVersion, kind, namespace, name string) {
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
 				assert.Equal(t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case DeleteNonCascading:
+		case *deleteNonCascading:
 			pc.DeleteNonCascadingMock.Set(func(apiVersion, kind, namespace, name string) {
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
 				assert.Equal(t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case JSONPatch:
+		case *jsonPatch:
 			pc.JSONPatchMock.Set(func(jsonPatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				assert.Equal(t, p.JsonPatch, jsonPatch, "JSON patch mismatch")
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
@@ -54,7 +58,7 @@ func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollecto
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case MergePatch:
+		case *mergePatch:
 			pc.MergePatchMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				assert.Equal(t, p.MergePatch, mergePatch, "Merge patch mismatch")
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
@@ -62,7 +66,7 @@ func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollecto
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case JQFilter:
+		case *jqFilter:
 			pc.JQFilterMock.Set(func(jqFilter string, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				assert.Equal(t, p.JQFilter, jqFilter, "JQ filter mismatch")
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
@@ -70,7 +74,7 @@ func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollecto
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case PatchWithJQ:
+		case *patchWithJQ:
 			pc.PatchWithJQMock.Set(func(jqfilter, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				assert.Equal(t, p.JQFilter, jqfilter, "JQ filter mismatch")
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
@@ -78,7 +82,7 @@ func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollecto
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case PatchWithJSON:
+		case *patchWithJSON:
 			pc.PatchWithJSONMock.Set(func(jsonPatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				assert.Equal(t, p.JsonPatch, jsonPatch, "JSON patch mismatch")
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
@@ -86,7 +90,7 @@ func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollecto
 				assert.Equal(t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(t, p.Name, name, "Name mismatch")
 			})
-		case PatchWithMerge:
+		case *patchWithMerge:
 			pc.PatchWithMergeMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
 				assert.Equal(t, p.MergePatch, mergePatch, "Merge patch mismatch")
 				assert.Equal(t, p.ApiVersion, apiVersion, "API version mismatch")
@@ -101,69 +105,92 @@ func PreparePatchCollector(t *testing.T, patches ...any) pkg.OutputPatchCollecto
 
 	return pc
 }
+func NewCreate(obj any) *typedPatch {
+	return &typedPatch{wrapped: &create{Object: obj}}
+}
 
-// Patch type definitions for different patching operations
-type Create struct {
+type create struct {
 	Object any
 }
 
-type CreateIfNotExists struct {
+func NewCreateIfNotExists(obj any) *typedPatch {
+	return &typedPatch{wrapped: &createIfNotExists{Object: obj}}
+}
+
+type createIfNotExists struct {
 	Object any
 }
 
-type CreateOrUpdate struct {
+func NewCreateOrUpdate(obj any) *typedPatch {
+	return &typedPatch{wrapped: &createOrUpdate{Object: obj}}
+}
+
+type createOrUpdate struct {
 	Object any
 }
 
-type Delete struct {
+func NewDelete(apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &delete{ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type delete struct {
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
-type DeleteInBackground struct {
+func NewDeleteInBackground(apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &deleteInBackground{ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type deleteInBackground struct {
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
-type DeleteNonCascading struct {
+func NewDeleteNonCascading(apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &deleteNonCascading{ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type deleteNonCascading struct {
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
-type JSONPatch struct {
+func NewJSONPatch(JSONPatch any, apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &jsonPatch{JsonPatch: JSONPatch, ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type jsonPatch struct {
 	JsonPatch  any
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
-	Options    []pkg.PatchCollectorOption
 }
 
-type MergePatch struct {
+func NewMergePatch(MergePatch any, apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &mergePatch{MergePatch: MergePatch, ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type mergePatch struct {
 	MergePatch any
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
-	Options    []pkg.PatchCollectorOption
 }
 
-type JQFilter struct {
-	JQFilter   string
-	ApiVersion string
-	Kind       string
-	Namespace  string
-	Name       string
-	Options    []pkg.PatchCollectorOption
+func NewJQFilter(JQFilter, apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &jqFilter{JQFilter: JQFilter, ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
 }
 
-type PatchWithJQ struct {
+type jqFilter struct {
 	JQFilter   string
 	ApiVersion string
 	Kind       string
@@ -171,20 +198,38 @@ type PatchWithJQ struct {
 	Name       string
 }
 
-type PatchWithJSON struct {
+func NewPatchWithJQ(jqFilter, apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &patchWithJQ{JQFilter: jqFilter, ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type patchWithJQ struct {
+	JQFilter   string
+	ApiVersion string
+	Kind       string
+	Namespace  string
+	Name       string
+}
+
+func NewPatchWithJSON(jsonPatch any, apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &patchWithJSON{JsonPatch: jsonPatch, ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type patchWithJSON struct {
 	JsonPatch  any
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
-	Options    []pkg.PatchCollectorOption
 }
 
-type PatchWithMerge struct {
+func NewPatchWithMerge(mergePatch any, apiVersion, kind, namespace, name string) *typedPatch {
+	return &typedPatch{wrapped: &patchWithMerge{MergePatch: mergePatch, ApiVersion: apiVersion, Kind: kind, Namespace: namespace, Name: name}}
+}
+
+type patchWithMerge struct {
 	MergePatch any
 	ApiVersion string
 	Kind       string
 	Namespace  string
 	Name       string
-	Options    []pkg.PatchCollectorOption
 }
