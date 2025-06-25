@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"gopkg.in/yaml.v3"
+
 	"github.com/deckhouse/deckhouse/pkg/log"
+
 	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/jq"
 	"github.com/deckhouse/module-sdk/testing/mock"
-	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
 )
 
 type HookFramework struct {
@@ -77,7 +79,7 @@ func (f *HookFramework) PrepareHookSnapshots(config *pkg.HookConfig, inputSnapsh
 
 			res, err := query.FilterStringObject(context.TODO(), string(jsonSnap))
 			assert.NoError(f.t, err, "Failed to filter snapshot with JQ query: %s", jsonSnap)
-			fmt.Println("JSON Snapshot:", string(res.String()))
+			fmt.Println("JSON Snapshot:", res.String())
 
 			formattedSnapshots[snapBindingName] = append(formattedSnapshots[snapBindingName], objectpatch.Snapshot(res.String()))
 		}
@@ -105,69 +107,69 @@ func (f *HookFramework) PreparePatchCollector(patches ...any) {
 			})
 		case Delete:
 			pc.DeleteMock.Set(func(apiVersion, kind, namespace, name string) {
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case DeleteInBackground:
 			pc.DeleteInBackgroundMock.Set(func(apiVersion, kind, namespace, name string) {
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case DeleteNonCascading:
 			pc.DeleteNonCascadingMock.Set(func(apiVersion, kind, namespace, name string) {
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case JSONPatch:
-			pc.JSONPatchMock.Set(func(jsonPatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
-				assert.Equal(f.t, p.JsonPatch, jsonPatch, "JSON patch mismatch")
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+			pc.JSONPatchMock.Set(func(jsonPatch any, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
+				assert.Equal(f.t, p.JSONPatch, jsonPatch, "JSON patch mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case MergePatch:
-			pc.MergePatchMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+			pc.MergePatchMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
 				assert.Equal(f.t, p.MergePatch, mergePatch, "Merge patch mismatch")
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case JQFilter:
-			pc.JQFilterMock.Set(func(jqFilter string, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+			pc.JQFilterMock.Set(func(jqFilter string, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
 				assert.Equal(f.t, p.JQFilter, jqFilter, "JQ filter mismatch")
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case PatchWithJQ:
-			pc.PatchWithJQMock.Set(func(jqfilter, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+			pc.PatchWithJQMock.Set(func(jqfilter, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
 				assert.Equal(f.t, p.JQFilter, jqfilter, "JQ filter mismatch")
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case PatchWithJSON:
-			pc.PatchWithJSONMock.Set(func(jsonPatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
-				assert.Equal(f.t, p.JsonPatch, jsonPatch, "JSON patch mismatch")
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+			pc.PatchWithJSONMock.Set(func(jsonPatch any, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
+				assert.Equal(f.t, p.JSONPatch, jsonPatch, "JSON patch mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
 			})
 		case PatchWithMerge:
-			pc.PatchWithMergeMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
+			pc.PatchWithMergeMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, _ ...pkg.PatchCollectorOption) {
 				assert.Equal(f.t, p.MergePatch, mergePatch, "Merge patch mismatch")
-				assert.Equal(f.t, p.ApiVersion, apiVersion, "API version mismatch")
+				assert.Equal(f.t, p.APIVersion, apiVersion, "API version mismatch")
 				assert.Equal(f.t, p.Kind, kind, "Kind mismatch")
 				assert.Equal(f.t, p.Namespace, namespace, "Namespace mismatch")
 				assert.Equal(f.t, p.Name, name, "Name mismatch")
@@ -194,29 +196,29 @@ type CreateOrUpdate struct {
 }
 
 type Delete struct {
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
 type DeleteInBackground struct {
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
 type DeleteNonCascading struct {
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
 type JSONPatch struct {
-	JsonPatch  any
-	ApiVersion string
+	JSONPatch  any
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
@@ -225,7 +227,7 @@ type JSONPatch struct {
 
 type MergePatch struct {
 	MergePatch any
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
@@ -234,7 +236,7 @@ type MergePatch struct {
 
 type JQFilter struct {
 	JQFilter   string
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
@@ -243,15 +245,15 @@ type JQFilter struct {
 
 type PatchWithJQ struct {
 	JQFilter   string
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
 }
 
 type PatchWithJSON struct {
-	JsonPatch  any
-	ApiVersion string
+	JSONPatch  any
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string
@@ -260,7 +262,7 @@ type PatchWithJSON struct {
 
 type PatchWithMerge struct {
 	MergePatch any
-	ApiVersion string
+	APIVersion string
 	Kind       string
 	Namespace  string
 	Name       string

@@ -42,7 +42,7 @@ func Test_PrepareHookInput(t *testing.T) {
 		},
 	}
 
-	f := framework.NewHookFramework(t, config, func(ctx context.Context, input *pkg.HookInput) error {
+	f := framework.NewHookFramework(t, config, func(_ context.Context, _ *pkg.HookInput) error {
 		return nil
 	})
 
@@ -80,7 +80,7 @@ func Test_PrepareHookInput(t *testing.T) {
 		},
 	}
 
-	f = framework.NewHookFramework(t, multiConfig, func(ctx context.Context, input *pkg.HookInput) error {
+	f = framework.NewHookFramework(t, multiConfig, func(_ context.Context, _ *pkg.HookInput) error {
 		return nil
 	})
 
