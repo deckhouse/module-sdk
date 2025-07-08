@@ -16,6 +16,7 @@ require (
 	github.com/jonboulle/clockwork v0.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/spf13/cobra v1.9.1
+	github.com/stoewer/go-strcase v1.2.0
 	github.com/stretchr/testify v1.10.0
 	github.com/sylabs/oci-tools v0.7.0
 	github.com/tidwall/gjson v1.18.0
