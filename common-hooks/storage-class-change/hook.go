@@ -145,6 +145,10 @@ var podFilter = `{
 }`
 
 func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) error {
+	if args.BeforeHookCheck != nil && !args.BeforeHookCheck(input) {
+		return nil
+	}
+
 	kubeClient, err := input.DC.GetK8sClient()
 	if err != nil {
 		return fmt.Errorf("get k8s client: %w", err)
