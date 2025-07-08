@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/deckhouse/deckhouse/pkg/log"
 	"github.com/stoewer/go-strcase"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -29,6 +28,8 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/deckhouse/deckhouse/pkg/log"
 
 	"github.com/deckhouse/module-sdk/pkg"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
