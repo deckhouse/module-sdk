@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/stoewer/go-strcase"
+	"github.com/iancoleman/strcase"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
@@ -301,10 +301,10 @@ func calculateEffectiveStorageClass(input *pkg.HookInput, args Args, currentStor
 		effectiveStorageClass = input.ConfigValues.Get(configValuesPath).String()
 	}
 
-	var internalValuesPath = fmt.Sprintf("%s.internal.effectiveStorageClass", strcase.LowerCamelCase(args.ModuleName))
+	var internalValuesPath = fmt.Sprintf("%s.internal.effectiveStorageClass", strcase.ToLowerCamel(args.ModuleName))
 
 	if args.InternalValuesSubPath != "" {
-		internalValuesPath = fmt.Sprintf("%s.internal.%s.effectiveStorageClass", strcase.LowerCamelCase(args.ModuleName), args.InternalValuesSubPath)
+		internalValuesPath = fmt.Sprintf("%s.internal.%s.effectiveStorageClass", strcase.ToLowerCamel(args.ModuleName), args.InternalValuesSubPath)
 	}
 
 	emptydirUsageMetricValue := 0.0
