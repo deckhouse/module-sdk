@@ -250,6 +250,14 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 				},
 			}
 			err = kubeClient.Delete(ctx, obj)
+		case "Deployment":
+			obj := &appsv1.Deployment{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      args.ObjectName,
+					Namespace: args.Namespace,
+				},
+			}
+			err = kubeClient.Delete(ctx, obj)
 		default:
 			return fmt.Errorf("unknown object kind %s", args.ObjectKind)
 		}
