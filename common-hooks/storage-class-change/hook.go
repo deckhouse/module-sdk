@@ -87,7 +87,7 @@ func RegisterHook(args Args) bool {
 				JqFilter: podFilter,
 			},
 			{
-				Name:       "storageclasses",
+				Name:       "storageClasses",
 				APIVersion: "storage.k8s.io/v1",
 				Kind:       "Storageclass",
 				JqFilter:   storageClassFilter,
@@ -183,7 +183,7 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 
 		pod, err := findPodByPVCName(pvc.Name)
 		if err != nil {
-			input.Logger.Warn("find pod by fpvc name failed", slog.String("pvc", pvc.Name), log.Err(err))
+			input.Logger.Warn("find pod by pvc name failed", slog.String("pvc", pvc.Name), log.Err(err))
 			continue
 		}
 
