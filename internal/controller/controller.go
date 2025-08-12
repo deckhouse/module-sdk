@@ -236,6 +236,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *gohook.HookConfig {
 		newHookConfig.Schedule = append(newHookConfig.Schedule, gohook.ScheduleConfig{
 			Name:    scfg.Name,
 			Crontab: scfg.Crontab,
+			Queue:   cfg.Queue,
 		})
 	}
 
