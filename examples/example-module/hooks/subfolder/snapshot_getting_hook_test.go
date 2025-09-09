@@ -60,16 +60,15 @@ var _ = Describe("snapshot example", func() {
 
 			var input = &pkg.HookInput{
 				Snapshots: snapshots,
-				Logger: log.NewLogger(log.Options{
-					Level:  log.LevelDebug.Level(),
-					Output: buf,
-					TimeFunc: func(_ time.Time) time.Time {
+				Logger: log.NewLogger(log.WithLevel(log.LevelDebug.Level()),
+					log.WithOutput(buf),
+					log.WithTimeFunc(func(_ time.Time) time.Time {
 						parsedTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
 						Expect(err).ShouldNot(HaveOccurred())
 
 						return parsedTime
-					},
-				}),
+					}),
+				),
 			}
 
 			It("reconcile func executed correctly", func() {
@@ -100,16 +99,16 @@ var _ = Describe("snapshot example", func() {
 
 			var input = &pkg.HookInput{
 				Snapshots: snapshots,
-				Logger: log.NewLogger(log.Options{
-					Level:  log.LevelDebug.Level(),
-					Output: buf,
-					TimeFunc: func(_ time.Time) time.Time {
+				Logger: log.NewLogger(
+					log.WithLevel(log.LevelDebug.Level()),
+					log.WithOutput(buf),
+					log.WithTimeFunc(func(_ time.Time) time.Time {
 						parsedTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
 						Expect(err).ShouldNot(HaveOccurred())
 
 						return parsedTime
-					},
-				}),
+					}),
+				),
 			}
 
 			It("unmarshal returns error", func() {
