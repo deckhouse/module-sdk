@@ -24,7 +24,7 @@ type Hook struct {
 
 // NewHook creates a new go hook
 func NewHook(config *pkg.HookConfig, f pkg.ReconcileFunc) *Hook {
-	logger := log.NewLogger(log.Options{})
+	logger := log.NewLogger()
 
 	return &Hook{
 		config:        config,

@@ -21,7 +21,7 @@ import (
 var _ = Describe("values example", func() {
 	Context("refoncile func", func() {
 		When("all services works correctly", func() {
-			values := mock.NewPatchableValuesCollectorMock(GinkgoT())
+			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
 			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
 			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
 			values.GetPatchesMock.Return([]*utils.ValuesPatchOperation{
@@ -49,7 +49,7 @@ var _ = Describe("values example", func() {
 		})
 
 		When("get ok returns false", func() {
-			values := mock.NewPatchableValuesCollectorMock(GinkgoT())
+			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
 			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
 			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, false)
 			values.ExistsMock.When("some.path.to.field.str").Then(false)
@@ -69,7 +69,7 @@ var _ = Describe("values example", func() {
 		})
 
 		When("get raw geturns not number", func() {
-			values := mock.NewPatchableValuesCollectorMock(GinkgoT())
+			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
 			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
 			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
 			values.GetPatchesMock.Return([]*utils.ValuesPatchOperation{
@@ -97,7 +97,7 @@ var _ = Describe("values example", func() {
 		})
 
 		When("array count returns error", func() {
-			values := mock.NewPatchableValuesCollectorMock(GinkgoT())
+			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
 			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
 			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
 			values.GetPatchesMock.Return([]*utils.ValuesPatchOperation{

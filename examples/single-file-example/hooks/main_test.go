@@ -38,7 +38,7 @@ var _ = Describe("handle hook single file example", func() {
 		},
 	)
 
-	values := mock.NewPatchableValuesCollectorMock(GinkgoT())
+	values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
 	values.SetMock.When("test.internal.apiServers", []string{firstSnapshot, secondSnapshot})
 
 	var input = &pkg.HookInput{
