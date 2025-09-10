@@ -3,7 +3,7 @@ module example-module
 go 1.24
 
 require (
-	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20250424095005-9ab587d01d7a
+	github.com/deckhouse/deckhouse/pkg/log v0.0.0-20250814094423-e9f108b41a1a
 	github.com/deckhouse/module-sdk v0.0.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.35.1
