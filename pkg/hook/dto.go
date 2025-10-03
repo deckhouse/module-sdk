@@ -62,6 +62,8 @@ type ScheduleConfig struct {
 	Name string `yaml:"name,omitempty" json:"name,omitempty"`
 	// Crontab is a schedule config in crontab format. (5 or 6 fields)
 	Crontab string `yaml:"crontab" json:"crontab"`
+
+	Queue string `yaml:"queue" json:"queue,omitempty"`
 }
 
 type FilterResult any
@@ -69,62 +71,62 @@ type FilterResult any
 type FilterFunc func(*unstructured.Unstructured) (FilterResult, error)
 
 type NameSelector struct {
-	MatchNames []string `json:"matchNames" yaml:"matchNames"`
+	MatchNames []string `yaml:"matchNames" json:"matchNames"`
 }
 
 type FieldSelectorRequirement struct {
-	Field    string `json:"field"`
-	Operator string `json:"operator"`
-	Value    string `json:"value,omitempty"`
+	Field    string `yaml:"field" json:"field"`
+	Operator string `yaml:"operator" json:"operator"`
+	Value    string `yaml:"value,omitempty" json:"value,omitempty"`
 }
 
 type FieldSelector struct {
-	MatchExpressions []FieldSelectorRequirement `json:"matchExpressions" yaml:"matchExpressions"`
+	MatchExpressions []FieldSelectorRequirement `yaml:"matchExpressions" json:"matchExpressions"`
 }
 
 type NamespaceSelector struct {
-	NameSelector  *NameSelector         `json:"nameSelector,omitempty" yaml:"nameSelector,omitempty"`
-	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty" yaml:"labelSelector,omitempty"`
+	NameSelector  *NameSelector         `yaml:"nameSelector,omitempty" json:"nameSelector,omitempty"`
+	LabelSelector *metav1.LabelSelector `yaml:"labelSelector,omitempty" json:"labelSelector,omitempty"`
 }
 
 type KubernetesConfig struct {
-	Name string `json:"name"`
+	Name string `yaml:"name" json:"name"`
 	// APIVersion of objects. "v1" is used if not set.
-	APIVersion string `json:"apiVersion,omitempty"`
+	APIVersion string `yaml:"apiVersion,omitempty" json:"apiVersion,omitempty"`
 	// Kind of objects.
-	Kind string `json:"kind,omitempty"`
+	Kind string `yaml:"kind,omitempty" json:"kind,omitempty"`
 	// NameSelector used to subscribe on object by its name.
-	NameSelector *NameSelector `json:"nameSelector,omitempty"`
+	NameSelector *NameSelector `yaml:"nameSelector,omitempty" json:"nameSelector,omitempty"`
 	// NamespaceSelector used to subscribe on objects in namespaces.
-	NamespaceSelector *NamespaceSelector `json:"namespace,omitempty"`
+	NamespaceSelector *NamespaceSelector `yaml:"namespace,omitempty" json:"namespace,omitempty"`
 	// LabelSelector used to subscribe on objects by matching their labels.
-	LabelSelector *metav1.LabelSelector `json:"labelSelector,omitempty"`
+	LabelSelector *metav1.LabelSelector `yaml:"labelSelector,omitempty" json:"labelSelector,omitempty"`
 	// FieldSelector used to subscribe on objects by matching specific fields (the list of fields is narrow, see shell-operator documentation).
-	FieldSelector *FieldSelector `json:"fieldSelector,omitempty"`
+	FieldSelector *FieldSelector `yaml:"fieldSelector,omitempty" json:"fieldSelector,omitempty"`
 	// ExecuteHookOnEvents is true by default. Set to false if only snapshot update is needed.
 	// *bool --> ExecuteHookOnEvents: [All events] || empty slice || nil
-	ExecuteHookOnEvents *bool `json:"executeHookOnEvent,omitempty"`
+	ExecuteHookOnEvents *bool `yaml:"executeHookOnEvent,omitempty" json:"executeHookOnEvent,omitempty"`
 	// ExecuteHookOnSynchronization is true by default. Set to false if only snapshot update is needed.
 	// true || false
-	ExecuteHookOnSynchronization *bool `json:"executeHookOnSynchronization,omitempty"`
+	ExecuteHookOnSynchronization *bool `yaml:"executeHookOnSynchronization,omitempty" json:"executeHookOnSynchronization,omitempty"`
 	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
 	// true || false
-	WaitForSynchronization *bool `json:"waitForSynchronization,omitempty"`
+	WaitForSynchronization *bool `yaml:"waitForSynchronization,omitempty" json:"waitForSynchronization,omitempty"`
 	// false by default
 	// if JQ filter is empty - KeepFullObjectsInMemory always true
-	KeepFullObjectsInMemory *bool `json:"keepFullObjectsInMemory,omitempty"`
+	KeepFullObjectsInMemory *bool `yaml:"keepFullObjectsInMemory,omitempty" json:"keepFullObjectsInMemory,omitempty"`
 	// JQ filter to filter results from kubernetes objects
-	JqFilter string `json:"jqFilter,omitempty"`
+	JqFilter string `yaml:"jqFilter,omitempty" json:"jqFilter,omitempty"`
 
-	AllowFailure            *bool  `json:"allowFailure,omitempty"`
-	ResynchronizationPeriod string `json:"resynchronizationPeriod,omitempty"`
+	AllowFailure            *bool  `yaml:"allowFailure,omitempty" json:"allowFailure,omitempty"`
+	ResynchronizationPeriod string `yaml:"resynchronizationPeriod,omitempty" json:"resynchronizationPeriod,omitempty"`
 
-	IncludeSnapshotsFrom []string `json:"includeSnapshotsFrom,omitempty"`
+	IncludeSnapshotsFrom []string `yaml:"includeSnapshotsFrom,omitempty" json:"includeSnapshotsFrom,omitempty"`
 
-	Queue string `json:"queue,omitempty"`
+	Queue string `yaml:"queue,omitempty" json:"queue,omitempty"`
 }
 
 type Error struct {
-	Message string `json:"message"`
-	Code    int    `json:"code,omitempty"`
+	Message string `yaml:"message" json:"message"`
+	Code    int    `yaml:"code,omitempty" json:"code,omitempty"`
 }
