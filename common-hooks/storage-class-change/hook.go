@@ -190,7 +190,8 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 		// if someone deleted pvc then evict the pod.
 		evict := &policyv1.Eviction{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: pod.Name,
+				Name:      pod.Name,
+				Namespace: pod.Namespace,
 			},
 		}
 
