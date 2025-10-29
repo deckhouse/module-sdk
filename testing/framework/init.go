@@ -31,8 +31,8 @@ func NewHookFramework(t *testing.T, config *pkg.HookConfig, f pkg.ReconcileFunc)
 		ReconcileFunc: f,
 		HookInput: &pkg.HookInput{
 			Snapshots:        mock.NewSnapshotsMock(t),
-			Values:           mock.NewPatchableValuesCollectorMock(t),
-			ConfigValues:     mock.NewPatchableValuesCollectorMock(t),
+			Values:           mock.NewOutputPatchableValuesCollectorMock(t),
+			ConfigValues:     mock.NewOutputPatchableValuesCollectorMock(t),
 			PatchCollector:   mock.NewPatchCollectorMock(t),
 			MetricsCollector: mock.NewMetricsCollectorMock(t),
 			DC:               mock.NewDependencyContainerMock(t),
