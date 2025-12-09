@@ -158,7 +158,7 @@ func (c *HookController) RunSettingsCheck(ctx context.Context) error {
 	hook := c.registry.SettingsCheck()
 
 	if hook == nil {
-		return ErrReadinessHookDoesNotExists
+		return ErrSettingsCheckHookDoesNotExists
 	}
 
 	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
@@ -187,7 +187,7 @@ func (c *HookController) RunSettingsCheck(ctx context.Context) error {
 
 type SettingsCheckConfig struct {
 	ModuleName string
-	ProbeFunc  func(ctx context.Context, input *pkg.HookInput) error
+	ProbeFunc  settingscheck.SettingsCheckFunc
 }
 
 func addSettingsCheckHook(reg *registry.HookRegistry, cfg *SettingsCheckConfig) {

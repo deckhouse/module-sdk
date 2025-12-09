@@ -2,21 +2,28 @@ package main
 
 import (
 	"context"
-	"fmt"
 
-	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/app"
+	settingscheck "github.com/deckhouse/module-sdk/pkg/settings-check"
 )
 
 const (
 	SnapshotKey = "apiservers"
 )
 
-func SettingsCheckFunc(ctx context.Context, input *pkg.HookInput) error {
-	fmt.Println("settings check")
-	return nil
+func settingsCheckFunc(ctx context.Context, input *settingscheck.SettingsCheckHookInput) settingscheck.SettingsCheckHookResult {
+	res := settingscheck.SettingsCheckHookResult{
+		Allow: true,
+	}
+
+	if true {
+		res.Allow = false
+		res.Message = "this is a test warning"
+	}
+
+	return res
 }
 
 func main() {
-	app.Run(app.WithSettingsCheck(SettingsCheckFunc))
+	app.Run(app.WithSettingsCheck(settingsCheckFunc))
 }

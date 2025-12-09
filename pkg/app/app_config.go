@@ -10,6 +10,7 @@ import (
 
 	"github.com/deckhouse/module-sdk/internal/controller"
 	"github.com/deckhouse/module-sdk/pkg"
+	settingscheck "github.com/deckhouse/module-sdk/pkg/settings-check"
 )
 
 type hookConfig struct {
@@ -41,7 +42,7 @@ type readinessConfig struct {
 }
 
 type settingsCheckConfig struct {
-	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
+	ProbeFunc settingscheck.SettingsCheckFunc
 }
 
 type config struct {
