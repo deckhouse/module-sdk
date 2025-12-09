@@ -32,9 +32,10 @@ type ReadinessConfig struct {
 }
 
 type Config struct {
-	ModuleName      string
-	HookConfig      *HookConfig
-	ReadinessConfig *ReadinessConfig
+	ModuleName          string
+	HookConfig          *HookConfig
+	ReadinessConfig     *ReadinessConfig
+	SettingsCheckConfig *SettingsCheckConfig
 
 	LogLevelRaw string
 	LogLevel    log.Level

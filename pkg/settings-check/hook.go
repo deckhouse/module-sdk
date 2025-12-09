@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package valuescheck
+package settingscheck
 
 import (
 	"context"
@@ -39,20 +39,20 @@ func GetModuleGVR() *schema.GroupVersionResource {
 	}
 }
 
-type ValuesCheckHookConfig struct {
+type SettingsCheckHookConfig struct {
 	ModuleName string
 	ProbeFunc  func(ctx context.Context, input *pkg.HookInput) error
 }
 
-func NewValuesCheckHookEM(cfg *ValuesCheckHookConfig) (*pkg.HookConfig, pkg.ReconcileFunc) {
+func NewSettingsCheckHookEM(cfg *SettingsCheckHookConfig) (*pkg.HookConfig, pkg.ReconcileFunc) {
 	if cfg == nil {
 		panic("empty readiness config")
 	}
 
-	return NewValuesCheckConfig(cfg), ModuleValuesCheck(cfg)
+	return NewSettingsCheckConfig(cfg), ModuleSettingsCheck(cfg)
 }
 
-func NewValuesCheckConfig(cfg *ValuesCheckHookConfig) *pkg.HookConfig {
+func NewSettingsCheckConfig(cfg *SettingsCheckHookConfig) *pkg.HookConfig {
 	return &pkg.HookConfig{
 		Schedule: []pkg.ScheduleConfig{
 			{
@@ -69,7 +69,7 @@ const (
 	modulePhaseHookError   = "Error"
 )
 
-func ModuleValuesCheck(cfg *ValuesCheckHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
+func ModuleSettingsCheck(cfg *SettingsCheckHookConfig) func(ctx context.Context, input *pkg.HookInput) error {
 	if cfg.ModuleName == "" {
 		panic("empty readiness module name")
 	}

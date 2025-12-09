@@ -33,20 +33,16 @@ type ReadinessConfig struct {
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
-func WithValuesCheck(cfg *ValuesCheckConfig) RunConfigOption {
-	if cfg == nil {
-		return func(c *config) {
-			c.ValuesCheckConfig = nil
-		}
+func WithSettingsCheck(probeFunc settingsProbeFunc) RunConfigOption {
+	if probeFunc == nil {
+		return func(c *config) {}
 	}
 
 	return func(c *config) {
-		c.ValuesCheckConfig = &valuesCheckConfig{
-			ProbeFunc: cfg.ProbeFunc,
+		c.SettingsCheckConfig = &settingsCheckConfig{
+			ProbeFunc: probeFunc,
 		}
 	}
 }
 
-type ValuesCheckConfig struct {
-	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
-}
+type settingsProbeFunc func(ctx context.Context, input *pkg.HookInput) error

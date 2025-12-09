@@ -40,16 +40,15 @@ type readinessConfig struct {
 	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
-type valuesCheckConfig struct {
-	ModuleName string
-	ProbeFunc  func(ctx context.Context, input *pkg.HookInput) error
+type settingsCheckConfig struct {
+	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
 type config struct {
-	ModuleName        string `env:"MODULE_NAME" envDefault:"default-module"`
-	HookConfig        *hookConfig
-	ReadinessConfig   *readinessConfig   `envPrefix:"READINESS_"`
-	ValuesCheckConfig *valuesCheckConfig `envPrefix:"VALUES_CHECK_"`
+	ModuleName          string `env:"MODULE_NAME" envDefault:"default-module"`
+	HookConfig          *hookConfig
+	ReadinessConfig     *readinessConfig `envPrefix:"READINESS_"`
+	SettingsCheckConfig *settingsCheckConfig
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
@@ -100,6 +99,13 @@ func remapConfigToControllerConfig(input *config) *controller.Config {
 			ModuleName:        input.ModuleName,
 			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
 			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
+		}
+	}
+
+	if input.SettingsCheckConfig != nil {
+		cfg.SettingsCheckConfig = &controller.SettingsCheckConfig{
+			ModuleName: input.ModuleName,
+			ProbeFunc:  input.SettingsCheckConfig.ProbeFunc,
 		}
 	}
 

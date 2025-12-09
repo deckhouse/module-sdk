@@ -18,6 +18,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/dependency"
 	gohook "github.com/deckhouse/module-sdk/pkg/hook"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
+	settingscheck "github.com/deckhouse/module-sdk/pkg/settings-check"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
 
@@ -43,6 +44,10 @@ func NewHookController(cfg *Config, logger *log.Logger) *HookController {
 
 	if cfg.ReadinessConfig != nil {
 		addReadinessHook(reg, cfg.ReadinessConfig)
+	}
+
+	if cfg.SettingsCheckConfig != nil {
+		addSettingsCheckHook(reg, cfg.SettingsCheckConfig)
 	}
 
 	return &HookController{
@@ -145,6 +150,57 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+var ErrSettingsCheckHookDoesNotExists = errors.New("settings check hook does not exists")
+
+func (c *HookController) RunSettingsCheck(ctx context.Context) error {
+	hook := c.registry.SettingsCheck()
+
+	if hook == nil {
+		return ErrReadinessHookDoesNotExists
+	}
+
+	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
+
+	hookRes, err := hook.Execute(ctx, transport.NewRequest())
+	if err != nil {
+		outputError := &gohook.Error{Message: "execute: " + err.Error()}
+
+		buf := bytes.NewBuffer([]byte{})
+		err := json.NewEncoder(buf).Encode(outputError)
+		if err != nil {
+			return fmt.Errorf("encode error: %w", err)
+		}
+
+		fmt.Fprintln(os.Stderr, buf.String())
+		os.Exit(1)
+	}
+
+	err = transport.NewResponse().Send(hookRes)
+	if err != nil {
+		return fmt.Errorf("send: %w", err)
+	}
+
+	return nil
+}
+
+type SettingsCheckConfig struct {
+	ModuleName string
+	ProbeFunc  func(ctx context.Context, input *pkg.HookInput) error
+}
+
+func addSettingsCheckHook(reg *registry.HookRegistry, cfg *SettingsCheckConfig) {
+	settingsCheckConfig := &settingscheck.SettingsCheckHookConfig{
+		ModuleName: cfg.ModuleName,
+		ProbeFunc:  cfg.ProbeFunc,
+	}
+
+	config, f := settingscheck.NewSettingsCheckHookEM(settingsCheckConfig)
+	config.Metadata.Name = "settings-check"
+	config.Metadata.Path = "common-hooks/settings-check"
+
+	reg.SetSettingsCheckHook(&pkg.Hook{Config: config, ReconcileFunc: f})
 }
 
 var ErrNoHooksRegistered = errors.New("no hooks registered")
