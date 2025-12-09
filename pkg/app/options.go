@@ -32,3 +32,21 @@ type ReadinessConfig struct {
 	IntervalInSeconds uint8
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
+
+func WithValuesCheck(cfg *ValuesCheckConfig) RunConfigOption {
+	if cfg == nil {
+		return func(c *config) {
+			c.ValuesCheckConfig = nil
+		}
+	}
+
+	return func(c *config) {
+		c.ValuesCheckConfig = &valuesCheckConfig{
+			ProbeFunc: cfg.ProbeFunc,
+		}
+	}
+}
+
+type ValuesCheckConfig struct {
+	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
+}

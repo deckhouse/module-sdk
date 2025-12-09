@@ -40,10 +40,16 @@ type readinessConfig struct {
 	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
+type valuesCheckConfig struct {
+	ModuleName string
+	ProbeFunc  func(ctx context.Context, input *pkg.HookInput) error
+}
+
 type config struct {
-	ModuleName      string `env:"MODULE_NAME" envDefault:"default-module"`
-	HookConfig      *hookConfig
-	ReadinessConfig *readinessConfig `envPrefix:"READINESS_"`
+	ModuleName        string `env:"MODULE_NAME" envDefault:"default-module"`
+	HookConfig        *hookConfig
+	ReadinessConfig   *readinessConfig   `envPrefix:"READINESS_"`
+	ValuesCheckConfig *valuesCheckConfig `envPrefix:"VALUES_CHECK_"`
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
