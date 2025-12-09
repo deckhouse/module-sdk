@@ -21,8 +21,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/deckhouse/module-sdk/pkg"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/deckhouse/module-sdk/pkg"
 )
 
 func GetModuleGVR() *schema.GroupVersionResource {
@@ -56,13 +57,6 @@ func NewSettingsCheckConfig(cfg *SettingsCheckHookConfig) *pkg.HookConfig {
 		},
 	}
 }
-
-// const (
-// 	conditionStatusIsReady = "IsReady"
-// 	modulePhaseReconciling = "Reconciling"
-// 	modulePhaseReady       = "Ready"
-// 	modulePhaseHookError   = "Error"
-// )
 
 type SettingsCheckHookResult struct {
 	Allow   bool

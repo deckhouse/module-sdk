@@ -36,7 +36,9 @@ type ReadinessConfig struct {
 
 func WithSettingsCheck(probeFunc settingscheck.SettingsCheckFunc) RunConfigOption {
 	if probeFunc == nil {
-		return func(c *config) {}
+		return func(c *config) {
+			c.SettingsCheckConfig = nil
+		}
 	}
 
 	return func(c *config) {
@@ -45,5 +47,3 @@ func WithSettingsCheck(probeFunc settingscheck.SettingsCheckFunc) RunConfigOptio
 		}
 	}
 }
-
-type settingsProbeFunc func(ctx context.Context, input *pkg.HookInput) error

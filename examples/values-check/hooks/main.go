@@ -7,16 +7,14 @@ import (
 	settingscheck "github.com/deckhouse/module-sdk/pkg/settings-check"
 )
 
-const (
-	SnapshotKey = "apiservers"
-)
-
-func settingsCheckFunc(ctx context.Context, input *settingscheck.SettingsCheckHookInput) settingscheck.SettingsCheckHookResult {
+func settingsCheckFunc(_ context.Context, input *settingscheck.SettingsCheckHookInput) settingscheck.SettingsCheckHookResult {
 	res := settingscheck.SettingsCheckHookResult{
 		Allow: true,
 	}
 
-	if true {
+	test := input.Values.Get("global.test").Bool()
+
+	if !test {
 		res.Allow = false
 		res.Message = "this is a test warning"
 	}
