@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	env "github.com/caarlos0/env/v11"
+	"github.com/caarlos0/env/v11"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 
 	"github.com/deckhouse/module-sdk/internal/controller"
 	"github.com/deckhouse/module-sdk/pkg"
-	settingscheck "github.com/deckhouse/module-sdk/pkg/settings-check"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 )
 
 type hookConfig struct {
@@ -41,15 +41,11 @@ type readinessConfig struct {
 	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
-type settingsCheckConfig struct {
-	ProbeFunc settingscheck.SettingsCheckFunc
-}
-
 type config struct {
-	ModuleName          string `env:"MODULE_NAME" envDefault:"default-module"`
-	HookConfig          *hookConfig
-	ReadinessConfig     *readinessConfig `envPrefix:"READINESS_"`
-	SettingsCheckConfig *settingsCheckConfig
+	ModuleName      string `env:"MODULE_NAME" envDefault:"default-module"`
+	HookConfig      *hookConfig
+	ReadinessConfig *readinessConfig `envPrefix:"READINESS_"`
+	SettingsCheck   settingscheck.Check
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
@@ -103,11 +99,8 @@ func remapConfigToControllerConfig(input *config) *controller.Config {
 		}
 	}
 
-	if input.SettingsCheckConfig != nil {
-		cfg.SettingsCheckConfig = &controller.SettingsCheckConfig{
-			ModuleName: input.ModuleName,
-			ProbeFunc:  input.SettingsCheckConfig.ProbeFunc,
-		}
+	if input.SettingsCheck != nil {
+		cfg.SettingsCheck = input.SettingsCheck
 	}
 
 	return cfg

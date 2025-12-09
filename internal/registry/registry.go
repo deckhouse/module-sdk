@@ -8,9 +8,8 @@ import (
 )
 
 type HookRegistry struct {
-	hooks             []*gohook.Hook
-	readinessHook     *gohook.Hook
-	settingsCheckHook *gohook.Hook
+	hooks         []*gohook.Hook
+	readinessHook *gohook.Hook
 
 	logger *log.Logger
 }
@@ -35,10 +34,6 @@ func (h *HookRegistry) Readiness() *gohook.Hook {
 	return h.readinessHook
 }
 
-func (h *HookRegistry) SettingsCheck() *gohook.Hook {
-	return h.settingsCheckHook
-}
-
 func (h *HookRegistry) Add(hooks ...*pkg.Hook) {
 	for _, hook := range hooks {
 		newHook := gohook.NewHook(hook.Config, hook.ReconcileFunc)
@@ -53,11 +48,4 @@ func (h *HookRegistry) SetReadinessHook(hook *pkg.Hook) {
 	newHook.SetLogger(h.logger.Named(newHook.GetName()))
 
 	h.readinessHook = newHook
-}
-
-func (h *HookRegistry) SetSettingsCheckHook(hook *pkg.Hook) {
-	newHook := gohook.NewHook(hook.Config, hook.ReconcileFunc)
-	newHook.SetLogger(h.logger.Named(newHook.GetName()))
-
-	h.settingsCheckHook = newHook
 }

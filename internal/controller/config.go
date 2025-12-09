@@ -7,6 +7,7 @@ import (
 
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 )
 
 type HookConfig struct {
@@ -32,10 +33,10 @@ type ReadinessConfig struct {
 }
 
 type Config struct {
-	ModuleName          string
-	HookConfig          *HookConfig
-	ReadinessConfig     *ReadinessConfig
-	SettingsCheckConfig *SettingsCheckConfig
+	ModuleName      string
+	HookConfig      *HookConfig
+	ReadinessConfig *ReadinessConfig
+	SettingsCheck   settingscheck.Check
 
 	LogLevelRaw string
 	LogLevel    log.Level

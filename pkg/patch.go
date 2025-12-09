@@ -91,3 +91,12 @@ type PatchableValuesCollector interface {
 	Remove(path string)
 	Set(path string, value any)
 }
+
+type ReadOnlyValuesCollector interface {
+	ArrayCount(path string) (int, error)
+	Exists(path string) bool
+	Get(path string) gjson.Result
+	GetOk(path string) (gjson.Result, bool)
+	GetPatches() []*utils.ValuesPatchOperation
+	GetRaw(path string) any
+}

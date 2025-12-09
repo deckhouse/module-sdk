@@ -18,16 +18,17 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/dependency"
 	gohook "github.com/deckhouse/module-sdk/pkg/hook"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
-	settingscheck "github.com/deckhouse/module-sdk/pkg/settings-check"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
 
 type HookController struct {
 	registry *registry.HookRegistry
-	dc       pkg.DependencyContainer
+	fConfig  *file.Config
 
-	fConfig *file.Config
+	settingsCheck settingscheck.Check
 
+	dc     pkg.DependencyContainer
 	logger *log.Logger
 }
 
@@ -46,15 +47,12 @@ func NewHookController(cfg *Config, logger *log.Logger) *HookController {
 		addReadinessHook(reg, cfg.ReadinessConfig)
 	}
 
-	if cfg.SettingsCheckConfig != nil {
-		addSettingsCheckHook(reg, cfg.SettingsCheckConfig)
-	}
-
 	return &HookController{
-		registry: reg,
-		dc:       dependency.NewDependencyContainer(),
-		fConfig:  cfg.GetFileConfig(),
-		logger:   logger,
+		registry:      reg,
+		settingsCheck: cfg.SettingsCheck,
+		dc:            dependency.NewDependencyContainer(),
+		fConfig:       cfg.GetFileConfig(),
+		logger:        logger,
 	}
 }
 
@@ -152,61 +150,24 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 	return nil
 }
 
-var ErrSettingsCheckHookDoesNotExists = errors.New("settings check hook does not exists")
+func (c *HookController) CheckSettings(ctx context.Context) error {
+	res := settingscheck.Wrap(ctx, c.settingsCheck, c.dc, c.logger)
 
-func (c *HookController) RunSettingsCheck(ctx context.Context) error {
-	hook := c.registry.SettingsCheck()
-
-	if hook == nil {
-		return ErrSettingsCheckHookDoesNotExists
+	buf := bytes.NewBuffer([]byte{})
+	if err := json.NewEncoder(buf).Encode(res); err != nil {
+		return fmt.Errorf("encode error: %w", err)
 	}
 
-	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
-
-	hookRes, err := hook.Execute(ctx, transport.NewRequest())
-	if err != nil {
-		outputError := &gohook.Error{Message: "execute: " + err.Error()}
-
-		buf := bytes.NewBuffer([]byte{})
-		err := json.NewEncoder(buf).Encode(outputError)
-		if err != nil {
-			return fmt.Errorf("encode error: %w", err)
-		}
-
-		fmt.Fprintln(os.Stderr, buf.String())
-		os.Exit(1)
-	}
-
-	err = transport.NewResponse().Send(hookRes)
-	if err != nil {
-		return fmt.Errorf("send: %w", err)
-	}
+	fmt.Fprintln(os.Stderr, buf.String())
+	os.Exit(1)
 
 	return nil
-}
-
-type SettingsCheckConfig struct {
-	ModuleName string
-	ProbeFunc  settingscheck.SettingsCheckFunc
-}
-
-func addSettingsCheckHook(reg *registry.HookRegistry, cfg *SettingsCheckConfig) {
-	settingsCheckConfig := &settingscheck.SettingsCheckHookConfig{
-		ModuleName: cfg.ModuleName,
-		ProbeFunc:  cfg.ProbeFunc,
-	}
-
-	config, f := settingscheck.NewSettingsCheckHookEM(settingsCheckConfig)
-	config.Metadata.Name = "settings-check"
-	config.Metadata.Path = "common-hooks/settings-check"
-
-	reg.SetSettingsCheckHook(&pkg.Hook{Config: config, ReconcileFunc: f})
 }
 
 var ErrNoHooksRegistered = errors.New("no hooks registered")
 
 func (c *HookController) PrintHookConfigs() error {
-	if len(c.registry.Hooks()) == 0 {
+	if len(c.registry.Hooks()) == 0 && c.settingsCheck == nil {
 		return ErrNoHooksRegistered
 	}
 
@@ -223,6 +184,10 @@ func (c *HookController) PrintHookConfigs() error {
 
 	if c.registry.Readiness() != nil {
 		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
+	}
+
+	if c.settingsCheck != nil {
+		cfg.HasSettingsCheck = true
 	}
 
 	buf := bytes.NewBuffer([]byte{})

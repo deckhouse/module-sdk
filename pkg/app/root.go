@@ -78,21 +78,20 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		},
 	})
 
-	settingsCheckCmd := &cobra.Command{
+	hooksCmd.AddCommand(&cobra.Command{
 		Use:    "check",
 		Short:  "Check settings",
 		Long:   `Check settings of the module`,
 		Hidden: true,
-		Run: func(cmd *cobra.Command, _ []string) {
-			ctx := cmd.Context()
-
-			err := c.controller.RunSettingsCheck(ctx)
-			if err != nil {
-				c.logger.Warn("settings check hook shutdown", "error", err)
-				os.Exit(1)
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := c.controller.CheckSettings(cmd.Context()); err != nil {
+				c.logger.Error("failed to check settings", "error", err)
+				return err
 			}
+
+			return nil
 		},
-	}
+	})
 
 	configCmd := &cobra.Command{
 		Use:   "config",
@@ -108,7 +107,6 @@ func (c *cmd) hooksCmd() *cobra.Command {
 			return nil
 		},
 	}
-	configCmd.AddCommand(settingsCheckCmd)
 	hooksCmd.AddCommand(configCmd)
 
 	dumpCmd := &cobra.Command{
