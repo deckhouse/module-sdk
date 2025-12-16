@@ -99,20 +99,7 @@ func Reject(msg string) Result {
 	}
 }
 
-func RejectErr(err error) Result {
-	return Result{
-		Allow:   false,
-		Message: err.Error(),
-	}
-}
-
-func Allow() Result {
-	return Result{
-		Allow: true,
-	}
-}
-
-func Warn(warnings ...string) Result {
+func Allow(warnings ...string) Result {
 	return Result{
 		Allow:    true,
 		Warnings: warnings,

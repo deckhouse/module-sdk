@@ -13,15 +13,16 @@ func check(_ context.Context, input settingscheck.Input) settingscheck.Result {
 		return settingscheck.Reject("replicas cannot be 0")
 	}
 
+	var warnings []string
 	if replicas == 2 {
-		return settingscheck.Warn("replicas cannot be greater than 2")
+		warnings = append(warnings, "replicas cannot be greater than 3")
 	}
 
 	if replicas > 3 {
 		return settingscheck.Reject("replicas cannot be greater than 3")
 	}
 
-	return settingscheck.Allow()
+	return settingscheck.Allow(warnings...)
 }
 
 func main() {
