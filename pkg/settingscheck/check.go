@@ -18,7 +18,6 @@ package settingscheck
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -32,16 +31,9 @@ const (
 )
 
 type Result struct {
-	Allow   bool   `json:"allow" yaml:"allow"`
-	Warning string `json:"warning" yaml:"warning"`
-}
-
-type Warning struct {
-	Message string `json:"message" yaml:"message"`
-}
-
-func (w *Warning) Error() string {
-	return w.Message
+	Allow    bool     `json:"allow" yaml:"allow"`
+	Message  string   `json:"message" yaml:"message"`
+	Warnings []string `json:"warnings" yaml:"warnings"`
 }
 
 type Input struct {
@@ -50,9 +42,9 @@ type Input struct {
 	Logger   pkg.Logger
 }
 
-type Check func(ctx context.Context, input Input) error
+type Check func(ctx context.Context, input Input) Result
 
-func Wrap(ctx context.Context, check Check, dc pkg.DependencyContainer, logger pkg.Logger) Result {
+func Execute(ctx context.Context, check Check, dc pkg.DependencyContainer, logger pkg.Logger) Result {
 	if check == nil {
 		return Result{
 			Allow: true,
@@ -63,7 +55,7 @@ func Wrap(ctx context.Context, check Check, dc pkg.DependencyContainer, logger p
 	if path == "" {
 		return Result{
 			Allow:   false,
-			Warning: fmt.Sprintf("env '%s' not set", EnvSettingsPath),
+			Message: fmt.Sprintf("env '%s' not set", EnvSettingsPath),
 		}
 	}
 
@@ -71,7 +63,7 @@ func Wrap(ctx context.Context, check Check, dc pkg.DependencyContainer, logger p
 	if err != nil {
 		return Result{
 			Allow:   false,
-			Warning: fmt.Sprintf("failed to read settings: %v", err),
+			Message: fmt.Sprintf("failed to read settings: %v", err),
 		}
 	}
 
@@ -79,7 +71,7 @@ func Wrap(ctx context.Context, check Check, dc pkg.DependencyContainer, logger p
 	if err != nil {
 		return Result{
 			Allow:   false,
-			Warning: fmt.Sprintf("failed to parse settings: %v", err),
+			Message: fmt.Sprintf("failed to parse settings: %v", err),
 		}
 	}
 
@@ -87,7 +79,7 @@ func Wrap(ctx context.Context, check Check, dc pkg.DependencyContainer, logger p
 	if err != nil {
 		return Result{
 			Allow:   false,
-			Warning: fmt.Sprintf("failed to parse settings: %v", err),
+			Message: fmt.Sprintf("failed to parse settings: %v", err),
 		}
 	}
 
@@ -97,23 +89,32 @@ func Wrap(ctx context.Context, check Check, dc pkg.DependencyContainer, logger p
 		Logger:   logger,
 	}
 
-	err = check(ctx, input)
-	if err == nil {
-		return Result{
-			Allow: true,
-		}
-	}
+	return check(ctx, input)
+}
 
-	warning := new(Warning)
-	if errors.As(err, &warning) {
-		return Result{
-			Allow:   true,
-			Warning: warning.Message,
-		}
-	}
-
+func Reject(msg string) Result {
 	return Result{
 		Allow:   false,
-		Warning: err.Error(),
+		Message: msg,
+	}
+}
+
+func RejectErr(err error) Result {
+	return Result{
+		Allow:   false,
+		Message: err.Error(),
+	}
+}
+
+func Allow() Result {
+	return Result{
+		Allow: true,
+	}
+}
+
+func Warn(warnings ...string) Result {
+	return Result{
+		Allow:    true,
+		Warnings: warnings,
 	}
 }

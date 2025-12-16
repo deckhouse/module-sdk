@@ -151,7 +151,7 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 }
 
 func (c *HookController) CheckSettings(ctx context.Context) error {
-	res := settingscheck.Wrap(ctx, c.settingsCheck, c.dc, c.logger)
+	res := settingscheck.Execute(ctx, c.settingsCheck, c.dc, c.logger)
 
 	buf := bytes.NewBuffer([]byte{})
 	if err := json.NewEncoder(buf).Encode(res); err != nil {
