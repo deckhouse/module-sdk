@@ -31,7 +31,7 @@ const (
 )
 
 type Result struct {
-	Allow    bool     `json:"allow" yaml:"allow"`
+	Valid    bool     `json:"valid" yaml:"valid"`
 	Message  string   `json:"message" yaml:"message"`
 	Warnings []string `json:"warnings" yaml:"warnings"`
 }
@@ -47,14 +47,14 @@ type Check func(ctx context.Context, input Input) Result
 func Execute(ctx context.Context, check Check, dc pkg.DependencyContainer, logger pkg.Logger) Result {
 	if check == nil {
 		return Result{
-			Allow: true,
+			Valid: true,
 		}
 	}
 
 	path := os.Getenv(EnvSettingsPath)
 	if path == "" {
 		return Result{
-			Allow:   false,
+			Valid:   false,
 			Message: fmt.Sprintf("env '%s' not set", EnvSettingsPath),
 		}
 	}
@@ -62,7 +62,7 @@ func Execute(ctx context.Context, check Check, dc pkg.DependencyContainer, logge
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return Result{
-			Allow:   false,
+			Valid:   false,
 			Message: fmt.Sprintf("failed to read settings: %v", err),
 		}
 	}
@@ -70,7 +70,7 @@ func Execute(ctx context.Context, check Check, dc pkg.DependencyContainer, logge
 	values, err := utils.NewValuesFromBytes(raw)
 	if err != nil {
 		return Result{
-			Allow:   false,
+			Valid:   false,
 			Message: fmt.Sprintf("failed to parse settings: %v", err),
 		}
 	}
@@ -78,7 +78,7 @@ func Execute(ctx context.Context, check Check, dc pkg.DependencyContainer, logge
 	settings, err := patchablevalues.NewPatchableValues(values)
 	if err != nil {
 		return Result{
-			Allow:   false,
+			Valid:   false,
 			Message: fmt.Sprintf("failed to parse settings: %v", err),
 		}
 	}
@@ -94,14 +94,14 @@ func Execute(ctx context.Context, check Check, dc pkg.DependencyContainer, logge
 
 func Reject(msg string) Result {
 	return Result{
-		Allow:   false,
+		Valid:   false,
 		Message: msg,
 	}
 }
 
 func Allow(warnings ...string) Result {
 	return Result{
-		Allow:    true,
+		Valid:    true,
 		Warnings: warnings,
 	}
 }
