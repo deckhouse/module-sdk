@@ -92,7 +92,7 @@ type PatchableValuesCollector interface {
 	Set(path string, value any)
 }
 
-type ReadOnlyValuesCollector interface {
+type ReadableValuesCollector interface {
 	ArrayCount(path string) (int, error)
 	Exists(path string) bool
 	Get(path string) gjson.Result

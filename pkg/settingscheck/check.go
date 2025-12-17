@@ -37,7 +37,7 @@ type Result struct {
 }
 
 type Input struct {
-	Settings pkg.ReadOnlyValuesCollector
+	Settings pkg.ReadableValuesCollector
 	DC       pkg.DependencyContainer
 	Logger   pkg.Logger
 }
