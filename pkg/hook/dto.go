@@ -18,9 +18,10 @@ type GoHookMetadata struct {
 const BatchHookConfigV1 = "v1"
 
 type BatchHookConfig struct {
-	Version   string       `yaml:"version" json:"version"`
-	Hooks     []HookConfig `yaml:"hooks" json:"hooks"`
-	Readiness *HookConfig  `yaml:"readiness,omitempty" json:"readiness,omitempty"`
+	Version          string       `yaml:"version" json:"version"`
+	Hooks            []HookConfig `yaml:"hooks" json:"hooks"`
+	Readiness        *HookConfig  `yaml:"readiness,omitempty" json:"readiness,omitempty"`
+	HasSettingsCheck bool         `yaml:"has_settings_check,omitempty" json:"has_settings_check,omitempty"`
 }
 
 type HookConfig struct {

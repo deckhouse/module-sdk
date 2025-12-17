@@ -78,6 +78,21 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		},
 	})
 
+	hooksCmd.AddCommand(&cobra.Command{
+		Use:    "check",
+		Short:  "Check settings",
+		Long:   `Check settings of the module`,
+		Hidden: true,
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			if err := c.controller.CheckSettings(cmd.Context()); err != nil {
+				c.logger.Error("failed to check settings", "error", err)
+				return err
+			}
+
+			return nil
+		},
+	})
+
 	configCmd := &cobra.Command{
 		Use:   "config",
 		Short: "Print hooks configs",

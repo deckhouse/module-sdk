@@ -11,3 +11,5 @@
 [Module hook examples with common hooks](https://github.com/deckhouse/module-sdk/tree/main/examples/common-hooks)
 
 [Dockerfile and Makefile for building](https://github.com/deckhouse/module-sdk/tree/main/examples/scripts)
+
+[Module hook example with settings checking](https://github.com/deckhouse/module-sdk/tree/main/examples/settings-check)

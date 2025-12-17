@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 )
 
 // RunConfigOption is a function that modifies the configuration for Run.
@@ -31,4 +32,10 @@ func WithReadiness(cfg *ReadinessConfig) RunConfigOption {
 type ReadinessConfig struct {
 	IntervalInSeconds uint8
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
+}
+
+func WithSettingsCheck(check settingscheck.Check) RunConfigOption {
+	return func(c *config) {
+		c.SettingsCheck = check
+	}
 }

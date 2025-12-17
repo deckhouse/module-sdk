@@ -18,15 +18,17 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/dependency"
 	gohook "github.com/deckhouse/module-sdk/pkg/hook"
 	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
 
 type HookController struct {
 	registry *registry.HookRegistry
-	dc       pkg.DependencyContainer
+	fConfig  *file.Config
 
-	fConfig *file.Config
+	settingsCheck settingscheck.Check
 
+	dc     pkg.DependencyContainer
 	logger *log.Logger
 }
 
@@ -46,10 +48,11 @@ func NewHookController(cfg *Config, logger *log.Logger) *HookController {
 	}
 
 	return &HookController{
-		registry: reg,
-		dc:       dependency.NewDependencyContainer(),
-		fConfig:  cfg.GetFileConfig(),
-		logger:   logger,
+		registry:      reg,
+		settingsCheck: cfg.SettingsCheck,
+		dc:            dependency.NewDependencyContainer(),
+		fConfig:       cfg.GetFileConfig(),
+		logger:        logger,
 	}
 }
 
@@ -147,10 +150,24 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 	return nil
 }
 
+func (c *HookController) CheckSettings(ctx context.Context) error {
+	res := settingscheck.Execute(ctx, c.settingsCheck, c.dc, c.logger)
+
+	buf := bytes.NewBuffer([]byte{})
+	if err := json.NewEncoder(buf).Encode(res); err != nil {
+		return fmt.Errorf("encode error: %w", err)
+	}
+
+	fmt.Fprintln(os.Stderr, buf.String())
+	os.Exit(1)
+
+	return nil
+}
+
 var ErrNoHooksRegistered = errors.New("no hooks registered")
 
 func (c *HookController) PrintHookConfigs() error {
-	if len(c.registry.Hooks()) == 0 {
+	if len(c.registry.Hooks()) == 0 && c.settingsCheck == nil {
 		return ErrNoHooksRegistered
 	}
 
@@ -167,6 +184,10 @@ func (c *HookController) PrintHookConfigs() error {
 
 	if c.registry.Readiness() != nil {
 		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
+	}
+
+	if c.settingsCheck != nil {
+		cfg.HasSettingsCheck = true
 	}
 
 	buf := bytes.NewBuffer([]byte{})
