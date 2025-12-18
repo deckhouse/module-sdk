@@ -10,19 +10,31 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Hook struct {
-	Config        *HookConfig
-	ReconcileFunc ReconcileFunc
+type Hook[Input any] struct {
+	Config   *HookConfig
+	HookFunc HookFunc[Input]
 }
 
-// ReconcileFunc function which holds the main logic of the hook
-type ReconcileFunc func(ctx context.Context, input *HookInput) error
+// Func function which holds the main logic of the hook
+type HookFunc[Input any] func(ctx context.Context, input Input) error
 
 type HookInput struct {
 	Snapshots Snapshots
 
 	Values           OutputPatchableValuesCollector
 	ConfigValues     OutputPatchableValuesCollector
+	PatchCollector   OutputPatchCollector
+	MetricsCollector MetricsCollector
+
+	DC DependencyContainer
+
+	Logger Logger
+}
+
+type ApplicationHookInput struct {
+	Snapshots Snapshots
+
+	Values           OutputPatchableValuesCollector
 	PatchCollector   OutputPatchCollector
 	MetricsCollector MetricsCollector
 

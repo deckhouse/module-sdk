@@ -12,18 +12,18 @@ import (
 	"github.com/deckhouse/deckhouse/pkg/log"
 
 	"github.com/deckhouse/module-sdk/internal/common-hooks/readiness"
-	"github.com/deckhouse/module-sdk/internal/registry"
+	execregistry "github.com/deckhouse/module-sdk/internal/executor/registry"
 	"github.com/deckhouse/module-sdk/internal/transport/file"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/dependency"
 	gohook "github.com/deckhouse/module-sdk/pkg/hook"
-	outerRegistry "github.com/deckhouse/module-sdk/pkg/registry"
+	hookregistry "github.com/deckhouse/module-sdk/pkg/registry"
 	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 	"github.com/deckhouse/module-sdk/pkg/utils/ptr"
 )
 
 type HookController struct {
-	registry *registry.HookRegistry
+	registry *execregistry.Registry
 	fConfig  *file.Config
 
 	settingsCheck settingscheck.Check
@@ -40,8 +40,9 @@ type HookSender interface {
 }
 
 func NewHookController(cfg *Config, logger *log.Logger) *HookController {
-	reg := registry.NewHookRegistry(logger)
-	reg.Add(outerRegistry.Registry().Hooks()...)
+	reg := execregistry.NewRegistry(logger)
+	reg.RegisterModuleHooks(hookregistry.Registry().ModuleHooks()...)
+	reg.RegisterAppHooks(hookregistry.Registry().ApplicationHooks()...)
 
 	if cfg.ReadinessConfig != nil {
 		addReadinessHook(reg, cfg.ReadinessConfig)
@@ -56,7 +57,7 @@ func NewHookController(cfg *Config, logger *log.Logger) *HookController {
 	}
 }
 
-func addReadinessHook(reg *registry.HookRegistry, cfg *ReadinessConfig) {
+func addReadinessHook(reg *execregistry.Registry, cfg *ReadinessConfig) {
 	readinessConfig := &readiness.ReadinessHookConfig{
 		ModuleName:        cfg.ModuleName,
 		IntervalInSeconds: cfg.IntervalInSeconds,
@@ -67,15 +68,15 @@ func addReadinessHook(reg *registry.HookRegistry, cfg *ReadinessConfig) {
 	config.Metadata.Name = "readiness"
 	config.Metadata.Path = "common-hooks/readiness"
 
-	reg.SetReadinessHook(&pkg.Hook{Config: config, ReconcileFunc: f})
+	reg.SetReadinessHook(pkg.Hook[*pkg.HookInput]{Config: config, HookFunc: f})
 }
 
 func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
-	hooks := c.registry.Hooks()
+	hooks := c.registry.Executors()
 
 	hooksmetas := make([]pkg.HookMetadata, 0, len(hooks))
 	for _, hook := range hooks {
-		hooksmetas = append(hooksmetas, hook.GetConfig().Metadata)
+		hooksmetas = append(hooksmetas, hook.Config().Metadata)
 	}
 
 	return hooksmetas
@@ -85,7 +86,7 @@ func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
 var ErrHookIndexIsNotExists = errors.New("hook index does not exist")
 
 func (c *HookController) RunHook(ctx context.Context, idx int) error {
-	hooks := c.registry.Hooks()
+	hooks := c.registry.Executors()
 
 	if len(hooks) <= idx {
 		return ErrHookIndexIsNotExists
@@ -93,7 +94,7 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 
 	hook := hooks[idx]
 
-	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.Config().Metadata.Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -126,7 +127,7 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 		return ErrReadinessHookDoesNotExists
 	}
 
-	transport := file.NewTransport(c.fConfig, hook.GetName(), c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.Config().Metadata.Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -167,14 +168,14 @@ func (c *HookController) CheckSettings(ctx context.Context) error {
 var ErrNoHooksRegistered = errors.New("no hooks registered")
 
 func (c *HookController) PrintHookConfigs() error {
-	if len(c.registry.Hooks()) == 0 && c.settingsCheck == nil {
+	if len(c.registry.Executors()) == 0 && c.settingsCheck == nil {
 		return ErrNoHooksRegistered
 	}
 
 	configs := make([]gohook.HookConfig, 0, 1)
 
-	for _, hook := range c.registry.Hooks() {
-		configs = append(configs, *remapHookConfigToHookConfig(hook.GetConfig()))
+	for _, hook := range c.registry.Executors() {
+		configs = append(configs, *remapHookConfigToHookConfig(hook.Config()))
 	}
 
 	cfg := &gohook.BatchHookConfig{
@@ -183,7 +184,7 @@ func (c *HookController) PrintHookConfigs() error {
 	}
 
 	if c.registry.Readiness() != nil {
-		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
+		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().Config())
 	}
 
 	if c.settingsCheck != nil {
@@ -202,7 +203,7 @@ func (c *HookController) PrintHookConfigs() error {
 }
 
 func (c *HookController) WriteHookConfigsInFile() error {
-	if len(c.registry.Hooks()) == 0 {
+	if len(c.registry.Executors()) == 0 {
 		return ErrNoHooksRegistered
 	}
 
@@ -227,8 +228,8 @@ func (c *HookController) WriteHookConfigsInFile() error {
 
 	configs := make([]gohook.HookConfig, 0, 1)
 
-	for _, hook := range c.registry.Hooks() {
-		configs = append(configs, *remapHookConfigToHookConfig(hook.GetConfig()))
+	for _, hook := range c.registry.Executors() {
+		configs = append(configs, *remapHookConfigToHookConfig(hook.Config()))
 	}
 
 	cfg := &gohook.BatchHookConfig{
@@ -237,7 +238,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	}
 
 	if c.registry.Readiness() != nil {
-		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().GetConfig())
+		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().Config())
 	}
 
 	err = json.NewEncoder(f).Encode(cfg)
