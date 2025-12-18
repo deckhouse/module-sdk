@@ -1,4 +1,4 @@
-package hook_test
+package executor_test
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/deckhouse/deckhouse/pkg/log"
 
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
-	"github.com/deckhouse/module-sdk/internal/hook"
+	"github.com/deckhouse/module-sdk/internal/executor"
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
@@ -23,7 +23,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 	}
 
 	type fields struct {
-		setupHookRequest       func(t *testing.T) hook.HookRequest
+		setupHookRequest       func(t *testing.T) executor.Request
 		setupHookReconcileFunc func(t *testing.T) func(ctx context.Context, input *pkg.HookInput) error
 	}
 
@@ -46,7 +46,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -97,7 +97,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -148,7 +148,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -200,7 +200,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -225,7 +225,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -252,7 +252,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -280,7 +280,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -310,7 +310,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -344,7 +344,7 @@ func Test_Go_Hook_Execute(t *testing.T) {
 				enabled: true,
 			},
 			fields: fields{
-				setupHookRequest: func(t *testing.T) hook.HookRequest {
+				setupHookRequest: func(t *testing.T) executor.Request {
 					hr := NewHookRequestMock(t)
 
 					vals := hr.GetValuesMock.Expect()
@@ -382,11 +382,14 @@ func Test_Go_Hook_Execute(t *testing.T) {
 		t.Run(tt.meta.name, func(t *testing.T) {
 			t.Parallel()
 
-			cfg := &pkg.HookConfig{}
+			h := pkg.Hook[*pkg.HookInput]{
+				Config:   new(pkg.HookConfig),
+				HookFunc: tt.fields.setupHookReconcileFunc(t),
+			}
 
-			h := hook.NewHook(cfg, tt.fields.setupHookReconcileFunc(t)).SetLogger(log.NewNop())
+			exec := executor.NewModuleExecutor(h, log.NewNop())
 
-			_, err := h.Execute(context.Background(), tt.fields.setupHookRequest(t))
+			_, err := exec.Execute(context.Background(), tt.fields.setupHookRequest(t))
 			if tt.wants.err != "" {
 				assert.Contains(t, err.Error(), tt.wants.err)
 			} else {

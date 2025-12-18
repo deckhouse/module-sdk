@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,19 +12,15 @@ import (
 
 func TestRegister(t *testing.T) {
 	t.Run("Hook with OnStartup and Kubernetes bindings should panic", func(t *testing.T) {
-		hook := &pkg.Hook{
-			Config: &pkg.HookConfig{
-				OnStartup: &pkg.OrderedConfig{Order: 1},
-				Kubernetes: []pkg.KubernetesConfig{
-					{
-						Name:       "test",
-						APIVersion: "v1",
-						Kind:       "Pod",
-						// FilterFunc: nil,
-					},
+		hook := &pkg.HookConfig{
+			OnStartup: &pkg.OrderedConfig{Order: 1},
+			Kubernetes: []pkg.KubernetesConfig{
+				{
+					Name:       "test",
+					APIVersion: "v1",
+					Kind:       "Pod",
 				},
 			},
-			ReconcileFunc: nil,
 		}
 
 		defer func() {
@@ -31,43 +28,46 @@ func TestRegister(t *testing.T) {
 			require.NotEmpty(t, r)
 			assert.Equal(t, bindingsPanicMsg, r)
 		}()
-		Registry().Add(hook)
+
+		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
+			return nil
+		})
 	})
 
 	t.Run("Hook with OnStartup should not panic", func(t *testing.T) {
-		hook := &pkg.Hook{
-			Config: &pkg.HookConfig{
-				OnStartup: &pkg.OrderedConfig{Order: 1},
-			},
-			ReconcileFunc: nil,
+		hook := &pkg.HookConfig{
+			OnStartup: &pkg.OrderedConfig{Order: 1},
 		}
 
 		defer func() {
 			r := recover()
 			assert.NotEqual(t, bindingsPanicMsg, r)
 		}()
-		Registry().Add(hook)
+
+		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
+			return nil
+		})
 	})
 
 	t.Run("Hook with Kubernetes binding should not panic", func(t *testing.T) {
-		hook := &pkg.Hook{
-			Config: &pkg.HookConfig{
-				Kubernetes: []pkg.KubernetesConfig{
-					{
-						Name:       "test",
-						APIVersion: "v1",
-						Kind:       "Pod",
-						// FilterFunc: nil,
-					},
+		hook := &pkg.HookConfig{
+			Kubernetes: []pkg.KubernetesConfig{
+				{
+					Name:       "test",
+					APIVersion: "v1",
+					Kind:       "Pod",
+					// FilterFunc: nil,
 				},
 			},
-			ReconcileFunc: nil,
 		}
 
 		defer func() {
 			r := recover()
 			assert.NotEqual(t, bindingsPanicMsg, r)
 		}()
-		Registry().Add(hook)
+
+		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
+			return nil
+		})
 	})
 }

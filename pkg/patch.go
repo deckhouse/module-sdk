@@ -2,22 +2,14 @@ package pkg
 
 import (
 	"github.com/tidwall/gjson"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
-type OutputPatchCollector interface {
-	// Deprecated: use PatchWithMerge instead
-	PatchCollector
-	Outputer
-}
-
-type OutputPatchableValuesCollector interface {
-	PatchableValuesCollector
-	Outputer
-}
-
 type PatchCollector interface {
+	Outputer
+
 	// object must be Unstructured, map[string]any or runtime.Object
 	Create(object any)
 	// object must be Unstructured, map[string]any or runtime.Object
@@ -58,6 +50,40 @@ type PatchCollector interface {
 	Operations() []PatchCollectorOperation
 }
 
+type NamespacedPatchCollector interface {
+	// Create creates the object in the cluster.
+	Create(object runtime.Object)
+	// CreateIfNotExists creates the object only if it does not already exist.
+	CreateIfNotExists(object runtime.Object)
+	// CreateOrUpdate creates the object if it does not exist, or updates it if it does.
+	CreateOrUpdate(object runtime.Object)
+
+	// Delete removes the object using foreground cascading deletion.
+	// The API server adds the "foregroundDeletion" finalizer and sets deletionTimestamp.
+	// The object remains until the garbage collector deletes all dependents
+	// with ownerReference.blockOwnerDeletion=true.
+	Delete(apiVersion, kind, name string)
+	// DeleteInBackground removes the object immediately while the garbage collector
+	// deletes dependents in the background.
+	DeleteInBackground(apiVersion, kind, name string)
+	// DeleteNonCascading removes the object without deleting its dependents (orphans them).
+	DeleteNonCascading(apiVersion, kind, name string)
+
+	// PatchWithJSON applies a RFC6902 JSON Patch to the object.
+	// This format requires explicit operations (add, remove, replace, etc.) with paths and values.
+	// See https://tools.ietf.org/html/rfc6902 for details.
+	PatchWithJSON(jsonPatch any, apiVersion, kind, name string, opts ...PatchCollectorOption)
+	// PatchWithMerge applies a RFC7396 JSON Merge Patch to the object.
+	// This format merges the patch directly into the object, replacing values at matching paths.
+	// See https://tools.ietf.org/html/rfc7396 for details.
+	PatchWithMerge(mergePatch any, apiVersion, kind, name string, opts ...PatchCollectorOption)
+	// PatchWithJQ mutates the object using a jq filter expression.
+	PatchWithJQ(jqfilter, apiVersion, kind, name string, opts ...PatchCollectorOption)
+
+	// Operations returns all collected patch operations.
+	Operations() []PatchCollectorOperation
+}
+
 // There are 4 types of operations:
 //
 // - createOperation to create or update object via Create and Update API calls. Unstructured, map[string]any or runtime.Object is required.
@@ -82,6 +108,7 @@ type PatchCollectorOptionApplier interface {
 }
 
 type PatchableValuesCollector interface {
+	Outputer
 	ArrayCount(path string) (int, error)
 	Exists(path string) bool
 	Get(path string) gjson.Result
