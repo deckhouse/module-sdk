@@ -49,7 +49,7 @@ var _ = Describe("handle hook single file example", func() {
 
 	Context("refoncile func", func() {
 		It("reconcile func executed correctly", func() {
-			err := singlefileexample.HandlerHook(context.Background(), input)
+			err := singlefileexample.Handle(context.Background(), input)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

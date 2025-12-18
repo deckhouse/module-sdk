@@ -11,37 +11,26 @@ import (
 
 const bindingsPanicMsg = "OnStartup hook always has binding context without Kubernetes snapshots. To prevent logic errors, don't use OnStartup and Kubernetes bindings in the same Go hook configuration."
 
-// /path/.../somemodule/hooks/001_ensure_crd/a/b/c/main.go
-// $1 - Hook path for values (001_ensure_crd/a/b/c/main.go)
-var hookRe = regexp.MustCompile(`([^/]*)/hooks/(.*)$`)
+var (
+	instance *HookRegistry
+	once     sync.Once
 
-var RegisterAppFunc = func(config *pkg.HookConfig, f pkg.HookFunc[*pkg.ApplicationHookInput]) bool {
-	Registry().addApplicationHook(pkg.Hook[*pkg.ApplicationHookInput]{Config: config, HookFunc: f})
-	return true
-}
+	// /path/.../somemodule/hooks/001_ensure_crd/a/b/c/main.go
+	// $1 - Hook path for values (001_ensure_crd/a/b/c/main.go)
+	hookRe = regexp.MustCompile(`([^/]*)/hooks/(.*)$`)
+)
 
-var RegisterFunc = func(config *pkg.HookConfig, f pkg.HookFunc[*pkg.HookInput]) bool {
-	Registry().addModuleHook(pkg.Hook[*pkg.HookInput]{Config: config, HookFunc: f})
-	return true
-}
-
-var RegisterReadinessFunc = func(config *pkg.HookConfig, f pkg.HookFunc[*pkg.HookInput]) bool {
-	Registry().addModuleHook(pkg.Hook[*pkg.HookInput]{Config: config, HookFunc: f})
-	return true
+type Input interface {
+	*pkg.HookInput | *pkg.ApplicationHookInput
 }
 
 type HookRegistry struct {
-	m                sync.Mutex
+	mtx              sync.Mutex
 	moduleHooks      []pkg.Hook[*pkg.HookInput]
 	applicationHooks []pkg.Hook[*pkg.ApplicationHookInput]
 }
 
-var (
-	instance *HookRegistry
-	once     sync.Once
-)
-
-// use it only in controller
+// Registry returns singleton instance, it is used it only in controller
 func Registry() *HookRegistry {
 	once.Do(func() {
 		instance = &HookRegistry{
@@ -60,94 +49,59 @@ func (h *HookRegistry) ApplicationHooks() []pkg.Hook[*pkg.ApplicationHookInput] 
 	return h.applicationHooks
 }
 
-func (h *HookRegistry) addModuleHook(hook pkg.Hook[*pkg.HookInput]) {
-	config := hook.Config
-	if config.OnStartup != nil && len(config.Kubernetes) > 0 {
-		panic(bindingsPanicMsg)
-	}
-
-	pc := make([]uintptr, 50)
-	n := runtime.Callers(0, pc)
-	if n == 0 {
-		panic("runtime.Callers is empty")
-	}
-	pc = pc[:n] // pass only valid pcs to runtime.CallersFrames
-	frames := runtime.CallersFrames(pc)
-
-	meta := pkg.HookMetadata{}
-
-	for {
-		frame, more := frames.Next()
-
-		matches := hookRe.FindStringSubmatch(frame.File)
-		if matches != nil {
-			meta.Name = strings.TrimRight(matches[2], ".go")
-
-			lastSlashIdx := strings.LastIndex(matches[0], "/")
-			// trim with last slash
-
-			meta.Path = matches[0][:lastSlashIdx+1]
-		}
-
-		if !more {
-			break
-		}
-	}
-
-	hook.Config.Metadata = meta
-
-	if len(hook.Config.Metadata.Name) == 0 {
-		panic("cannot extract metadata from GoHook")
-	}
-
-	h.m.Lock()
-	defer h.m.Unlock()
-
-	h.moduleHooks = append(h.moduleHooks, hook)
+func RegisterFunc[T Input](config *pkg.HookConfig, f pkg.HookFunc[T]) bool {
+	registerHook(Registry(), config, f)
+	return true
 }
 
-func (h *HookRegistry) addApplicationHook(hook pkg.Hook[*pkg.ApplicationHookInput]) {
-	config := hook.Config
-	if config.OnStartup != nil && len(config.Kubernetes) > 0 {
+func registerHook[T Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookFunc[T]) {
+	if cfg.OnStartup != nil && len(cfg.Kubernetes) > 0 {
 		panic(bindingsPanicMsg)
 	}
 
+	cfg.Metadata = extractHookMetadata()
+
+	r.mtx.Lock()
+	defer r.mtx.Unlock()
+
+	hook := pkg.Hook[T]{Config: cfg, HookFunc: f}
+
+	switch any(hook).(type) {
+	case pkg.Hook[*pkg.HookInput]:
+		r.moduleHooks = append(r.moduleHooks, any(hook).(pkg.Hook[*pkg.HookInput]))
+	case pkg.Hook[*pkg.ApplicationHookInput]:
+		r.applicationHooks = append(r.applicationHooks, any(hook).(pkg.Hook[*pkg.ApplicationHookInput]))
+	default:
+		panic("unknown hook input type")
+	}
+}
+
+func extractHookMetadata() pkg.HookMetadata {
 	pc := make([]uintptr, 50)
 	n := runtime.Callers(0, pc)
 	if n == 0 {
 		panic("runtime.Callers is empty")
 	}
-	pc = pc[:n] // pass only valid pcs to runtime.CallersFrames
+	pc = pc[:n]
 	frames := runtime.CallersFrames(pc)
 
 	meta := pkg.HookMetadata{}
-
 	for {
 		frame, more := frames.Next()
-
 		matches := hookRe.FindStringSubmatch(frame.File)
 		if matches != nil {
 			meta.Name = strings.TrimRight(matches[2], ".go")
-
 			lastSlashIdx := strings.LastIndex(matches[0], "/")
-			// trim with last slash
-
 			meta.Path = matches[0][:lastSlashIdx+1]
 		}
-
 		if !more {
 			break
 		}
 	}
 
-	hook.Config.Metadata = meta
-
-	if len(hook.Config.Metadata.Name) == 0 {
+	if len(meta.Name) == 0 {
 		panic("cannot extract metadata from GoHook")
 	}
 
-	h.m.Lock()
-	defer h.m.Unlock()
-
-	h.applicationHooks = append(h.applicationHooks, hook)
+	return meta
 }

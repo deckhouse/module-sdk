@@ -4,20 +4,20 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/app"
 	objectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 	"github.com/deckhouse/module-sdk/pkg/registry"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 )
 
 const (
 	SnapshotKey = "apiservers"
 )
 
-var _ = registry.RegisterAppFunc(config, Handle)
+var _ = registry.RegisterFunc(config, Handle)
 
 var config = &pkg.HookConfig{
 	Kubernetes: []pkg.KubernetesConfig{
