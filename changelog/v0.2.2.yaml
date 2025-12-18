@@ -1,0 +1,10 @@
+features:
+  SDK:
+    - Added pkg/utils/pwgen package for password generation utilities
+fixes:
+  SDK:
+    - Fixed typo in naming: renamed Unmarhal to Unmarshal
+chore:
+  SDK:
+    - Bumped Kubernetes version dependencies
+    - Removed unnecessary code and dependencies

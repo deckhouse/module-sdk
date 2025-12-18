@@ -1,0 +1,4 @@
+fixes:
+  SDK:
+    - Fixed CVE vulnerabilities in examples
+    - Addressed CVE issues in the main codebase

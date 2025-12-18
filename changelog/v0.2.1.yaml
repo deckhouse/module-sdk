@@ -1,0 +1,13 @@
+features:
+  SDK:
+    - Added external-auth common hook for authentication management
+fixes:
+  SDK:
+    - Fixed deprecated interface usage
+chore:
+  SDK:
+    - Updated golang.org/x/net dependency in various examples
+    - Bumped github.com/google/go-cmp from 0.6.0 to 0.7.0
+    - Updated github.com/docker/docker dependency
+    - Bumped golang.org/x/crypto from 0.28.0 to 0.31.0
+    - Added dependabot.yml for automated dependency updates

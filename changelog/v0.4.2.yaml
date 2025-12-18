@@ -1,0 +1,3 @@
+fixes:
+  SDK:
+    - Fixed cobra error handling to prevent errors from reaching JSON parser

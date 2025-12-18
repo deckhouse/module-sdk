@@ -1,0 +1,3 @@
+fixes:
+  SDK:
+    - Replaced k8sclient with patchcollector for improved patching functionality

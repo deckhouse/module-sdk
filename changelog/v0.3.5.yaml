@@ -1,0 +1,3 @@
+fixes:
+  SDK:
+    - Changed snapshots name to resolve naming conflicts

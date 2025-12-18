@@ -1,0 +1,7 @@
+features:
+  SDK:
+    - Re-generated dependencies for improved compatibility
+    - Bumped logging library version
+fixes:
+  SDK:
+    - Fixed dependencies in examples
