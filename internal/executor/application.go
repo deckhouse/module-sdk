@@ -19,7 +19,7 @@ type applicationExecutor struct {
 	logger *log.Logger
 }
 
-// NewApplicationExecutor creates a new application hook
+// NewApplicationExecutor creates a new application executor
 func NewApplicationExecutor(h pkg.Hook[*pkg.ApplicationHookInput], logger *log.Logger) Executor {
 	return &applicationExecutor{
 		hook:   h,

@@ -2,7 +2,7 @@
 
 package executor_test
 
-//go:generate minimock -i github.com/deckhouse/module-sdk/internal/hook.HookRequest -o hook_request_mock_test.go -n HookRequestMock -p hook_test
+//go:generate minimock -i github.com/deckhouse/module-sdk/internal/executor.Request -o hook_request_mock_test.go -n HookRequestMock -p hook_test
 
 import (
 	"sync"

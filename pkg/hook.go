@@ -10,13 +10,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Hook[Input any] struct {
-	Config   *HookConfig
-	HookFunc HookFunc[Input]
+type Input interface {
+	*HookInput | *ApplicationHookInput
 }
 
-// Func function which holds the main logic of the hook
-type HookFunc[Input any] func(ctx context.Context, input Input) error
+type Hook[T Input] struct {
+	Config   *HookConfig
+	HookFunc HookFunc[T]
+}
+
+// HookFunc function which holds the main logic of the hook
+type HookFunc[T Input] func(ctx context.Context, input T) error
 
 type HookInput struct {
 	Snapshots Snapshots

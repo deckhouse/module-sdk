@@ -20,10 +20,6 @@ var (
 	hookRe = regexp.MustCompile(`([^/]*)/hooks/(.*)$`)
 )
 
-type Input interface {
-	*pkg.HookInput | *pkg.ApplicationHookInput
-}
-
 type HookRegistry struct {
 	mtx              sync.Mutex
 	moduleHooks      []pkg.Hook[*pkg.HookInput]
@@ -38,6 +34,7 @@ func Registry() *HookRegistry {
 			applicationHooks: make([]pkg.Hook[*pkg.ApplicationHookInput], 0, 1),
 		}
 	})
+
 	return instance
 }
 
@@ -49,12 +46,12 @@ func (h *HookRegistry) ApplicationHooks() []pkg.Hook[*pkg.ApplicationHookInput] 
 	return h.applicationHooks
 }
 
-func RegisterFunc[T Input](config *pkg.HookConfig, f pkg.HookFunc[T]) bool {
+func RegisterFunc[T pkg.Input](config *pkg.HookConfig, f pkg.HookFunc[T]) bool {
 	registerHook(Registry(), config, f)
 	return true
 }
 
-func registerHook[T Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookFunc[T]) {
+func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookFunc[T]) {
 	if cfg.OnStartup != nil && len(cfg.Kubernetes) > 0 {
 		panic(bindingsPanicMsg)
 	}
