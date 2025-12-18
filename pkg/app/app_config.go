@@ -4,12 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	env "github.com/caarlos0/env/v11"
+	"github.com/caarlos0/env/v11"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 
 	"github.com/deckhouse/module-sdk/internal/controller"
 	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/settingscheck"
 )
 
 type hookConfig struct {
@@ -44,6 +45,7 @@ type config struct {
 	ModuleName      string `env:"MODULE_NAME" envDefault:"default-module"`
 	HookConfig      *hookConfig
 	ReadinessConfig *readinessConfig `envPrefix:"READINESS_"`
+	SettingsCheck   settingscheck.Check
 
 	LogLevelRaw string    `env:"LOG_LEVEL" envDefault:"FATAL"`
 	LogLevel    log.Level `env:"-"`
@@ -95,6 +97,10 @@ func remapConfigToControllerConfig(input *config) *controller.Config {
 			IntervalInSeconds: input.ReadinessConfig.IntervalInSeconds,
 			ProbeFunc:         input.ReadinessConfig.ProbeFunc,
 		}
+	}
+
+	if input.SettingsCheck != nil {
+		cfg.SettingsCheck = input.SettingsCheck
 	}
 
 	return cfg
