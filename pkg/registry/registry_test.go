@@ -11,7 +11,7 @@ import (
 
 func TestRegister(t *testing.T) {
 	t.Run("Hook with OnStartup and Kubernetes bindings should panic", func(t *testing.T) {
-		hook := &pkg.Hook{
+		hook := pkg.Hook[*pkg.HookInput]{
 			Config: &pkg.HookConfig{
 				OnStartup: &pkg.OrderedConfig{Order: 1},
 				Kubernetes: []pkg.KubernetesConfig{
@@ -23,7 +23,7 @@ func TestRegister(t *testing.T) {
 					},
 				},
 			},
-			ReconcileFunc: nil,
+			HookFunc: nil,
 		}
 
 		defer func() {
@@ -31,26 +31,26 @@ func TestRegister(t *testing.T) {
 			require.NotEmpty(t, r)
 			assert.Equal(t, bindingsPanicMsg, r)
 		}()
-		Registry().Add(hook)
+		Registry().addModuleHook(hook)
 	})
 
 	t.Run("Hook with OnStartup should not panic", func(t *testing.T) {
-		hook := &pkg.Hook{
+		hook := pkg.Hook[*pkg.HookInput]{
 			Config: &pkg.HookConfig{
 				OnStartup: &pkg.OrderedConfig{Order: 1},
 			},
-			ReconcileFunc: nil,
+			HookFunc: nil,
 		}
 
 		defer func() {
 			r := recover()
 			assert.NotEqual(t, bindingsPanicMsg, r)
 		}()
-		Registry().Add(hook)
+		Registry().addModuleHook(hook)
 	})
 
 	t.Run("Hook with Kubernetes binding should not panic", func(t *testing.T) {
-		hook := &pkg.Hook{
+		hook := pkg.Hook[*pkg.HookInput]{
 			Config: &pkg.HookConfig{
 				Kubernetes: []pkg.KubernetesConfig{
 					{
@@ -61,13 +61,13 @@ func TestRegister(t *testing.T) {
 					},
 				},
 			},
-			ReconcileFunc: nil,
+			HookFunc: nil,
 		}
 
 		defer func() {
 			r := recover()
 			assert.NotEqual(t, bindingsPanicMsg, r)
 		}()
-		Registry().Add(hook)
+		Registry().addModuleHook(hook)
 	})
 }

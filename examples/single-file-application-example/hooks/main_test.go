@@ -41,13 +41,13 @@ var _ = Describe("handle hook single file example", func() {
 	values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
 	values.SetMock.When("test.internal.apiServers", []string{firstSnapshot, secondSnapshot})
 
-	var input = &pkg.HookInput{
+	var input = &pkg.ApplicationHookInput{
 		Snapshots: snapshots,
 		Values:    values,
 		Logger:    log.NewNop(),
 	}
 
-	Context("refoncile func", func() {
+	Context("reconcile func", func() {
 		It("reconcile func executed correctly", func() {
 			err := singlefileexample.Handle(context.Background(), input)
 			Expect(err).ShouldNot(HaveOccurred())

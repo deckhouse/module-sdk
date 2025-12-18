@@ -19,7 +19,7 @@ const (
 	SnapshotKey = "apiservers"
 )
 
-var _ = registry.RegisterFunc(config, HandlerHook)
+var _ = registry.RegisterFunc(config, Handle)
 
 var config = &pkg.HookConfig{
 	Kubernetes: []pkg.KubernetesConfig{
@@ -40,7 +40,7 @@ var config = &pkg.HookConfig{
 	},
 }
 
-func HandlerHook(_ context.Context, input *pkg.HookInput) error {
+func Handle(_ context.Context, input *pkg.HookInput) error {
 	podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, "apiservers")
 	if err != nil {
 		return err

@@ -46,7 +46,7 @@ type ReadinessHookConfig struct {
 	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
 }
 
-func NewReadinessHookEM(cfg *ReadinessHookConfig) (*pkg.HookConfig, pkg.ReconcileFunc) {
+func NewReadinessHookEM(cfg *ReadinessHookConfig) (*pkg.HookConfig, pkg.HookFunc[*pkg.HookInput]) {
 	if cfg == nil {
 		panic("empty readiness config")
 	}
