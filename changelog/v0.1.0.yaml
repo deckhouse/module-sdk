@@ -1,0 +1,16 @@
+features:
+  SDK:
+    - Initial release of the Module SDK for building Deckhouse modules
+    - Added support for compiling hooks as binaries and integrating with addon operator
+    - Implemented Kubernetes configuration bindings with namespace and label selectors
+    - Provided object patching capabilities for modifying Kubernetes resources
+    - Added metrics collection and reporting functionality
+    - Included certificate management utilities for TLS and CA operations
+    - Added CRD installer for automatic Custom Resource Definition management
+    - Implemented dependency management for module interdependencies
+    - Provided JQ filtering support for advanced Kubernetes object queries
+    - Added settings validation and checking mechanisms
+    - Implemented readiness probes for module health reporting
+    - Included comprehensive testing utilities and mock frameworks
+    - Added common hooks for typical operations like TLS certificate management and storage class changes
+    - Provided examples and documentation for various module configurations

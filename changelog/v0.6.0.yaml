@@ -1,0 +1,3 @@
+features:
+  SDK:
+    - Packaged settings checks for improved configuration validation

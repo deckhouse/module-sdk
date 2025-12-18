@@ -1,0 +1,23 @@
+features:
+  SDK:
+    - Unified the interface for hook.Input to provide consistent access to hook data
+    - Added patching for CRD status.storedVersions to handle deprecated or unknown values
+    - Enhanced TLS certificate generation with support for custom KeyAlgorithm, KeySize, and CommonCACanonicalName
+    - Introduced test SDK utilities for comprehensive module testing
+    - Added common hook for copying custom certificates
+    - Implemented ensure CRDs functionality for automatic Custom Resource Definition management
+    - Added common CA handling logic for certificate authority operations
+    - Integrated certificates library with rebuilt hooks for improved certificate management
+    - Added panic handling to improve error resilience in hooks
+fixes:
+  SDK:
+    - Fixed kebab case regular expression for proper name validation
+    - Corrected CRD update logic to prevent issues with resource definitions
+chore:
+  SDK:
+    - Performed various dependency bumps and version updates
+    - Added comprehensive configuration validation and tests
+    - Improved error handling and logging throughout the codebase
+    - Conducted code refactoring and minor optimizations
+    - Added comments and documentation improvements
+    - Updated Makefile and build configurations

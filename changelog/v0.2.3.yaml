@@ -1,0 +1,3 @@
+fixes:
+  SDK:
+    - Addressed CVE vulnerabilities by updating dependencies in go.mod and go.sum
