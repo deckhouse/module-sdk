@@ -1,15 +1,12 @@
 name: Test
-
 on:
   pull_request:
     types: [opened]
   push:
-    branches-ignore: [ main ]
-
+    branches-ignore: [main]
 env:
-  GO_VERSION: '1.24'
+  GO_VERSION: '1.25.5'
   GOLANGCI_LINT_VERSION: 'v2.1'
-
 jobs:
   # Check if there is any dirty change for go mod tidy
   go-mod:
@@ -24,7 +21,6 @@ jobs:
           go mod tidy
           git diff --exit-code go.mod
           git diff --exit-code go.sum
-
   go-test:
     needs: go-mod
     runs-on: ubuntu-latest
@@ -34,7 +30,6 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
       - run: go test ./... -race
-
   golangci-lint:
     needs: go-test
     runs-on: ubuntu-latest
@@ -46,7 +41,6 @@ jobs:
       - uses: golangci/golangci-lint-action@v8
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
-
   detect-modules: # ref: https://github.com/golangci/golangci-lint-action/tree/main
     needs: [golangci-lint, go-test, go-mod]
     runs-on: ubuntu-latest
@@ -66,7 +60,6 @@ jobs:
           path: go.work
       - id: set-modules
         run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
-
   go-mod-examples:
     needs: [detect-modules]
     runs-on: ubuntu-latest
@@ -86,7 +79,6 @@ jobs:
           git diff --exit-code go.mod
           git diff --exit-code go.sum
         working-directory: ${{ matrix.modules }}
-
   go-test-examples:
     needs: [detect-modules, go-mod-examples]
     runs-on: ubuntu-latest
@@ -105,7 +97,6 @@ jobs:
           name: go_work
       - run: go test ./...
         working-directory: ${{ matrix.modules }}
-
   golangci-lint-examples:
     needs: [detect-modules, go-test-examples]
     runs-on: ubuntu-latest
