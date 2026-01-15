@@ -76,8 +76,12 @@ update-workflows-go-version: yq
 
 .PHONY: update-workflows-golangci-lint-version
 update-workflows-golangci-lint-version: yq
-	$(YQ) -i '(.jobs.run_linter.steps[] | select(.name == "Run golangci-lint") | .run) |= sub("v\\d+\\.\\d+\\.\\d+", "$(GOLANGCI_LINT_VERSION)")' .github/workflows/lint.yaml
-	echo "Updated golangci-lint version in lint.yaml to $(GOLANGCI_LINT_VERSION)"
+	for file in $$(find .github/workflows -name "*.yaml" -o -name "*.yml"); do \
+		if grep -q "golangci/golangci-lint-action" $$file; then \
+			$(YQ) -i '(.env.GOLANGCI_LINT_VERSION) = "$(GOLANGCI_LINT_VERSION)"' $$file; \
+		fi; \
+	done
+	echo "Updated golangci-lint version in workflow files to $(GOLANGCI_LINT_VERSION)"
 
 ## Installed tools check
 
