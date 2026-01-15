@@ -28,7 +28,7 @@ import (
 
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/dependency/cr"
-	"github.com/deckhouse/module-sdk/pkg/dependency/http"
+	"github.com/deckhouse/module-sdk/pkg/dependency/httpclient"
 	"github.com/deckhouse/module-sdk/pkg/dependency/k8s"
 )
 
@@ -67,10 +67,10 @@ func (dc *dependencyContainer) GetHTTPClient(options ...pkg.HTTPOption) pkg.HTTP
 
 	contentCA, err := os.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
 	if err == nil {
-		opts = append(opts, http.WithAdditionalCACerts([][]byte{contentCA}))
+		opts = append(opts, httpclient.WithAdditionalCACerts([][]byte{contentCA}))
 	}
 
-	dc.httpClient = http.NewClient(opts...)
+	dc.httpClient = httpclient.NewClient(opts...)
 
 	return dc.httpClient
 }
