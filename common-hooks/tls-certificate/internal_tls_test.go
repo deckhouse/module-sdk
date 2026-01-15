@@ -99,8 +99,16 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 			assert.NotEmpty(t, values.Crt)
 			assert.NotEmpty(t, values.Key)
 
+			ca, err := certificate.ParseCertificate([]byte(values.CA))
+			assert.NoError(t, err)
+
+			assert.Equal(t, ca.IsCA, true)
+			assert.Equal(t, ca.NotAfter.Sub(ca.NotBefore), time.Hour*24*365*5)
+
 			cert, err := certificate.ParseCertificate([]byte(values.Crt))
 			assert.NoError(t, err)
+
+			assert.Equal(t, ca.Subject, cert.Issuer)
 
 			assert.Equal(t, []string{
 				"example-webhook",
@@ -109,6 +117,8 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"example-webhook.d8-example-module.svc.cluster.local",
 				"example-webhook.d8-example-module.svc.127.0.0.1.sslip.io",
 			}, cert.DNSNames)
+
+			assert.Equal(t, cert.NotAfter.Sub(cert.NotBefore), time.Hour*24*365)
 		})
 
 		var input = &pkg.HookInput{
@@ -133,6 +143,8 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
 			}),
 			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CAExpiryDuration:     time.Hour * 24 * 365 * 5,
+			CertExpiryDuration:   time.Hour * 24 * 365,
 		}
 
 		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
@@ -327,6 +339,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
 			}),
 			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CertOutdatedDuration: 2 * time.Hour,
 		}
 
 		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
@@ -424,6 +437,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
 			}),
 			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CAOutdatedDuration:   2 * time.Hour,
 		}
 
 		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)

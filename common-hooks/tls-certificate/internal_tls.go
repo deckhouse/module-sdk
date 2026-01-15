@@ -40,6 +40,7 @@ import (
 
 const (
 	caExpiryDurationStr  = "87600h"                    // 10 years
+	caOutdatedDuration   = (24 * time.Hour) * 365 / 2  // 6 month, just enough to renew CA certificate
 	certExpiryDuration   = (24 * time.Hour) * 365 * 10 // 10 years
 	certOutdatedDuration = (24 * time.Hour) * 365 / 2  // 6 month, just enough to renew certificate
 
@@ -108,6 +109,21 @@ type GenSelfSignedTLSHookConf struct {
 	// Canonical name (CN) of common CA certificate.
 	// If not specified (empty), then (if no CA cert already generated) using CN property of this struct
 	CommonCACanonicalName string
+
+	// CAExpiryDuration is duration of CA certificate validity
+	// if not specified (zero value), then using default value
+	CAExpiryDuration time.Duration
+	// CAOutdatedDuration defines how long before expiration
+	// a CA certificate is considered outdated and should be renewed.
+	// If not specified (zero value), then the default value is used.
+	CAOutdatedDuration time.Duration
+	// CertExpiryDuration is duration of certificate validity
+	// if not specified (zero value), then using default value
+	CertExpiryDuration time.Duration
+	// CertOutdatedDuration defines how long before expiration
+	// a certificate is considered outdated and should be renewed.
+	// If not specified (zero value), then the default value is used.
+	CertOutdatedDuration time.Duration
 }
 
 func (gss GenSelfSignedTLSHookConf) Path() string {
@@ -171,12 +187,14 @@ func GenSelfSignedTLSConfig(conf GenSelfSignedTLSHookConf) *pkg.HookConfig {
 }
 
 type SelfSignedCertValues struct {
-	CA           *certificate.Authority
-	CN           string
-	KeyAlgorithm string
-	KeySize      int
-	SANs         []string
-	Usages       []string
+	CA                 *certificate.Authority
+	CN                 string
+	KeyAlgorithm       string
+	KeySize            int
+	SANs               []string
+	Usages             []string
+	CAExpireDuration   string
+	CertExpireDuration time.Duration
 }
 
 func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, input *pkg.HookInput) error {
@@ -217,6 +235,23 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		panic(fmt.Errorf("bad KeySize/KeyAlgorithm combination: %w", err))
 	}
 
+	caExpiryDuration := caExpiryDurationStr
+	if conf.CAExpiryDuration != 0 {
+		caExpiryDuration = conf.CAExpiryDuration.String()
+	}
+	caOutdatedDuration := caOutdatedDuration
+	if conf.CAOutdatedDuration != 0 {
+		caOutdatedDuration = conf.CAOutdatedDuration
+	}
+	certExpiryDuration := certExpiryDuration
+	if conf.CertExpiryDuration != 0 {
+		certExpiryDuration = conf.CertExpiryDuration
+	}
+	certOutdatedDuration := certOutdatedDuration
+	if conf.CertOutdatedDuration != 0 {
+		certOutdatedDuration = conf.CertOutdatedDuration
+	}
+
 	return func(_ context.Context, input *pkg.HookInput) error {
 		if conf.BeforeHookCheck != nil {
 			passed := conf.BeforeHookCheck(input)
@@ -246,7 +281,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		// 2.2) save new common ca in values
 		// 2.3) mark certificates to regenerate
 		if useCommonCA {
-			auth, err = getCommonCA(input, conf.CommonCAPath())
+			auth, err = getCommonCA(input, conf.CommonCAPath(), caOutdatedDuration)
 			if err != nil {
 				commonCACanonicalName := conf.CommonCACanonicalName
 
@@ -258,7 +293,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 					commonCACanonicalName,
 					certificate.WithKeyAlgo(keyAlgorithm),
 					certificate.WithKeySize(keySize),
-					certificate.WithCAExpiry(caExpiryDurationStr))
+					certificate.WithCAExpiry(caExpiryDuration))
 				if err != nil {
 					return fmt.Errorf("generate ca: %w", err)
 				}
@@ -285,7 +320,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 			// update certificate if less than 6 month left. We create certificate for 10 years, so it looks acceptable
 			// and we don't need to create Crontab schedule
-			caOutdated, err := isOutdatedCA(cert.CA)
+			caOutdated, err := isOutdatedCA(cert.CA, caOutdatedDuration)
 			if err != nil {
 				input.Logger.Warn("is outdated ca", log.Err(err))
 			}
@@ -297,7 +332,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 				caOutdated = true
 			}
 
-			certOutdated, err := isIrrelevantCert(cert.Cert, sans)
+			certOutdated, err := isIrrelevantCert(cert.Cert, sans, certOutdatedDuration)
 			if err != nil {
 				input.Logger.Warn("is irrelevant cert", log.Err(err))
 			}
@@ -309,12 +344,14 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 
 		if mustGenerate {
 			cert, err = generateNewSelfSignedTLS(SelfSignedCertValues{
-				CA:           auth,
-				CN:           cn,
-				KeyAlgorithm: keyAlgorithm,
-				KeySize:      keySize,
-				SANs:         sans,
-				Usages:       usages,
+				CA:                 auth,
+				CN:                 cn,
+				KeyAlgorithm:       keyAlgorithm,
+				KeySize:            keySize,
+				SANs:               sans,
+				Usages:             usages,
+				CAExpireDuration:   caExpiryDuration,
+				CertExpireDuration: certExpiryDuration,
 			})
 
 			if err != nil {
@@ -347,7 +384,7 @@ func convCertToValues(cert *certificate.Certificate) CertValues {
 var ErrCertificateIsNotFound = errors.New("certificate is not found")
 var ErrCAIsInvalidOrOutdated = errors.New("ca is invalid or outdated")
 
-func getCommonCA(input *pkg.HookInput, valKey string) (*certificate.Authority, error) {
+func getCommonCA(input *pkg.HookInput, valKey string, caOutdatedDuration time.Duration) (*certificate.Authority, error) {
 	auth := new(certificate.Authority)
 
 	ca, ok := input.Values.GetOk(valKey)
@@ -360,7 +397,7 @@ func getCommonCA(input *pkg.HookInput, valKey string) (*certificate.Authority, e
 		return nil, err
 	}
 
-	outdated, err := isOutdatedCA(auth.Cert)
+	outdated, err := isOutdatedCA(auth.Cert, caOutdatedDuration)
 	if err != nil {
 		input.Logger.Error("is outdated ca", log.Err(err))
 
@@ -386,7 +423,7 @@ func generateNewSelfSignedTLS(input SelfSignedCertValues) (*certificate.Certific
 			input.CN,
 			certificate.WithKeyAlgo(input.KeyAlgorithm),
 			certificate.WithKeySize(input.KeySize),
-			certificate.WithCAExpiry(caExpiryDurationStr))
+			certificate.WithCAExpiry(input.CAExpireDuration))
 		if err != nil {
 			return nil, fmt.Errorf("generate ca: %w", err)
 		}
@@ -398,7 +435,7 @@ func generateNewSelfSignedTLS(input SelfSignedCertValues) (*certificate.Certific
 		certificate.WithSANs(input.SANs...),
 		certificate.WithKeyAlgo(input.KeyAlgorithm),
 		certificate.WithKeySize(input.KeySize),
-		certificate.WithSigningDefaultExpiry(certExpiryDuration),
+		certificate.WithSigningDefaultExpiry(input.CertExpireDuration),
 		certificate.WithSigningDefaultUsage(input.Usages),
 	)
 	if err != nil {
@@ -409,7 +446,7 @@ func generateNewSelfSignedTLS(input SelfSignedCertValues) (*certificate.Certific
 }
 
 // check certificate duration and SANs list
-func isIrrelevantCert(certData []byte, desiredSANSs []string) (bool, error) {
+func isIrrelevantCert(certData []byte, desiredSANSs []string, certOutdatedDuration time.Duration) (bool, error) {
 	cert, err := certificate.ParseCertificate(certData)
 	if err != nil {
 		return false, fmt.Errorf("parse certificate: %w", err)
@@ -446,7 +483,7 @@ func isIrrelevantCert(certData []byte, desiredSANSs []string) (bool, error) {
 	return false, nil
 }
 
-func isOutdatedCA(ca []byte) (bool, error) {
+func isOutdatedCA(ca []byte, caOutdatedDuration time.Duration) (bool, error) {
 	// Issue a new certificate if there is no CA in the secret.
 	// Without CA it is not possible to validate the certificate.
 	if len(ca) == 0 {
@@ -458,7 +495,7 @@ func isOutdatedCA(ca []byte) (bool, error) {
 		return false, fmt.Errorf("parse certificate: %w", err)
 	}
 
-	if time.Until(cert.NotAfter) < certOutdatedDuration {
+	if time.Until(cert.NotAfter) < caOutdatedDuration {
 		return true, nil
 	}
 
