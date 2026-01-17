@@ -108,7 +108,6 @@ type PatchCollectorOptionApplier interface {
 }
 
 type PatchableValuesCollector interface {
-	Outputer
 	ArrayCount(path string) (int, error)
 	Exists(path string) bool
 	Get(path string) gjson.Result
