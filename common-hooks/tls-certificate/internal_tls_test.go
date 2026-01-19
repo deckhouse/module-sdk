@@ -35,6 +35,8 @@ import (
 	mock "github.com/deckhouse/module-sdk/testing/mock"
 )
 
+const tenYears = (24 * time.Hour) * 365 * 10
+
 func Test_JQFilterTLS(t *testing.T) {
 	t.Run("apply tls", func(t *testing.T) {
 		const rawSecret = `
@@ -162,7 +164,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
 						certificate.WithKeySize(256),
-						certificate.WithCAExpiry("87600h"))
+						certificate.WithCAExpiry(tenYears))
 
 					assert.NoError(t, err)
 
@@ -259,7 +261,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
 						certificate.WithKeySize(256),
-						certificate.WithCAExpiry("87600h"))
+						certificate.WithCAExpiry(tenYears))
 
 					assert.NoError(t, err)
 
@@ -357,7 +359,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
 						certificate.WithKeySize(256),
-						certificate.WithCAExpiry("1h"))
+						certificate.WithCAExpiry(time.Hour))
 
 					assert.NoError(t, err)
 

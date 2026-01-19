@@ -16,7 +16,11 @@ limitations under the License.
 
 package certificate
 
-import "github.com/cloudflare/cfssl/csr"
+import (
+	"time"
+
+	"github.com/cloudflare/cfssl/csr"
+)
 
 type Option func(request *csr.CertificateRequest)
 
@@ -32,9 +36,9 @@ func WithKeySize(size int) Option {
 	}
 }
 
-func WithCAExpiry(expiry string) Option {
+func WithCAExpiry(expiry time.Duration) Option {
 	return func(request *csr.CertificateRequest) {
-		request.CA.Expiry = expiry
+		request.CA.Expiry = expiry.String()
 	}
 }
 

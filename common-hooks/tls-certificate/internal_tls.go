@@ -39,7 +39,7 @@ import (
 )
 
 const (
-	caExpiryDurationStr  = "87600h"                    // 10 years
+	caExpiryDuration     = (24 * time.Hour) * 365 * 10 // 10 years
 	caOutdatedDuration   = (24 * time.Hour) * 365 / 2  // 6 month, just enough to renew CA certificate
 	certExpiryDuration   = (24 * time.Hour) * 365 * 10 // 10 years
 	certOutdatedDuration = (24 * time.Hour) * 365 / 2  // 6 month, just enough to renew certificate
@@ -193,7 +193,7 @@ type SelfSignedCertValues struct {
 	KeySize            int
 	SANs               []string
 	Usages             []string
-	CAExpireDuration   string
+	CAExpireDuration   time.Duration
 	CertExpireDuration time.Duration
 }
 
@@ -235,9 +235,9 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		panic(fmt.Errorf("bad KeySize/KeyAlgorithm combination: %w", err))
 	}
 
-	caExpiryDuration := caExpiryDurationStr
+	caExpiryDuration := caExpiryDuration
 	if conf.CAExpiryDuration != 0 {
-		caExpiryDuration = conf.CAExpiryDuration.String()
+		caExpiryDuration = conf.CAExpiryDuration
 	}
 	caOutdatedDuration := caOutdatedDuration
 	if conf.CAOutdatedDuration != 0 {
