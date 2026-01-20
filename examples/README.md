@@ -14,4 +14,4 @@
 
 [Settings check example](https://github.com/deckhouse/module-sdk/tree/main/examples/settings-check)
 
-[Application hook single file example](https://github.com/deckhouse/module-sdk/tree/main/examples/single-file-application-example)
+[Application hook single file example](https://github.com/deckhouse/module-sdk/tree/main/examples/single-file-app-example)

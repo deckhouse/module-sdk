@@ -75,13 +75,19 @@ func (e *applicationExecutor) Execute(ctx context.Context, req Request) (Result,
 	metricsCollector := metric.NewCollector()
 	namespacedPatchCollector := objectpatch.NewNamespacedCollector(inst.namespace, e.logger.Named("object-patch-collector"))
 
+	dc, ok := req.GetDependencyContainer().(pkg.ApplicationDependencyContainer)
+	if !ok {
+		e.logger.Error("get application dependency container", slog.String("error", "request dependency container is not an ApplicationDependencyContainer"))
+		return nil, fmt.Errorf("get application dependency container: incompatible dependency container type")
+	}
+
 	err = e.hook.HookFunc(ctx, &pkg.ApplicationHookInput{
 		Snapshots:        formattedSnapshots,
-		Instance:         newAppInstance(),
+		Instance:         inst,
 		Values:           patchableValues,
 		PatchCollector:   namespacedPatchCollector,
 		MetricsCollector: metricsCollector,
-		DC:               req.GetDependencyContainer(),
+		DC:               dc,
 		Logger:           e.logger,
 	})
 	if err != nil {

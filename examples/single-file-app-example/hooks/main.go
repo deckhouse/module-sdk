@@ -22,7 +22,7 @@ var config = &pkg.HookConfig{
 	Kubernetes: []pkg.KubernetesConfig{
 		{
 			Name:       SnapshotKey,
-			APIVersion: "metav1",
+			APIVersion: "v1",
 			Kind:       "Pod",
 			NamespaceSelector: &pkg.NamespaceSelector{
 				NameSelector: &pkg.NameSelector{
