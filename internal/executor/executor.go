@@ -11,6 +11,7 @@ import (
 type Executor interface {
 	Config() *pkg.HookConfig
 	Execute(ctx context.Context, req Request) (Result, error)
+	IsApplicationHook() bool
 }
 
 type Request interface {

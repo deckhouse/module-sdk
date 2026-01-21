@@ -175,7 +175,11 @@ func (c *HookController) PrintHookConfigs() error {
 	configs := make([]gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Executors() {
-		configs = append(configs, *remapHookConfigToHookConfig(hook.Config()))
+		hookConfig, err := remapHookConfigToHookConfig(hook.Config(), hook.IsApplicationHook())
+		if err != nil {
+			return fmt.Errorf("failed to remap hook config for %s: %w", hook.Config().Metadata.Name, err)
+		}
+		configs = append(configs, *hookConfig)
 	}
 
 	cfg := &gohook.BatchHookConfig{
@@ -184,7 +188,11 @@ func (c *HookController) PrintHookConfigs() error {
 	}
 
 	if c.registry.Readiness() != nil {
-		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().Config())
+		readinessConfig, err := remapHookConfigToHookConfig(c.registry.Readiness().Config(), false) // Readiness is always a module hook
+		if err != nil {
+			return fmt.Errorf("failed to remap readiness hook config: %w", err)
+		}
+		cfg.Readiness = readinessConfig
 	}
 
 	if c.settingsCheck != nil {
@@ -229,7 +237,11 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	configs := make([]gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Executors() {
-		configs = append(configs, *remapHookConfigToHookConfig(hook.Config()))
+		hookConfig, err := remapHookConfigToHookConfig(hook.Config(), hook.IsApplicationHook())
+		if err != nil {
+			return fmt.Errorf("failed to remap hook config for %s: %w", hook.Config().Metadata.Name, err)
+		}
+		configs = append(configs, *hookConfig)
 	}
 
 	cfg := &gohook.BatchHookConfig{
@@ -238,7 +250,11 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	}
 
 	if c.registry.Readiness() != nil {
-		cfg.Readiness = remapHookConfigToHookConfig(c.registry.Readiness().Config())
+		readinessConfig, err := remapHookConfigToHookConfig(c.registry.Readiness().Config(), false) // Readiness is always a module hook
+		if err != nil {
+			return fmt.Errorf("failed to remap readiness hook config: %w", err)
+		}
+		cfg.Readiness = readinessConfig
 	}
 
 	err = json.NewEncoder(f).Encode(cfg)
@@ -249,7 +265,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	return nil
 }
 
-func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *gohook.HookConfig {
+func remapHookConfigToHookConfig(cfg *pkg.HookConfig, isApplicationHook bool) (*gohook.HookConfig, error) {
 	newHookConfig := &gohook.HookConfig{
 		ConfigVersion: "v1",
 		Metadata:      gohook.GoHookMetadata(cfg.Metadata),
@@ -290,14 +306,29 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *gohook.HookConfig {
 			}
 		}
 
-		if shcfg.NamespaceSelector != nil {
-			newShCfg.NamespaceSelector = &gohook.NamespaceSelector{
+		var targetNamespaceSelector *gohook.NamespaceSelector
+		// For application hooks, automatically add namespace selector to limit resources to the app's namespace
+		if isApplicationHook {
+			appNs := os.Getenv(pkg.EnvApplicationNamespace)
+			if appNs == "" {
+				return nil, fmt.Errorf("application hook %q requires %s env var to be set", cfg.Metadata.Name, pkg.EnvApplicationNamespace)
+			}
+
+			targetNamespaceSelector = &gohook.NamespaceSelector{
+				NameSelector: &gohook.NameSelector{
+					MatchNames: []string{appNs},
+				},
+			}
+		} else if shcfg.NamespaceSelector != nil {
+			targetNamespaceSelector = &gohook.NamespaceSelector{
 				NameSelector: &gohook.NameSelector{
 					MatchNames: shcfg.NamespaceSelector.NameSelector.MatchNames,
 				},
 				LabelSelector: shcfg.NamespaceSelector.LabelSelector,
 			}
 		}
+
+		newShCfg.NamespaceSelector = targetNamespaceSelector
 
 		if shcfg.FieldSelector != nil {
 			fs := &gohook.FieldSelector{
@@ -330,5 +361,5 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) *gohook.HookConfig {
 		newHookConfig.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
 	}
 
-	return newHookConfig
+	return newHookConfig, nil
 }
