@@ -184,10 +184,6 @@ type KubernetesConfig struct {
 func (cfg *KubernetesConfig) Validate() error {
 	var errs error
 
-	if !kebabCaseRegexp.Match([]byte(cfg.Name)) {
-		errs = errors.Join(errs, errors.New("name is not kebab case"))
-	}
-
 	if !camelCaseRegexp.Match([]byte(cfg.Kind)) {
 		errs = errors.Join(errs, errors.New("kind has not letter symbols"))
 	}
