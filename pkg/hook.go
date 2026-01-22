@@ -69,6 +69,14 @@ type HookMetadata struct {
 	Path string
 }
 
+// HookType defines the type of hook
+type HookType string
+
+const (
+	HookTypeModule      HookType = "module"
+	HookTypeApplication HookType = "application"
+)
+
 type HookConfig struct {
 	Metadata   HookMetadata
 	Schedule   []ScheduleConfig
@@ -85,6 +93,8 @@ type HookConfig struct {
 	Queue        string
 
 	Settings *HookConfigSettings
+
+	HookType HookType
 }
 
 var (
