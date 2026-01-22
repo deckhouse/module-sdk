@@ -1,0 +1,3 @@
+fixes:
+  SDK:
+    - Fixed pod eviction functionality within namespaces

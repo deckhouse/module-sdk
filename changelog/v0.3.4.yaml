@@ -1,0 +1,3 @@
+chore:
+  SDK:
+    - Added support for deployment in storage hook

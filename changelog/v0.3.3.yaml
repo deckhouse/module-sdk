@@ -1,0 +1,6 @@
+features:
+  SDK:
+    - Added storage class change hook for dynamic storage management
+chore:
+  SDK:
+    - Created LICENSE file

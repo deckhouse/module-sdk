@@ -1,0 +1,3 @@
+features:
+  SDK:
+    - Added queue to schedule bindings contract for improved scheduling

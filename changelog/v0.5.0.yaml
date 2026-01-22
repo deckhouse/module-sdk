@@ -1,0 +1,3 @@
+chore:
+  SDK:
+    - Bumped Kubernetes dependency to version 0.32

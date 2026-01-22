@@ -35,6 +35,8 @@ import (
 	mock "github.com/deckhouse/module-sdk/testing/mock"
 )
 
+const tenYears = (24 * time.Hour) * 365 * 10
+
 func Test_JQFilterTLS(t *testing.T) {
 	t.Run("apply tls", func(t *testing.T) {
 		const rawSecret = `
@@ -99,8 +101,16 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 			assert.NotEmpty(t, values.Crt)
 			assert.NotEmpty(t, values.Key)
 
+			ca, err := certificate.ParseCertificate([]byte(values.CA))
+			assert.NoError(t, err)
+
+			assert.Equal(t, ca.IsCA, true)
+			assert.Equal(t, ca.NotAfter.Sub(ca.NotBefore), time.Hour*24*365*5)
+
 			cert, err := certificate.ParseCertificate([]byte(values.Crt))
 			assert.NoError(t, err)
+
+			assert.Equal(t, ca.Subject, cert.Issuer)
 
 			assert.Equal(t, []string{
 				"example-webhook",
@@ -109,6 +119,8 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"example-webhook.d8-example-module.svc.cluster.local",
 				"example-webhook.d8-example-module.svc.127.0.0.1.sslip.io",
 			}, cert.DNSNames)
+
+			assert.Equal(t, cert.NotAfter.Sub(cert.NotBefore), time.Hour*24*365)
 		})
 
 		var input = &pkg.HookInput{
@@ -133,6 +145,8 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
 			}),
 			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CAExpiryDuration:     time.Hour * 24 * 365 * 5,
+			CertExpiryDuration:   time.Hour * 24 * 365,
 		}
 
 		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
@@ -150,7 +164,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
 						certificate.WithKeySize(256),
-						certificate.WithCAExpiry("87600h"))
+						certificate.WithCAExpiry(tenYears))
 
 					assert.NoError(t, err)
 
@@ -247,7 +261,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
 						certificate.WithKeySize(256),
-						certificate.WithCAExpiry("87600h"))
+						certificate.WithCAExpiry(tenYears))
 
 					assert.NoError(t, err)
 
@@ -327,6 +341,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
 			}),
 			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CertOutdatedDuration: 2 * time.Hour,
 		}
 
 		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
@@ -344,7 +359,7 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 						"cert-name",
 						certificate.WithKeyAlgo("ecdsa"),
 						certificate.WithKeySize(256),
-						certificate.WithCAExpiry("1h"))
+						certificate.WithCAExpiry(time.Hour))
 
 					assert.NoError(t, err)
 
@@ -424,6 +439,209 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
 			}),
 			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CAOutdatedDuration:   2 * time.Hour,
+		}
+
+		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
+		assert.NoError(t, err)
+	})
+
+	t.Run("wrong ca expiry duration in snapshot", func(t *testing.T) {
+		dc := mock.NewDependencyContainerMock(t)
+
+		snapshots := mock.NewSnapshotsMock(t)
+		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
+			[]pkg.Snapshot{
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) error {
+					ca, err := certificate.GenerateCA(
+						"cert-name",
+						certificate.WithKeyAlgo("ecdsa"),
+						certificate.WithKeySize(256),
+						certificate.WithCAExpiry((24*time.Hour)*365*10))
+
+					assert.NoError(t, err)
+
+					cert, err := certificate.GenerateSelfSignedCert(
+						"cert-name",
+						ca,
+						certificate.WithSANs([]string{
+							"example-webhook",
+							"example-webhook.d8-example-module",
+							"example-webhook.d8-example-module.svc",
+							"example-webhook.d8-example-module.svc.cluster.local",
+							"example-webhook.d8-example-module.svc.127.0.0.1.sslip.io",
+						}...),
+						certificate.WithKeyAlgo("ecdsa"),
+						certificate.WithKeySize(256),
+						certificate.WithSigningDefaultExpiry((24*time.Hour)*365*10),
+						certificate.WithSigningDefaultUsage([]string{
+							"signing",
+							"key encipherment",
+							"requestheader-client",
+						}),
+					)
+
+					assert.NoError(t, err)
+
+					value := v.(*certificate.Certificate)
+					*value = *cert
+
+					return nil
+				}),
+			},
+		)
+
+		values := mock.NewOutputPatchableValuesCollectorMock(t)
+
+		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
+		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})
+
+		values.SetMock.Set(func(path string, v any) {
+			assert.Equal(t, "d8-example-module.internal.webhookCert", path)
+
+			values, ok := v.(tlscertificate.CertValues)
+			assert.True(t, ok)
+
+			assert.NotEmpty(t, values.CA)
+			assert.NotEmpty(t, values.Crt)
+			assert.NotEmpty(t, values.Key)
+
+			ca, err := certificate.ParseCertificate([]byte(values.CA))
+			assert.NoError(t, err)
+			assert.Equal(t, ca.NotAfter.Sub(ca.NotBefore), (24*time.Hour)*365)
+
+			cert, err := certificate.ParseCertificate([]byte(values.Crt))
+			assert.NoError(t, err)
+
+			assert.Equal(t, []string{
+				"example-webhook",
+				"example-webhook.d8-example-module",
+				"example-webhook.d8-example-module.svc",
+				"example-webhook.d8-example-module.svc.cluster.local",
+				"example-webhook.d8-example-module.svc.127.0.0.1.sslip.io",
+			}, cert.DNSNames)
+		})
+
+		var input = &pkg.HookInput{
+			Snapshots: snapshots,
+			Values:    values,
+			DC:        dc,
+			Logger:    log.NewNop(),
+		}
+
+		config := tlscertificate.GenSelfSignedTLSHookConf{
+			CN:            "cert-name",
+			TLSSecretName: "secret-webhook-cert",
+			Namespace:     "some-namespace",
+			SANs: tlscertificate.DefaultSANs([]string{
+				"example-webhook",
+				"example-webhook.d8-example-module",
+				"example-webhook.d8-example-module.svc",
+				"%CLUSTER_DOMAIN%://example-webhook.d8-example-module.svc",
+				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
+			}),
+			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CAExpiryDuration:     (24 * time.Hour) * 365,
+		}
+
+		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
+		assert.NoError(t, err)
+	})
+
+	t.Run("wrong certificate expiry duration in snapshot", func(t *testing.T) {
+		dc := mock.NewDependencyContainerMock(t)
+
+		snapshots := mock.NewSnapshotsMock(t)
+		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then(
+			[]pkg.Snapshot{
+				mock.NewSnapshotMock(t).UnmarshalToMock.Set(func(v any) error {
+					ca, err := certificate.GenerateCA(
+						"cert-name",
+						certificate.WithKeyAlgo("ecdsa"),
+						certificate.WithKeySize(256),
+						certificate.WithCAExpiry((24*time.Hour)*365*10))
+
+					assert.NoError(t, err)
+
+					cert, err := certificate.GenerateSelfSignedCert(
+						"cert-name",
+						ca,
+						certificate.WithSANs([]string{
+							"example-webhook",
+							"example-webhook.d8-example-module",
+							"example-webhook.d8-example-module.svc",
+							"example-webhook.d8-example-module.svc.cluster.local",
+							"example-webhook.d8-example-module.svc.127.0.0.1.sslip.io",
+						}...),
+						certificate.WithKeyAlgo("ecdsa"),
+						certificate.WithKeySize(256),
+						certificate.WithSigningDefaultExpiry((24*time.Hour)*365*10),
+						certificate.WithSigningDefaultUsage([]string{
+							"signing",
+							"key encipherment",
+							"requestheader-client",
+						}),
+					)
+
+					assert.NoError(t, err)
+
+					value := v.(*certificate.Certificate)
+					*value = *cert
+
+					return nil
+				}),
+			},
+		)
+
+		values := mock.NewOutputPatchableValuesCollectorMock(t)
+
+		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
+		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})
+
+		values.SetMock.Set(func(path string, v any) {
+			assert.Equal(t, "d8-example-module.internal.webhookCert", path)
+
+			values, ok := v.(tlscertificate.CertValues)
+			assert.True(t, ok)
+
+			assert.NotEmpty(t, values.CA)
+			assert.NotEmpty(t, values.Crt)
+			assert.NotEmpty(t, values.Key)
+
+			cert, err := certificate.ParseCertificate([]byte(values.Crt))
+			assert.NoError(t, err)
+
+			assert.Equal(t, []string{
+				"example-webhook",
+				"example-webhook.d8-example-module",
+				"example-webhook.d8-example-module.svc",
+				"example-webhook.d8-example-module.svc.cluster.local",
+				"example-webhook.d8-example-module.svc.127.0.0.1.sslip.io",
+			}, cert.DNSNames)
+
+			assert.Equal(t, cert.NotAfter.Sub(cert.NotBefore), (24*time.Hour)*365)
+		})
+
+		var input = &pkg.HookInput{
+			Snapshots: snapshots,
+			Values:    values,
+			DC:        dc,
+			Logger:    log.NewNop(),
+		}
+
+		config := tlscertificate.GenSelfSignedTLSHookConf{
+			CN:            "cert-name",
+			TLSSecretName: "secret-webhook-cert",
+			Namespace:     "some-namespace",
+			SANs: tlscertificate.DefaultSANs([]string{
+				"example-webhook",
+				"example-webhook.d8-example-module",
+				"example-webhook.d8-example-module.svc",
+				"%CLUSTER_DOMAIN%://example-webhook.d8-example-module.svc",
+				"%PUBLIC_DOMAIN%://example-webhook.d8-example-module.svc",
+			}),
+			FullValuesPathPrefix: "d8-example-module.internal.webhookCert",
+			CertExpiryDuration:   (24 * time.Hour) * 365,
 		}
 
 		err := tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)

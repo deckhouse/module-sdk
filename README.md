@@ -72,7 +72,7 @@ Readiness probes let your module report its ready status to the Deckhouse addon-
    Create a function that checks if your module is ready. This function should return `nil` if everything is okay or an error if the module is not ready.
 
    ```go
-   func checkReadiness(ctx context.Context) error {
+   func checkReadiness(ctx context.Context, input *pkg.HookInput) error {
      // Perform your ready checks here
      // Return nil if ready, or error if not ready
      return nil
@@ -85,14 +85,13 @@ Readiness probes let your module report its ready status to the Deckhouse addon-
 
    ```go
    func main() {
-     readinessConfig := app.ReadinessConfig{
-        // you can override it with environment variable
-        // default: 15
+     readinessConfig := &app.ReadinessConfig{
+        // you can override it with environment variable READINESS_INTERVAL_IN_SECONDS
         IntervalInSeconds: 12,
         ProbeFunc: checkReadiness,
      }
      
-     app.RunWithReadinessProbe(readinessConfig)
+     app.Run(app.WithReadiness(readinessConfig))
    }
    ```
 
@@ -107,8 +106,8 @@ Readiness probes let your module report its ready status to the Deckhouse addon-
      "context"
      "fmt"
      "net/http"
-     "time"
 
+     "github.com/deckhouse/module-sdk/pkg"
      "github.com/deckhouse/module-sdk/pkg/app"
      "github.com/deckhouse/module-sdk/pkg/registry"
    )
@@ -117,8 +116,8 @@ Readiness probes let your module report its ready status to the Deckhouse addon-
 
    // Your regular hook config and handler here
 
-   func checkAPIEndpoint(ctx context.Context) error {
-	   client := input.DC.GetHTTPClient()
+   func checkAPIEndpoint(ctx context.Context, input *pkg.HookInput) error {
+     client := input.DC.GetHTTPClient()
      
      req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://api.example.com/readyz", nil)
      if err != nil {
@@ -139,11 +138,11 @@ Readiness probes let your module report its ready status to the Deckhouse addon-
    }
 
    func main() {
-     readinessConfig := app.ReadinessConfig{
+     readinessConfig := &app.ReadinessConfig{
        ProbeFunc: checkAPIEndpoint,
      }
      
-     app.RunWithReadinessProbe(readinessConfig)
+     app.Run(app.WithReadiness(readinessConfig))
    }
    ```
 
@@ -160,8 +159,88 @@ You can configure the readiness probe using environment variables:
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `READINESS_INTERVAL_IN_SECONDS` | How often to check readiness (in seconds) | None |
+| `READINESS_INTERVAL_IN_SECONDS` | How often to check readiness (in seconds) | 15 |
 | `MODULE_NAME` | Module name used in readiness reporting | default-module |
+
+## Adding Settings Validation
+
+Settings validation allows you to validate module configuration values before they are applied, helping prevent misconfigurations.
+
+### How to Add Settings Validation
+
+1. **Create a Validation Function**
+
+   Create a function that validates your module's settings. This function receives the settings and returns a validation result.
+
+   ```go
+   func validateSettings(_ context.Context, input settingscheck.Input) settingscheck.Result {
+     replicas := input.Settings.Get("replicas").Int()
+     
+     if replicas == 0 {
+       return settingscheck.Reject("replicas cannot be 0")
+     }
+     
+     if replicas > 3 {
+       return settingscheck.Reject("replicas cannot be greater than 3")
+     }
+     
+     // You can also return warnings
+     var warnings []string
+     if replicas == 2 {
+       warnings = append(warnings, "using 2 replicas is not recommended for high availability")
+     }
+     
+     return settingscheck.Allow(warnings...)
+   }
+   ```
+
+2. **Register Your Validation Function**
+
+   Register your validation function when initializing your application:
+
+   ```go
+   func main() {
+     app.Run(app.WithSettingsCheck(validateSettings))
+   }
+   ```
+
+3. **Complete Example**
+
+   ```go
+   package main
+
+   import (
+     "context"
+
+     "github.com/deckhouse/module-sdk/pkg/app"
+     "github.com/deckhouse/module-sdk/pkg/settingscheck"
+   )
+
+   func validateSettings(_ context.Context, input settingscheck.Input) settingscheck.Result {
+     replicas := input.Settings.Get("replicas").Int()
+     
+     if replicas == 0 {
+       return settingscheck.Reject("replicas cannot be 0")
+     }
+     
+     if replicas > 3 {
+       return settingscheck.Reject("replicas cannot be greater than 3")
+     }
+     
+     return settingscheck.Allow()
+   }
+
+   func main() {
+     app.Run(app.WithSettingsCheck(validateSettings))
+   }
+   ```
+
+### Behavior
+
+- When validation succeeds (returns `Allow()`), the settings are accepted
+- When validation fails (returns `Reject()`), the settings are rejected with an error message
+- You can include warnings in allowed settings using `Allow(warnings...)`
+- The validation runs before settings are applied to your module
 
 ## Testing
 
@@ -183,7 +262,7 @@ If you want to test your JQ filter, you can use JQ helper like in example [here]
 | HOOK_CONFIG_PATH |  | out/hook_config.json | Path to dump hook configurations in file |
 | CREATE_FILES |  | false | Allow hook to create files by himself (by default, waiting for addon operator to create) |
 | MODULE_NAME |  | default-module | Name of the module, hooks align |
-| READINESS_INTERVAL_IN_SECONDS |  |  | Interval in seconds for module readiness checks (override user values) |
+| READINESS_INTERVAL_IN_SECONDS |  | 15 | Interval in seconds for module readiness checks (override user values) |
 | LOG_LEVEL |  | FATAL | Log level (suppressed by default) |
 
 ### Work sequence

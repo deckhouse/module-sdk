@@ -1,0 +1,14 @@
+features:
+  SDK:
+    - Added liveness probe maturity functionality
+    - Implemented liveness hook for module health monitoring
+fixes:
+  SDK:
+    - Fixed status apply logic
+    - Corrected test issues
+chore:
+  SDK:
+    - Bumped github.com/spf13/cobra from 1.8.1 to 1.9.1
+    - Added GitHub Actions for Go testing
+    - Added comments to snapshot interface
+    - Performed linting and code cleanup
