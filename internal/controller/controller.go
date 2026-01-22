@@ -310,15 +310,6 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 		var targetNamespaceSelector *gohook.NamespaceSelector
 		// For application hooks, automatically add namespace selector to limit resources to the app's namespace
 		// For module hooks, use the configured namespace selector if present
-		if shcfg.NamespaceSelector != nil {
-			targetNamespaceSelector = &gohook.NamespaceSelector{
-				NameSelector: &gohook.NameSelector{
-					MatchNames: shcfg.NamespaceSelector.NameSelector.MatchNames,
-				},
-				LabelSelector: shcfg.NamespaceSelector.LabelSelector,
-			}
-		}
-		// Application hooks without explicit namespace selector get app namespace
 		if isApplicationHook {
 			appNs := os.Getenv(pkg.EnvApplicationNamespace)
 			if appNs == "" {
@@ -328,6 +319,13 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 				NameSelector: &gohook.NameSelector{
 					MatchNames: []string{appNs},
 				},
+			}
+		} else if shcfg.NamespaceSelector != nil {
+			targetNamespaceSelector = &gohook.NamespaceSelector{
+				NameSelector: &gohook.NameSelector{
+					MatchNames: shcfg.NamespaceSelector.NameSelector.MatchNames,
+				},
+				LabelSelector: shcfg.NamespaceSelector.LabelSelector,
 			}
 		}
 

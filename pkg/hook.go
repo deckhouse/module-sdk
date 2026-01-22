@@ -113,13 +113,17 @@ func (cfg *HookConfig) Validate() error {
 		}
 	}
 
+	isApplicationHook := cfg.HookType == HookTypeApplication
 	for _, k := range cfg.Kubernetes {
 		if err := k.Validate(); err != nil {
 			errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': %w", k.Name, err))
 		}
+		if isApplicationHook && k.NamespaceSelector != nil {
+			errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': NamespaceSelector cannot be specified for application hooks, namespace is automatically set to the application's namespace", k.Name))
+		}
 	}
 
-	return nil
+	return errs
 }
 
 type OrderedConfig struct {

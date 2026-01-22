@@ -66,19 +66,18 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookF
 
 	switch any(hook).(type) {
 	case pkg.Hook[*pkg.HookInput]:
+		cfg.HookType = pkg.HookTypeModule
 		r.moduleHooks = append(r.moduleHooks, any(hook).(pkg.Hook[*pkg.HookInput]))
 	case pkg.Hook[*pkg.ApplicationHookInput]:
 
 		cfg.HookType = pkg.HookTypeApplication
-		// Validate that application hooks don't specify namespace selectors
-		for _, k := range cfg.Kubernetes {
-			if k.NamespaceSelector != nil {
-				panic(fmt.Errorf("application hook cannot specify namespace selector in kubernetes config %q", k.Name))
-			}
-		}
 		r.applicationHooks = append(r.applicationHooks, any(hook).(pkg.Hook[*pkg.ApplicationHookInput]))
 	default:
 		panic("unknown hook input type")
+	}
+
+	if err := cfg.Validate(); err != nil {
+		panic(fmt.Sprintf("hook validation failed for %q: %v", cfg.Metadata.Name, err))
 	}
 }
 

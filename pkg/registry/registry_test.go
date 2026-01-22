@@ -70,4 +70,64 @@ func TestRegister(t *testing.T) {
 			return nil
 		})
 	})
+
+	t.Run("Application hook with NamespaceSelector should panic", func(t *testing.T) {
+		hook := &pkg.HookConfig{
+			Metadata: pkg.HookMetadata{
+				Name: "test-hook",
+				Path: "test/path",
+			},
+			Kubernetes: []pkg.KubernetesConfig{
+				{
+					Name:       "test",
+					APIVersion: "v1",
+					Kind:       "Pod",
+					NamespaceSelector: &pkg.NamespaceSelector{
+						NameSelector: &pkg.NameSelector{
+							MatchNames: []string{"some-namespace"},
+						},
+					},
+				},
+			},
+		}
+
+		defer func() {
+			r := recover()
+			require.NotEmpty(t, r)
+			assert.Contains(t, r.(string), "NamespaceSelector cannot be specified for application hooks")
+		}()
+
+		RegisterFunc(hook, func(_ context.Context, _ *pkg.ApplicationHookInput) error {
+			return nil
+		})
+	})
+
+	t.Run("Application hook without NamespaceSelector should not panic", func(t *testing.T) {
+		hook := &pkg.HookConfig{
+			Metadata: pkg.HookMetadata{
+				Name: "test-hook",
+				Path: "test/path",
+			},
+			Kubernetes: []pkg.KubernetesConfig{
+				{
+					Name:       "test",
+					APIVersion: "v1",
+					Kind:       "Pod",
+				},
+			},
+		}
+
+		defer func() {
+			r := recover()
+			assert.NotEqual(t, bindingsPanicMsg, r)
+			// Should not panic with validation error
+			if r != nil {
+				assert.NotContains(t, r.(string), "NamespaceSelector cannot be specified")
+			}
+		}()
+
+		RegisterFunc(hook, func(_ context.Context, _ *pkg.ApplicationHookInput) error {
+			return nil
+		})
+	})
 }
