@@ -188,35 +188,11 @@ func (cfg *KubernetesConfig) Validate() error {
 		errs = errors.Join(errs, errors.New("kind has not letter symbols"))
 	}
 
-	if err := cfg.NameSelector.Validate(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("name selector: %w", err))
-	}
-
-	if err := cfg.NamespaceSelector.Validate(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("namespace selector: %w", err))
-	}
-
 	return errs
 }
 
 type NameSelector struct {
 	MatchNames []string
-}
-
-func (cfg *NameSelector) Validate() error {
-	if cfg == nil {
-		return nil
-	}
-
-	var errs error
-
-	for _, sel := range cfg.MatchNames {
-		if !kebabCaseRegexp.Match([]byte(sel)) {
-			errs = errors.Join(errs, fmt.Errorf("selector is not kebab case '%s'", sel))
-		}
-	}
-
-	return errs
 }
 
 type FieldSelectorRequirement struct {
@@ -232,18 +208,4 @@ type FieldSelector struct {
 type NamespaceSelector struct {
 	NameSelector  *NameSelector
 	LabelSelector *metav1.LabelSelector
-}
-
-func (cfg *NamespaceSelector) Validate() error {
-	if cfg == nil {
-		return nil
-	}
-
-	var errs error
-
-	if err := cfg.NameSelector.Validate(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("name selector: %w", err))
-	}
-
-	return errs
 }
