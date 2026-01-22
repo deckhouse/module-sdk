@@ -57,7 +57,9 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookF
 		panic(bindingsPanicMsg)
 	}
 
-	cfg.Metadata = extractHookMetadata()
+	if cfg.Metadata.Name == "" {
+		cfg.Metadata = extractHookMetadata()
+	}
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -69,7 +71,6 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookF
 		cfg.HookType = pkg.HookTypeModule
 		r.moduleHooks = append(r.moduleHooks, any(hook).(pkg.Hook[*pkg.HookInput]))
 	case pkg.Hook[*pkg.ApplicationHookInput]:
-
 		cfg.HookType = pkg.HookTypeApplication
 		r.applicationHooks = append(r.applicationHooks, any(hook).(pkg.Hook[*pkg.ApplicationHookInput]))
 	default:

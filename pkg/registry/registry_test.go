@@ -75,7 +75,7 @@ func TestRegister(t *testing.T) {
 		hook := &pkg.HookConfig{
 			Metadata: pkg.HookMetadata{
 				Name: "test-hook",
-				Path: "test/path",
+				Path: "test/hooks",
 			},
 			Kubernetes: []pkg.KubernetesConfig{
 				{
@@ -106,7 +106,7 @@ func TestRegister(t *testing.T) {
 		hook := &pkg.HookConfig{
 			Metadata: pkg.HookMetadata{
 				Name: "test-hook",
-				Path: "test/path",
+				Path: "test/hooks",
 			},
 			Kubernetes: []pkg.KubernetesConfig{
 				{
