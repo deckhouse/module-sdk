@@ -144,10 +144,6 @@ type ScheduleConfig struct {
 func (cfg *ScheduleConfig) Validate() error {
 	var errs error
 
-	if !camelCaseRegexp.Match([]byte(cfg.Name)) {
-		errs = errors.Join(errs, errors.New("name has not letter symbols"))
-	}
-
 	if !cronScheduleRegex.Match([]byte(cfg.Crontab)) {
 		errs = errors.Join(errs, errors.New("crontab is not valid"))
 	}
