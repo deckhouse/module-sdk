@@ -10,25 +10,56 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Hook struct {
-	Config        *HookConfig
-	ReconcileFunc ReconcileFunc
+const (
+	EnvApplicationName      = "APPLICATION_NAME"
+	EnvApplicationNamespace = "APPLICATION_NAMESPACE"
+)
+
+type Input interface {
+	*HookInput | *ApplicationHookInput
 }
 
-// ReconcileFunc function which holds the main logic of the hook
-type ReconcileFunc func(ctx context.Context, input *HookInput) error
+type Hook[T Input] struct {
+	Config   *HookConfig
+	HookFunc HookFunc[T]
+}
+
+// HookFunc function which holds the main logic of the hook
+type HookFunc[T Input] func(ctx context.Context, input T) error
 
 type HookInput struct {
 	Snapshots Snapshots
 
-	Values           OutputPatchableValuesCollector
-	ConfigValues     OutputPatchableValuesCollector
-	PatchCollector   OutputPatchCollector
+	Values           PatchableValuesCollector
+	ConfigValues     PatchableValuesCollector
+	PatchCollector   PatchCollector
 	MetricsCollector MetricsCollector
 
 	DC DependencyContainer
 
 	Logger Logger
+}
+
+type ApplicationHookInput struct {
+	Snapshots Snapshots
+
+	Instance Instance
+
+	Values           PatchableValuesCollector
+	PatchCollector   NamespacedPatchCollector
+	MetricsCollector MetricsCollector
+
+	DC ApplicationDependencyContainer
+
+	Logger Logger
+}
+
+// Instance in application instance getter
+type Instance interface {
+	// Name returns application instance name
+	Name() string
+	// Namespace returns application instance namespace
+	Namespace() string
 }
 
 type HookMetadata struct {

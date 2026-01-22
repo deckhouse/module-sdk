@@ -12,4 +12,6 @@
 
 [Dockerfile and Makefile for building](https://github.com/deckhouse/module-sdk/tree/main/examples/scripts)
 
-[Module hook example with settings checking](https://github.com/deckhouse/module-sdk/tree/main/examples/settings-check)
+[Settings check example](https://github.com/deckhouse/module-sdk/tree/main/examples/settings-check)
+
+[Application hook single file example](https://github.com/deckhouse/module-sdk/tree/main/examples/single-file-app-example)
