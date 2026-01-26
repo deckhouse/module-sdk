@@ -280,61 +280,41 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 		})
 	}
 
-	var kubernetesConfigs []interface{}
+	var kubernetesConfigs []pkg.KubernetesConfigInterface
 	if isApplicationHook {
 		for _, shcfg := range cfg.ApplicationKubernetes {
-			kubernetesConfigs = append(kubernetesConfigs, shcfg)
+			kubernetesConfigs = append(kubernetesConfigs, &shcfg)
 		}
 	} else {
 		for _, shcfg := range cfg.Kubernetes {
-			kubernetesConfigs = append(kubernetesConfigs, shcfg)
+			kubernetesConfigs = append(kubernetesConfigs, &shcfg)
 		}
 	}
 
-	for _, shcfgInterface := range kubernetesConfigs {
-		var shcfg pkg.KubernetesConfig
-
-		if appCfg, ok := shcfgInterface.(pkg.ApplicationKubernetesConfig); ok {
-			shcfg = pkg.KubernetesConfig{
-				Name:                         appCfg.Name,
-				APIVersion:                   appCfg.APIVersion,
-				Kind:                         appCfg.Kind,
-				NameSelector:                 appCfg.NameSelector,
-				LabelSelector:                appCfg.LabelSelector,
-				FieldSelector:                appCfg.FieldSelector,
-				ExecuteHookOnEvents:          appCfg.ExecuteHookOnEvents,
-				ExecuteHookOnSynchronization: appCfg.ExecuteHookOnSynchronization,
-				WaitForSynchronization:       appCfg.WaitForSynchronization,
-				JqFilter:                     appCfg.JqFilter,
-				AllowFailure:                 appCfg.AllowFailure,
-				ResynchronizationPeriod:      appCfg.ResynchronizationPeriod,
-			}
-		} else {
-			shcfg = shcfgInterface.(pkg.KubernetesConfig)
-		}
+	for _, shcfg := range kubernetesConfigs {
 		newShCfg := gohook.KubernetesConfig{
-			APIVersion:                   shcfg.APIVersion,
-			Kind:                         shcfg.Kind,
-			Name:                         shcfg.Name,
-			NameSelector:                 (*gohook.NameSelector)(shcfg.NameSelector),
-			LabelSelector:                shcfg.LabelSelector,
-			ExecuteHookOnEvents:          shcfg.ExecuteHookOnEvents,
-			ExecuteHookOnSynchronization: shcfg.ExecuteHookOnSynchronization,
-			WaitForSynchronization:       shcfg.WaitForSynchronization,
+			APIVersion:                   shcfg.GetAPIVersion(),
+			Kind:                         shcfg.GetKind(),
+			Name:                         shcfg.GetName(),
+			NameSelector:                 (*gohook.NameSelector)(shcfg.GetNameSelector()),
+			LabelSelector:                shcfg.GetLabelSelector(),
+			ExecuteHookOnEvents:          shcfg.GetExecuteHookOnEvents(),
+			ExecuteHookOnSynchronization: shcfg.GetExecuteHookOnSynchronization(),
+			WaitForSynchronization:       shcfg.GetWaitForSynchronization(),
 			KeepFullObjectsInMemory:      ptr.To(false),
-			JqFilter:                     shcfg.JqFilter,
-			AllowFailure:                 shcfg.AllowFailure,
-			ResynchronizationPeriod:      shcfg.ResynchronizationPeriod,
+			JqFilter:                     shcfg.GetJqFilter(),
+			AllowFailure:                 shcfg.GetAllowFailure(),
+			ResynchronizationPeriod:      shcfg.GetResynchronizationPeriod(),
 			Queue:                        cfg.Queue,
 		}
 
-		if shcfg.JqFilter == "" {
+		if shcfg.GetJqFilter() == "" {
 			newShCfg.KeepFullObjectsInMemory = ptr.To(true)
 		}
 
-		if shcfg.NameSelector != nil {
+		if shcfg.GetNameSelector() != nil {
 			newShCfg.NameSelector = &gohook.NameSelector{
-				MatchNames: shcfg.NameSelector.MatchNames,
+				MatchNames: shcfg.GetNameSelector().MatchNames,
 			}
 		}
 
@@ -351,23 +331,23 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 					MatchNames: []string{appNs},
 				},
 			}
-		} else if shcfg.NamespaceSelector != nil {
+		} else if hookNs := shcfg.GetNamespaceSelector(); hookNs != nil {
 			targetNamespaceSelector = &gohook.NamespaceSelector{
 				NameSelector: &gohook.NameSelector{
-					MatchNames: shcfg.NamespaceSelector.NameSelector.MatchNames,
+					MatchNames: hookNs.NameSelector.MatchNames,
 				},
-				LabelSelector: shcfg.NamespaceSelector.LabelSelector,
+				LabelSelector: hookNs.LabelSelector,
 			}
 		}
 
 		newShCfg.NamespaceSelector = targetNamespaceSelector
 
-		if shcfg.FieldSelector != nil {
+		if fieldSelector := shcfg.GetFieldSelector(); fieldSelector != nil {
 			fs := &gohook.FieldSelector{
-				MatchExpressions: make([]gohook.FieldSelectorRequirement, 0, len(shcfg.FieldSelector.MatchExpressions)),
+				MatchExpressions: make([]gohook.FieldSelectorRequirement, 0, len(fieldSelector.MatchExpressions)),
 			}
 
-			for _, expr := range shcfg.FieldSelector.MatchExpressions {
+			for _, expr := range fieldSelector.MatchExpressions {
 				fs.MatchExpressions = append(fs.MatchExpressions, gohook.FieldSelectorRequirement(expr))
 			}
 

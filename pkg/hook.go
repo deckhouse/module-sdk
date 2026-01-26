@@ -163,6 +163,23 @@ func (cfg *ScheduleConfig) Validate() error {
 	return errs
 }
 
+// KubernetesConfigInterface is a common interface for KubernetesConfig and ApplicationKubernetesConfig.
+type KubernetesConfigInterface interface {
+	GetName() string
+	GetAPIVersion() string
+	GetKind() string
+	GetNameSelector() *NameSelector
+	GetLabelSelector() *metav1.LabelSelector
+	GetFieldSelector() *FieldSelector
+	GetExecuteHookOnEvents() *bool
+	GetExecuteHookOnSynchronization() *bool
+	GetWaitForSynchronization() *bool
+	GetJqFilter() string
+	GetAllowFailure() *bool
+	GetResynchronizationPeriod() string
+	GetNamespaceSelector() *NamespaceSelector // Returns nil for ApplicationKubernetesConfig
+}
+
 // ApplicationKubernetesConfig is used for application hooks.
 // Application hooks automatically work in the application's namespace,
 // so NamespaceSelector is not allowed.
@@ -222,6 +239,59 @@ type KubernetesConfig struct {
 	ResynchronizationPeriod string
 }
 
+// Implement KubernetesConfigInterface for ApplicationKubernetesConfig
+func (cfg *ApplicationKubernetesConfig) GetName() string {
+	return cfg.Name
+}
+
+func (cfg *ApplicationKubernetesConfig) GetAPIVersion() string {
+	return cfg.APIVersion
+}
+
+func (cfg *ApplicationKubernetesConfig) GetKind() string {
+	return cfg.Kind
+}
+
+func (cfg *ApplicationKubernetesConfig) GetNameSelector() *NameSelector {
+	return cfg.NameSelector
+}
+
+func (cfg *ApplicationKubernetesConfig) GetLabelSelector() *metav1.LabelSelector {
+	return cfg.LabelSelector
+}
+
+func (cfg *ApplicationKubernetesConfig) GetFieldSelector() *FieldSelector {
+	return cfg.FieldSelector
+}
+
+func (cfg *ApplicationKubernetesConfig) GetExecuteHookOnEvents() *bool {
+	return cfg.ExecuteHookOnEvents
+}
+
+func (cfg *ApplicationKubernetesConfig) GetExecuteHookOnSynchronization() *bool {
+	return cfg.ExecuteHookOnSynchronization
+}
+
+func (cfg *ApplicationKubernetesConfig) GetWaitForSynchronization() *bool {
+	return cfg.WaitForSynchronization
+}
+
+func (cfg *ApplicationKubernetesConfig) GetJqFilter() string {
+	return cfg.JqFilter
+}
+
+func (cfg *ApplicationKubernetesConfig) GetAllowFailure() *bool {
+	return cfg.AllowFailure
+}
+
+func (cfg *ApplicationKubernetesConfig) GetResynchronizationPeriod() string {
+	return cfg.ResynchronizationPeriod
+}
+
+func (cfg *ApplicationKubernetesConfig) GetNamespaceSelector() *NamespaceSelector {
+	return nil // Application hooks don't have namespace selector
+}
+
 // you must test JqFilter by yourself
 func (cfg *ApplicationKubernetesConfig) Validate() error {
 	var errs error
@@ -242,6 +312,59 @@ func (cfg *KubernetesConfig) Validate() error {
 	}
 
 	return errs
+}
+
+// Implement KubernetesConfigInterface for KubernetesConfig
+func (cfg *KubernetesConfig) GetName() string {
+	return cfg.Name
+}
+
+func (cfg *KubernetesConfig) GetAPIVersion() string {
+	return cfg.APIVersion
+}
+
+func (cfg *KubernetesConfig) GetKind() string {
+	return cfg.Kind
+}
+
+func (cfg *KubernetesConfig) GetNameSelector() *NameSelector {
+	return cfg.NameSelector
+}
+
+func (cfg *KubernetesConfig) GetLabelSelector() *metav1.LabelSelector {
+	return cfg.LabelSelector
+}
+
+func (cfg *KubernetesConfig) GetFieldSelector() *FieldSelector {
+	return cfg.FieldSelector
+}
+
+func (cfg *KubernetesConfig) GetExecuteHookOnEvents() *bool {
+	return cfg.ExecuteHookOnEvents
+}
+
+func (cfg *KubernetesConfig) GetExecuteHookOnSynchronization() *bool {
+	return cfg.ExecuteHookOnSynchronization
+}
+
+func (cfg *KubernetesConfig) GetWaitForSynchronization() *bool {
+	return cfg.WaitForSynchronization
+}
+
+func (cfg *KubernetesConfig) GetJqFilter() string {
+	return cfg.JqFilter
+}
+
+func (cfg *KubernetesConfig) GetAllowFailure() *bool {
+	return cfg.AllowFailure
+}
+
+func (cfg *KubernetesConfig) GetResynchronizationPeriod() string {
+	return cfg.ResynchronizationPeriod
+}
+
+func (cfg *KubernetesConfig) GetNamespaceSelector() *NamespaceSelector {
+	return cfg.NamespaceSelector
 }
 
 type NameSelector struct {
