@@ -31,6 +31,10 @@ func (e *moduleExecutor) Config() *pkg.HookConfig {
 	return e.hook.Config
 }
 
+func (e *moduleExecutor) IsApplicationHook() bool {
+	return false
+}
+
 func (e *moduleExecutor) Execute(ctx context.Context, req Request) (Result, error) {
 	// Values are patched in-place, so an error can occur.
 	rawValues, err := req.GetValues()

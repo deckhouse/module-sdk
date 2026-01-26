@@ -19,15 +19,14 @@ const (
 var _ = registry.RegisterFunc(config, Handle)
 
 var config = &pkg.HookConfig{
-	Kubernetes: []pkg.KubernetesConfig{
+	HookType: pkg.HookTypeApplication,
+	ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
 		{
 			Name:       SnapshotKey,
 			APIVersion: "v1",
 			Kind:       "Pod",
-			NamespaceSelector: &pkg.NamespaceSelector{
-				NameSelector: &pkg.NameSelector{
-					MatchNames: []string{"kube-system"},
-				},
+			NameSelector: &pkg.NameSelector{
+				MatchNames: []string{"kube-apiserver"},
 			},
 			LabelSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"component": "kube-apiserver"},

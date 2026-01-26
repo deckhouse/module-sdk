@@ -1,6 +1,7 @@
 package registry
 
 import (
+	"fmt"
 	"regexp"
 	"runtime"
 	"strings"
@@ -56,7 +57,9 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookF
 		panic(bindingsPanicMsg)
 	}
 
-	cfg.Metadata = extractHookMetadata()
+	if cfg.Metadata.Name == "" {
+		cfg.Metadata = extractHookMetadata()
+	}
 
 	r.mtx.Lock()
 	defer r.mtx.Unlock()
@@ -65,11 +68,17 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookF
 
 	switch any(hook).(type) {
 	case pkg.Hook[*pkg.HookInput]:
+		cfg.HookType = pkg.HookTypeModule
 		r.moduleHooks = append(r.moduleHooks, any(hook).(pkg.Hook[*pkg.HookInput]))
 	case pkg.Hook[*pkg.ApplicationHookInput]:
+		cfg.HookType = pkg.HookTypeApplication
 		r.applicationHooks = append(r.applicationHooks, any(hook).(pkg.Hook[*pkg.ApplicationHookInput]))
 	default:
 		panic("unknown hook input type")
+	}
+
+	if err := cfg.Validate(); err != nil {
+		panic(fmt.Sprintf("hook validation failed for %q: %v", cfg.Metadata.Name, err))
 	}
 }
 
