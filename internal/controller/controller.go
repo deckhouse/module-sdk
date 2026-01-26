@@ -280,7 +280,38 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 		})
 	}
 
-	for _, shcfg := range cfg.Kubernetes {
+	var kubernetesConfigs []interface{}
+	if isApplicationHook {
+		for _, shcfg := range cfg.ApplicationKubernetes {
+			kubernetesConfigs = append(kubernetesConfigs, shcfg)
+		}
+	} else {
+		for _, shcfg := range cfg.Kubernetes {
+			kubernetesConfigs = append(kubernetesConfigs, shcfg)
+		}
+	}
+
+	for _, shcfgInterface := range kubernetesConfigs {
+		var shcfg pkg.KubernetesConfig
+
+		if appCfg, ok := shcfgInterface.(pkg.ApplicationKubernetesConfig); ok {
+			shcfg = pkg.KubernetesConfig{
+				Name:                         appCfg.Name,
+				APIVersion:                   appCfg.APIVersion,
+				Kind:                         appCfg.Kind,
+				NameSelector:                 appCfg.NameSelector,
+				LabelSelector:                appCfg.LabelSelector,
+				FieldSelector:                appCfg.FieldSelector,
+				ExecuteHookOnEvents:          appCfg.ExecuteHookOnEvents,
+				ExecuteHookOnSynchronization: appCfg.ExecuteHookOnSynchronization,
+				WaitForSynchronization:       appCfg.WaitForSynchronization,
+				JqFilter:                     appCfg.JqFilter,
+				AllowFailure:                 appCfg.AllowFailure,
+				ResynchronizationPeriod:      appCfg.ResynchronizationPeriod,
+			}
+		} else {
+			shcfg = shcfgInterface.(pkg.KubernetesConfig)
+		}
 		newShCfg := gohook.KubernetesConfig{
 			APIVersion:                   shcfg.APIVersion,
 			Kind:                         shcfg.Kind,

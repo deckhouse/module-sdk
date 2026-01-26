@@ -78,9 +78,10 @@ const (
 )
 
 type HookConfig struct {
-	Metadata   HookMetadata
-	Schedule   []ScheduleConfig
-	Kubernetes []KubernetesConfig
+	Metadata              HookMetadata
+	Schedule              []ScheduleConfig
+	Kubernetes            []KubernetesConfig
+	ApplicationKubernetes []ApplicationKubernetesConfig
 	// OnStartup runs hook on module/global startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
@@ -113,12 +114,24 @@ func (cfg *HookConfig) Validate() error {
 	}
 
 	isApplicationHook := cfg.HookType == HookTypeApplication
-	for _, k := range cfg.Kubernetes {
-		if err := k.Validate(); err != nil {
-			errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': %w", k.Name, err))
+
+	if isApplicationHook {
+		if len(cfg.Kubernetes) > 0 {
+			errs = errors.Join(errs, errors.New("application hooks must use ApplicationKubernetes field, not Kubernetes"))
 		}
-		if isApplicationHook && k.NamespaceSelector != nil {
-			errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': NamespaceSelector cannot be specified for application hooks, namespace is automatically set to the application's namespace", k.Name))
+		for _, k := range cfg.ApplicationKubernetes {
+			if err := k.Validate(); err != nil {
+				errs = errors.Join(errs, fmt.Errorf("application kubernetes config with name '%s': %w", k.Name, err))
+			}
+		}
+	} else {
+		if len(cfg.ApplicationKubernetes) > 0 {
+			errs = errors.Join(errs, errors.New("module hooks must use Kubernetes field, not ApplicationKubernetes"))
+		}
+		for _, k := range cfg.Kubernetes {
+			if err := k.Validate(); err != nil {
+				errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': %w", k.Name, err))
+			}
 		}
 	}
 
@@ -150,6 +163,36 @@ func (cfg *ScheduleConfig) Validate() error {
 	return errs
 }
 
+// ApplicationKubernetesConfig is used for application hooks.
+// Application hooks automatically work in the application's namespace,
+// so NamespaceSelector is not allowed.
+type ApplicationKubernetesConfig struct {
+	// Name is a key in snapshots map.
+	Name string
+	// APIVersion of objects. "v1" is used if not set.
+	APIVersion string
+	// Kind of objects.
+	Kind string
+	// NameSelector used to subscribe on object by its name.
+	NameSelector *NameSelector
+	// LabelSelector used to subscribe on objects by matching their labels.
+	LabelSelector *metav1.LabelSelector
+	// FieldSelector used to subscribe on objects by matching specific fields (the list of fields is narrow, see shell-operator documentation).
+	FieldSelector *FieldSelector
+	// ExecuteHookOnEvents is true by default. Set to false if only snapshot update is needed.
+	ExecuteHookOnEvents *bool
+	// ExecuteHookOnSynchronization is true by default. Set to false if only snapshot update is needed.
+	ExecuteHookOnSynchronization *bool
+	// WaitForSynchronization is true by default. Set to false if beforeHelm is not required this snapshot on start.
+	WaitForSynchronization *bool
+	// JQ filter to filter results from kubernetes objects
+	JqFilter string
+	// Allow to fail hook
+	AllowFailure *bool
+
+	ResynchronizationPeriod string
+}
+
 type KubernetesConfig struct {
 	// Name is a key in snapshots map.
 	Name string
@@ -177,6 +220,17 @@ type KubernetesConfig struct {
 	AllowFailure *bool
 
 	ResynchronizationPeriod string
+}
+
+// you must test JqFilter by yourself
+func (cfg *ApplicationKubernetesConfig) Validate() error {
+	var errs error
+
+	if !camelCaseRegexp.Match([]byte(cfg.Kind)) {
+		errs = errors.Join(errs, errors.New("kind has not letter symbols"))
+	}
+
+	return errs
 }
 
 // you must test JqFilter by yourself

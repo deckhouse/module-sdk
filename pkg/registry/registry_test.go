@@ -71,22 +71,18 @@ func TestRegister(t *testing.T) {
 		})
 	})
 
-	t.Run("Application hook with NamespaceSelector should panic", func(t *testing.T) {
+	t.Run("Application hook with Kubernetes field should panic", func(t *testing.T) {
 		hook := &pkg.HookConfig{
 			Metadata: pkg.HookMetadata{
 				Name: "test-hook",
 				Path: "test/hooks",
 			},
+			HookType: pkg.HookTypeApplication,
 			Kubernetes: []pkg.KubernetesConfig{
 				{
 					Name:       "test",
 					APIVersion: "v1",
 					Kind:       "Pod",
-					NamespaceSelector: &pkg.NamespaceSelector{
-						NameSelector: &pkg.NameSelector{
-							MatchNames: []string{"some-namespace"},
-						},
-					},
 				},
 			},
 		}
@@ -94,7 +90,7 @@ func TestRegister(t *testing.T) {
 		defer func() {
 			r := recover()
 			require.NotEmpty(t, r)
-			assert.Contains(t, r.(string), "NamespaceSelector cannot be specified for application hooks")
+			assert.Contains(t, r.(string), "application hooks must use ApplicationKubernetes field")
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.ApplicationHookInput) error {
@@ -102,13 +98,14 @@ func TestRegister(t *testing.T) {
 		})
 	})
 
-	t.Run("Application hook without NamespaceSelector should not panic", func(t *testing.T) {
+	t.Run("Application hook with ApplicationKubernetes should not panic", func(t *testing.T) {
 		hook := &pkg.HookConfig{
 			Metadata: pkg.HookMetadata{
 				Name: "test-hook",
 				Path: "test/hooks",
 			},
-			Kubernetes: []pkg.KubernetesConfig{
+			HookType: pkg.HookTypeApplication,
+			ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
 				{
 					Name:       "test",
 					APIVersion: "v1",
@@ -120,10 +117,6 @@ func TestRegister(t *testing.T) {
 		defer func() {
 			r := recover()
 			assert.NotEqual(t, bindingsPanicMsg, r)
-			// Should not panic with validation error
-			if r != nil {
-				assert.NotContains(t, r.(string), "NamespaceSelector cannot be specified")
-			}
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.ApplicationHookInput) error {

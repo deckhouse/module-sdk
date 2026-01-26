@@ -35,7 +35,6 @@ func (m *mockExecutor) IsApplicationHook() bool {
 }
 
 // Application Hook without namespace selector.
-// Waiting: Namespace is automatically injected from the env variable.
 func Test_remapHookConfigToHookConfig_ApplicationHook_InjectsNamespace(t *testing.T) {
 	appName := "my-test-app"
 	t.Setenv(pkg.EnvApplicationNamespace, appName)
@@ -43,7 +42,7 @@ func Test_remapHookConfigToHookConfig_ApplicationHook_InjectsNamespace(t *testin
 	config := &pkg.HookConfig{
 		Metadata: pkg.HookMetadata{Name: "app-hook-simple"},
 		HookType: pkg.HookTypeApplication,
-		Kubernetes: []pkg.KubernetesConfig{
+		ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
 			{Name: "pods", APIVersion: "v1", Kind: "Pod"},
 		},
 	}
@@ -67,7 +66,7 @@ func Test_remapHookConfigToHookConfig_ApplicationHook_ErrorsOnMissingEnv(t *test
 	config := &pkg.HookConfig{
 		Metadata: pkg.HookMetadata{Name: "app-hook-broken"},
 		HookType: pkg.HookTypeApplication,
-		Kubernetes: []pkg.KubernetesConfig{
+		ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
 			{Name: "pods", APIVersion: "v1", Kind: "Pod"},
 		},
 	}
@@ -134,41 +133,4 @@ func Test_remapHookConfigToHookConfig_ModuleHook_PreservesCustomSelector(t *test
 	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector)
 
 	assert.Equal(t, []string{targetNs}, result.Kubernetes[0].NamespaceSelector.NameSelector.MatchNames)
-}
-
-// Application Hook with explicitly specified namespace selector.
-// Waiting: The specified NamespaceSelector is ignored, and the application's namespace is used instead.
-func Test_remapHookConfigToHookConfig_ApplicationHook_IgnoresCustomSelector(t *testing.T) {
-	appName := "my-test-app"
-	t.Setenv(pkg.EnvApplicationNamespace, appName)
-
-	config := &pkg.HookConfig{
-		Metadata: pkg.HookMetadata{Name: "app-hook-with-selector"},
-		HookType: pkg.HookTypeApplication,
-		Kubernetes: []pkg.KubernetesConfig{
-			{
-				Name:       "pods",
-				APIVersion: "v1",
-				Kind:       "Pod",
-				// Even if NamespaceSelector is specified, it should be ignored
-				NamespaceSelector: &pkg.NamespaceSelector{
-					NameSelector: &pkg.NameSelector{
-						MatchNames: []string{"wrong-namespace"},
-					},
-				},
-			},
-		},
-	}
-
-	mockExec := &mockExecutor{isAppHook: true, config: config}
-
-	result, err := remapHookConfigToHookConfig(mockExec.Config())
-	require.NoError(t, err)
-
-	require.Len(t, result.Kubernetes, 1)
-	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector)
-	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector.NameSelector)
-	// Should use application namespace, not the specified one
-	assert.Equal(t, []string{appName}, result.Kubernetes[0].NamespaceSelector.NameSelector.MatchNames)
-	assert.NotEqual(t, []string{"wrong-namespace"}, result.Kubernetes[0].NamespaceSelector.NameSelector.MatchNames)
 }
