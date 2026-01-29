@@ -28,19 +28,16 @@ type Config interface {
 	GetMetadata() HookMetadata
 	SetMetadata(HookMetadata)
 	GetHookType() HookType
-	SetHookType(HookType)
 	Validate() error
 }
 
 func (cfg *HookConfig) GetMetadata() HookMetadata  { return cfg.Metadata }
 func (cfg *HookConfig) SetMetadata(m HookMetadata) { cfg.Metadata = m }
-func (cfg *HookConfig) GetHookType() HookType      { return cfg.HookType }
-func (cfg *HookConfig) SetHookType(t HookType)     { cfg.HookType = t }
+func (cfg *HookConfig) GetHookType() HookType      { return HookTypeModule }
 
 func (cfg *ApplicationHookConfig) GetMetadata() HookMetadata  { return cfg.Metadata }
 func (cfg *ApplicationHookConfig) SetMetadata(m HookMetadata) { cfg.Metadata = m }
-func (cfg *ApplicationHookConfig) GetHookType() HookType      { return cfg.HookType }
-func (cfg *ApplicationHookConfig) SetHookType(t HookType)     { cfg.HookType = t }
+func (cfg *ApplicationHookConfig) GetHookType() HookType      { return HookTypeApplication }
 
 type ApplicationHookConfig struct {
 	Metadata HookMetadata
@@ -60,8 +57,6 @@ type ApplicationHookConfig struct {
 	Queue        string
 
 	Settings *HookConfigSettings
-
-	HookType HookType
 }
 
 // HookFunc function which holds the main logic of the hook
@@ -152,8 +147,6 @@ type HookConfig struct {
 	Queue        string
 
 	Settings *HookConfigSettings
-
-	HookType HookType
 }
 
 var (

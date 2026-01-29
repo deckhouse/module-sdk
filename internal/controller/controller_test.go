@@ -18,11 +18,6 @@ type mockExecutor struct {
 }
 
 func (m *mockExecutor) Config() pkg.Config {
-	if m.isAppHook {
-		m.config.SetHookType(pkg.HookTypeApplication)
-	} else {
-		m.config.SetHookType(pkg.HookTypeModule)
-	}
 	return m.config
 }
 
@@ -85,7 +80,6 @@ func Test_remapHookConfigToHookConfig_ModuleHook_PreservesNilSelector(t *testing
 
 	config := &pkg.HookConfig{
 		Metadata: pkg.HookMetadata{Name: "module-hook-global"},
-		HookType: pkg.HookTypeModule,
 		Kubernetes: []pkg.KubernetesConfig{
 			{Name: "nodes", APIVersion: "v1", Kind: "Node"},
 		},
@@ -107,7 +101,6 @@ func Test_remapHookConfigToHookConfig_ModuleHook_PreservesCustomSelector(t *test
 
 	config := &pkg.HookConfig{
 		Metadata: pkg.HookMetadata{Name: "module-hook-system"},
-		HookType: pkg.HookTypeModule,
 		Kubernetes: []pkg.KubernetesConfig{
 			{
 				Name:       "pods",

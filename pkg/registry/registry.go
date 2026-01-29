@@ -70,10 +70,8 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg pkg.Config, f pkg.HookFunc[T
 
 	switch any(hook).(type) {
 	case pkg.Hook[*pkg.HookInput]:
-		cfg.SetHookType(pkg.HookTypeModule)
 		r.moduleHooks = append(r.moduleHooks, any(hook).(pkg.Hook[*pkg.HookInput]))
 	case pkg.Hook[*pkg.ApplicationHookInput]:
-		cfg.SetHookType(pkg.HookTypeApplication)
 		r.applicationHooks = append(r.applicationHooks, any(hook).(pkg.Hook[*pkg.ApplicationHookInput]))
 	default:
 		panic("unknown hook input type")
