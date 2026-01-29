@@ -20,8 +20,48 @@ type Input interface {
 }
 
 type Hook[T Input] struct {
-	Config   *HookConfig
+	Config   Config
 	HookFunc HookFunc[T]
+}
+
+type Config interface {
+	GetMetadata() HookMetadata
+	SetMetadata(HookMetadata)
+	GetHookType() HookType
+	SetHookType(HookType)
+	Validate() error
+}
+
+func (cfg *HookConfig) GetMetadata() HookMetadata  { return cfg.Metadata }
+func (cfg *HookConfig) SetMetadata(m HookMetadata) { cfg.Metadata = m }
+func (cfg *HookConfig) GetHookType() HookType      { return cfg.HookType }
+func (cfg *HookConfig) SetHookType(t HookType)     { cfg.HookType = t }
+
+func (cfg *ApplicationHookConfig) GetMetadata() HookMetadata  { return cfg.Metadata }
+func (cfg *ApplicationHookConfig) SetMetadata(m HookMetadata) { cfg.Metadata = m }
+func (cfg *ApplicationHookConfig) GetHookType() HookType      { return cfg.HookType }
+func (cfg *ApplicationHookConfig) SetHookType(t HookType)     { cfg.HookType = t }
+
+type ApplicationHookConfig struct {
+	Metadata HookMetadata
+	Schedule []ScheduleConfig
+
+	Kubernetes []ApplicationKubernetesConfig
+
+	// OnStartup runs hook on module/global startup
+	// Attention! During the startup you don't have snapshots available
+	// use native KubeClient to fetch resources
+	OnStartup         *OrderedConfig
+	OnBeforeHelm      *OrderedConfig
+	OnAfterHelm       *OrderedConfig
+	OnAfterDeleteHelm *OrderedConfig
+
+	AllowFailure bool
+	Queue        string
+
+	Settings *HookConfigSettings
+
+	HookType HookType
 }
 
 // HookFunc function which holds the main logic of the hook
@@ -77,11 +117,29 @@ const (
 	HookTypeApplication HookType = "application"
 )
 
+func (cfg *ApplicationHookConfig) Validate() error {
+	var errs error
+	for _, s := range cfg.Schedule {
+		if err := s.Validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("schedule with name '%s': %w", s.Name, err))
+		}
+	}
+
+	for _, k := range cfg.Kubernetes {
+		if err := k.Validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("application kubernetes config with name '%s': %w", k.Name, err))
+		}
+	}
+
+	return errs
+}
+
 type HookConfig struct {
-	Metadata              HookMetadata
-	Schedule              []ScheduleConfig
-	Kubernetes            []KubernetesConfig
-	ApplicationKubernetes []ApplicationKubernetesConfig
+	Metadata HookMetadata
+	Schedule []ScheduleConfig
+
+	Kubernetes []KubernetesConfig
+
 	// OnStartup runs hook on module/global startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
@@ -113,25 +171,9 @@ func (cfg *HookConfig) Validate() error {
 		}
 	}
 
-	isApplicationHook := cfg.HookType == HookTypeApplication
-
-	if isApplicationHook {
-		if len(cfg.Kubernetes) > 0 {
-			errs = errors.Join(errs, errors.New("application hooks must use ApplicationKubernetes field, not Kubernetes"))
-		}
-		for _, k := range cfg.ApplicationKubernetes {
-			if err := k.Validate(); err != nil {
-				errs = errors.Join(errs, fmt.Errorf("application kubernetes config with name '%s': %w", k.Name, err))
-			}
-		}
-	} else {
-		if len(cfg.ApplicationKubernetes) > 0 {
-			errs = errors.Join(errs, errors.New("module hooks must use Kubernetes field, not ApplicationKubernetes"))
-		}
-		for _, k := range cfg.Kubernetes {
-			if err := k.Validate(); err != nil {
-				errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': %w", k.Name, err))
-			}
+	for _, k := range cfg.Kubernetes {
+		if err := k.Validate(); err != nil {
+			errs = errors.Join(errs, fmt.Errorf("kubernetes config with name '%s': %w", k.Name, err))
 		}
 	}
 

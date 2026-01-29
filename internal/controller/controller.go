@@ -65,8 +65,10 @@ func addReadinessHook(reg *execregistry.Registry, cfg *ReadinessConfig) {
 	}
 
 	config, f := readiness.NewReadinessHookEM(readinessConfig)
-	config.Metadata.Name = "readiness"
-	config.Metadata.Path = "common-hooks/readiness"
+	meta := config.GetMetadata()
+	meta.Name = "readiness"
+	meta.Path = "common-hooks/readiness"
+	config.SetMetadata(meta)
 
 	reg.SetReadinessHook(pkg.Hook[*pkg.HookInput]{Config: config, HookFunc: f})
 }
@@ -76,7 +78,7 @@ func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
 
 	hooksmetas := make([]pkg.HookMetadata, 0, len(hooks))
 	for _, hook := range hooks {
-		hooksmetas = append(hooksmetas, hook.Config().Metadata)
+		hooksmetas = append(hooksmetas, hook.Config().GetMetadata())
 	}
 
 	return hooksmetas
@@ -94,7 +96,7 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 
 	hook := hooks[idx]
 
-	transport := file.NewTransport(c.fConfig, hook.Config().Metadata.Name, c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.Config().GetMetadata().Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -127,7 +129,7 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 		return ErrReadinessHookDoesNotExists
 	}
 
-	transport := file.NewTransport(c.fConfig, hook.Config().Metadata.Name, c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.Config().GetMetadata().Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -177,7 +179,7 @@ func (c *HookController) PrintHookConfigs() error {
 	for _, hook := range c.registry.Executors() {
 		hookConfig, err := remapHookConfigToHookConfig(hook.Config())
 		if err != nil {
-			return fmt.Errorf("failed to remap hook config for %s: %w", hook.Config().Metadata.Name, err)
+			return fmt.Errorf("failed to remap hook config for %s: %w", hook.Config().GetMetadata().Name, err)
 		}
 		configs = append(configs, *hookConfig)
 	}
@@ -239,7 +241,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	for _, hook := range c.registry.Executors() {
 		hookConfig, err := remapHookConfigToHookConfig(hook.Config())
 		if err != nil {
-			return fmt.Errorf("failed to remap hook config for %s: %w", hook.Config().Metadata.Name, err)
+			return fmt.Errorf("failed to remap hook config for %s: %w", hook.Config().GetMetadata().Name, err)
 		}
 		configs = append(configs, *hookConfig)
 	}
@@ -265,30 +267,39 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	return nil
 }
 
-func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error) {
-	isApplicationHook := cfg.HookType == pkg.HookTypeApplication
+func remapHookConfigToHookConfig(cfg pkg.Config) (*gohook.HookConfig, error) {
+	isApplicationHook := cfg.GetHookType() == pkg.HookTypeApplication
 	newHookConfig := &gohook.HookConfig{
 		ConfigVersion: "v1",
-		Metadata:      gohook.GoHookMetadata(cfg.Metadata),
+		Metadata:      gohook.GoHookMetadata(cfg.GetMetadata()),
 	}
 
-	for _, scfg := range cfg.Schedule {
+	var schedule []pkg.ScheduleConfig
+	var kubernetesConfigs []pkg.KubernetesConfigInterface
+	var queue string
+
+	if isApplicationHook {
+		appCfg := cfg.(*pkg.ApplicationHookConfig)
+		schedule = appCfg.Schedule
+		queue = appCfg.Queue
+		for i := range appCfg.Kubernetes {
+			kubernetesConfigs = append(kubernetesConfigs, &appCfg.Kubernetes[i])
+		}
+	} else {
+		moduleCfg := cfg.(*pkg.HookConfig)
+		schedule = moduleCfg.Schedule
+		queue = moduleCfg.Queue
+		for i := range moduleCfg.Kubernetes {
+			kubernetesConfigs = append(kubernetesConfigs, &moduleCfg.Kubernetes[i])
+		}
+	}
+
+	for _, scfg := range schedule {
 		newHookConfig.Schedule = append(newHookConfig.Schedule, gohook.ScheduleConfig{
 			Name:    scfg.Name,
 			Crontab: scfg.Crontab,
-			Queue:   cfg.Queue,
+			Queue:   queue,
 		})
-	}
-
-	var kubernetesConfigs []pkg.KubernetesConfigInterface
-	if isApplicationHook {
-		for _, shcfg := range cfg.ApplicationKubernetes {
-			kubernetesConfigs = append(kubernetesConfigs, &shcfg)
-		}
-	} else {
-		for _, shcfg := range cfg.Kubernetes {
-			kubernetesConfigs = append(kubernetesConfigs, &shcfg)
-		}
 	}
 
 	for _, shcfg := range kubernetesConfigs {
@@ -305,7 +316,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 			JqFilter:                     shcfg.GetJqFilter(),
 			AllowFailure:                 shcfg.GetAllowFailure(),
 			ResynchronizationPeriod:      shcfg.GetResynchronizationPeriod(),
-			Queue:                        cfg.Queue,
+			Queue:                        queue,
 		}
 
 		if shcfg.GetJqFilter() == "" {
@@ -324,7 +335,7 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 		if isApplicationHook {
 			appNs := os.Getenv(pkg.EnvApplicationNamespace)
 			if appNs == "" {
-				return nil, fmt.Errorf("application hook %q requires %s env var to be set", cfg.Metadata.Name, pkg.EnvApplicationNamespace)
+				return nil, fmt.Errorf("application hook %q requires %s env var to be set", cfg.GetMetadata().Name, pkg.EnvApplicationNamespace)
 			}
 			targetNamespaceSelector = &gohook.NamespaceSelector{
 				NameSelector: &gohook.NameSelector{
@@ -357,20 +368,35 @@ func remapHookConfigToHookConfig(cfg *pkg.HookConfig) (*gohook.HookConfig, error
 		newHookConfig.Kubernetes = append(newHookConfig.Kubernetes, newShCfg)
 	}
 
-	if cfg.OnStartup != nil {
-		newHookConfig.OnStartup = ptr.To(cfg.OnStartup.Order)
+	var onStartup, onBeforeHelm, onAfterHelm, onAfterDeleteHelm *pkg.OrderedConfig
+	if isApplicationHook {
+		appCfg := cfg.(*pkg.ApplicationHookConfig)
+		onStartup = appCfg.OnStartup
+		onBeforeHelm = appCfg.OnBeforeHelm
+		onAfterHelm = appCfg.OnAfterHelm
+		onAfterDeleteHelm = appCfg.OnAfterDeleteHelm
+	} else {
+		moduleCfg := cfg.(*pkg.HookConfig)
+		onStartup = moduleCfg.OnStartup
+		onBeforeHelm = moduleCfg.OnBeforeHelm
+		onAfterHelm = moduleCfg.OnAfterHelm
+		onAfterDeleteHelm = moduleCfg.OnAfterDeleteHelm
 	}
 
-	if cfg.OnBeforeHelm != nil {
-		newHookConfig.OnBeforeHelm = ptr.To(cfg.OnBeforeHelm.Order)
+	if onStartup != nil {
+		newHookConfig.OnStartup = ptr.To(onStartup.Order)
 	}
 
-	if cfg.OnAfterHelm != nil {
-		newHookConfig.OnAfterHelm = ptr.To(cfg.OnAfterHelm.Order)
+	if onBeforeHelm != nil {
+		newHookConfig.OnBeforeHelm = ptr.To(onBeforeHelm.Order)
 	}
 
-	if cfg.OnAfterDeleteHelm != nil {
-		newHookConfig.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
+	if onAfterHelm != nil {
+		newHookConfig.OnAfterHelm = ptr.To(onAfterHelm.Order)
+	}
+
+	if onAfterDeleteHelm != nil {
+		newHookConfig.OnAfterDeleteHelm = ptr.To(onAfterDeleteHelm.Order)
 	}
 
 	return newHookConfig, nil

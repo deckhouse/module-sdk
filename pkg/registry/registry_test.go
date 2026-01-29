@@ -71,41 +71,13 @@ func TestRegister(t *testing.T) {
 		})
 	})
 
-	t.Run("Application hook with Kubernetes field should panic", func(t *testing.T) {
-		hook := &pkg.HookConfig{
+	t.Run("Application hook should not panic", func(t *testing.T) {
+		hook := &pkg.ApplicationHookConfig{
 			Metadata: pkg.HookMetadata{
 				Name: "test-hook",
 				Path: "test/hooks",
 			},
-			HookType: pkg.HookTypeApplication,
-			Kubernetes: []pkg.KubernetesConfig{
-				{
-					Name:       "test",
-					APIVersion: "v1",
-					Kind:       "Pod",
-				},
-			},
-		}
-
-		defer func() {
-			r := recover()
-			require.NotEmpty(t, r)
-			assert.Contains(t, r.(string), "application hooks must use ApplicationKubernetes field")
-		}()
-
-		RegisterFunc(hook, func(_ context.Context, _ *pkg.ApplicationHookInput) error {
-			return nil
-		})
-	})
-
-	t.Run("Application hook with ApplicationKubernetes should not panic", func(t *testing.T) {
-		hook := &pkg.HookConfig{
-			Metadata: pkg.HookMetadata{
-				Name: "test-hook",
-				Path: "test/hooks",
-			},
-			HookType: pkg.HookTypeApplication,
-			ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
+			Kubernetes: []pkg.ApplicationKubernetesConfig{
 				{
 					Name:       "test",
 					APIVersion: "v1",

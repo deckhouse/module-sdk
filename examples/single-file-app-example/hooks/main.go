@@ -18,9 +18,8 @@ const (
 
 var _ = registry.RegisterFunc(config, Handle)
 
-var config = &pkg.HookConfig{
-	HookType: pkg.HookTypeApplication,
-	ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
+var config = &pkg.ApplicationHookConfig{
+	Kubernetes: []pkg.ApplicationKubernetesConfig{
 		{
 			Name:       SnapshotKey,
 			APIVersion: "v1",

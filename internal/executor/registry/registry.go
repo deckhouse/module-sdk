@@ -36,18 +36,18 @@ func (r *Registry) Readiness() executor.Executor {
 
 func (r *Registry) RegisterModuleHooks(hooks ...pkg.Hook[*pkg.HookInput]) {
 	for _, h := range hooks {
-		exec := executor.NewModuleExecutor(h, r.logger.Named(h.Config.Metadata.Name))
+		exec := executor.NewModuleExecutor(h, r.logger.Named(h.Config.GetMetadata().Name))
 		r.executors = append(r.executors, exec)
 	}
 }
 
 func (r *Registry) RegisterAppHooks(hooks ...pkg.Hook[*pkg.ApplicationHookInput]) {
 	for _, h := range hooks {
-		exec := executor.NewApplicationExecutor(h, r.logger.Named(h.Config.Metadata.Name))
+		exec := executor.NewApplicationExecutor(h, r.logger.Named(h.Config.GetMetadata().Name))
 		r.executors = append(r.executors, exec)
 	}
 }
 
 func (r *Registry) SetReadinessHook(h pkg.Hook[*pkg.HookInput]) {
-	r.readinessExecutor = executor.NewModuleExecutor(h, r.logger.Named(h.Config.Metadata.Name))
+	r.readinessExecutor = executor.NewModuleExecutor(h, r.logger.Named(h.Config.GetMetadata().Name))
 }

@@ -47,18 +47,20 @@ func (h *HookRegistry) ApplicationHooks() []pkg.Hook[*pkg.ApplicationHookInput] 
 	return h.applicationHooks
 }
 
-func RegisterFunc[T pkg.Input](config *pkg.HookConfig, f pkg.HookFunc[T]) bool {
+func RegisterFunc[T pkg.Input](config pkg.Config, f pkg.HookFunc[T]) bool {
 	registerHook(Registry(), config, f)
 	return true
 }
 
-func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookFunc[T]) {
-	if cfg.OnStartup != nil && len(cfg.Kubernetes) > 0 {
-		panic(bindingsPanicMsg)
+func registerHook[T pkg.Input](r *HookRegistry, cfg pkg.Config, f pkg.HookFunc[T]) {
+	if cfgModule, ok := cfg.(*pkg.HookConfig); ok {
+		if cfgModule.OnStartup != nil && len(cfgModule.Kubernetes) > 0 {
+			panic(bindingsPanicMsg)
+		}
 	}
 
-	if cfg.Metadata.Name == "" {
-		cfg.Metadata = extractHookMetadata()
+	if cfg.GetMetadata().Name == "" {
+		cfg.SetMetadata(extractHookMetadata())
 	}
 
 	r.mtx.Lock()
@@ -68,17 +70,17 @@ func registerHook[T pkg.Input](r *HookRegistry, cfg *pkg.HookConfig, f pkg.HookF
 
 	switch any(hook).(type) {
 	case pkg.Hook[*pkg.HookInput]:
-		cfg.HookType = pkg.HookTypeModule
+		cfg.SetHookType(pkg.HookTypeModule)
 		r.moduleHooks = append(r.moduleHooks, any(hook).(pkg.Hook[*pkg.HookInput]))
 	case pkg.Hook[*pkg.ApplicationHookInput]:
-		cfg.HookType = pkg.HookTypeApplication
+		cfg.SetHookType(pkg.HookTypeApplication)
 		r.applicationHooks = append(r.applicationHooks, any(hook).(pkg.Hook[*pkg.ApplicationHookInput]))
 	default:
 		panic("unknown hook input type")
 	}
 
 	if err := cfg.Validate(); err != nil {
-		panic(fmt.Sprintf("hook validation failed for %q: %v", cfg.Metadata.Name, err))
+		panic(fmt.Sprintf("hook validation failed for %q: %v", cfg.GetMetadata().Name, err))
 	}
 }
 

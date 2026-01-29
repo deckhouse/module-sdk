@@ -28,7 +28,7 @@ func NewApplicationExecutor(h pkg.Hook[*pkg.ApplicationHookInput], logger *log.L
 	}
 }
 
-func (e *applicationExecutor) Config() *pkg.HookConfig {
+func (e *applicationExecutor) Config() pkg.Config {
 	return e.hook.Config
 }
 

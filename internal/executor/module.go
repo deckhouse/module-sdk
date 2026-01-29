@@ -27,7 +27,7 @@ func NewModuleExecutor(h pkg.Hook[*pkg.HookInput], logger *log.Logger) Executor 
 	}
 }
 
-func (e *moduleExecutor) Config() *pkg.HookConfig {
+func (e *moduleExecutor) Config() pkg.Config {
 	return e.hook.Config
 }
 

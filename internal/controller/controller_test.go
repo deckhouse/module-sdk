@@ -14,14 +14,14 @@ import (
 
 type mockExecutor struct {
 	isAppHook bool
-	config    *pkg.HookConfig
+	config    pkg.Config
 }
 
-func (m *mockExecutor) Config() *pkg.HookConfig {
+func (m *mockExecutor) Config() pkg.Config {
 	if m.isAppHook {
-		m.config.HookType = pkg.HookTypeApplication
+		m.config.SetHookType(pkg.HookTypeApplication)
 	} else {
-		m.config.HookType = pkg.HookTypeModule
+		m.config.SetHookType(pkg.HookTypeModule)
 	}
 	return m.config
 }
@@ -39,10 +39,9 @@ func Test_remapHookConfigToHookConfig_ApplicationHook_InjectsNamespace(t *testin
 	appName := "my-test-app"
 	t.Setenv(pkg.EnvApplicationNamespace, appName)
 
-	config := &pkg.HookConfig{
+	config := &pkg.ApplicationHookConfig{
 		Metadata: pkg.HookMetadata{Name: "app-hook-simple"},
-		HookType: pkg.HookTypeApplication,
-		ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
+		Kubernetes: []pkg.ApplicationKubernetesConfig{
 			{Name: "pods", APIVersion: "v1", Kind: "Pod"},
 		},
 	}
@@ -63,10 +62,9 @@ func Test_remapHookConfigToHookConfig_ApplicationHook_InjectsNamespace(t *testin
 func Test_remapHookConfigToHookConfig_ApplicationHook_ErrorsOnMissingEnv(t *testing.T) {
 	os.Unsetenv(pkg.EnvApplicationNamespace)
 
-	config := &pkg.HookConfig{
+	config := &pkg.ApplicationHookConfig{
 		Metadata: pkg.HookMetadata{Name: "app-hook-broken"},
-		HookType: pkg.HookTypeApplication,
-		ApplicationKubernetes: []pkg.ApplicationKubernetesConfig{
+		Kubernetes: []pkg.ApplicationKubernetesConfig{
 			{Name: "pods", APIVersion: "v1", Kind: "Pod"},
 		},
 	}
