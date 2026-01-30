@@ -42,8 +42,7 @@ func Test_remapHookConfigToHookConfig_ModuleHook_PreservesNilSelector(t *testing
 
 	mockExec := &mockExecutor{isAppHook: false, config: config}
 
-	result, err := remapHookConfigToHookConfig(mockExec.Config())
-	require.NoError(t, err)
+	result := remapHookConfigToHookConfig(mockExec.Config())
 
 	require.Len(t, result.Kubernetes, 1)
 	assert.Nil(t, result.Kubernetes[0].NamespaceSelector)
@@ -72,8 +71,7 @@ func Test_remapHookConfigToHookConfig_ModuleHook_PreservesCustomSelector(t *test
 
 	mockExec := &mockExecutor{isAppHook: false, config: config}
 
-	result, err := remapHookConfigToHookConfig(mockExec.Config())
-	require.NoError(t, err)
+	result := remapHookConfigToHookConfig(mockExec.Config())
 
 	require.Len(t, result.Kubernetes, 1)
 	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector)
