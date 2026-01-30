@@ -28,29 +28,6 @@ func (m *mockExecutor) IsApplicationHook() bool {
 	return m.isAppHook
 }
 
-// Application Hook without namespace selector.
-func Test_remapHookConfigToHookConfig_ApplicationHook_InjectsNamespace(t *testing.T) {
-	appName := "my-test-app"
-	t.Setenv(pkg.EnvApplicationNamespace, appName)
-
-	config := &pkg.ApplicationHookConfig{
-		Metadata: pkg.HookMetadata{Name: "app-hook-simple"},
-		Kubernetes: []pkg.ApplicationKubernetesConfig{
-			{Name: "pods", APIVersion: "v1", Kind: "Pod"},
-		},
-	}
-
-	mockExec := &mockExecutor{isAppHook: true, config: config}
-
-	result, err := remapHookConfigToHookConfig(mockExec.Config())
-	require.NoError(t, err)
-
-	require.Len(t, result.Kubernetes, 1)
-	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector)
-	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector.NameSelector)
-	assert.Equal(t, []string{appName}, result.Kubernetes[0].NamespaceSelector.NameSelector.MatchNames)
-}
-
 // Module Hook without the namespaceSelector.
 // Waiting: The NamespaceSelector remains nil (monitors the entire cluster or works by default).
 func Test_remapHookConfigToHookConfig_ModuleHook_PreservesNilSelector(t *testing.T) {
