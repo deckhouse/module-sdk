@@ -334,9 +334,6 @@ func remapHookConfigToHookConfig(cfg pkg.Config) (*gohook.HookConfig, error) {
 		// For module hooks, use the configured namespace selector if present
 		if isApplicationHook {
 			appNs := os.Getenv(pkg.EnvApplicationNamespace)
-			if appNs == "" {
-				return nil, fmt.Errorf("application hook %q requires %s env var to be set", cfg.GetMetadata().Name, pkg.EnvApplicationNamespace)
-			}
 			targetNamespaceSelector = &gohook.NamespaceSelector{
 				NameSelector: &gohook.NameSelector{
 					MatchNames: []string{appNs},

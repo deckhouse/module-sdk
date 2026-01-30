@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -50,27 +49,6 @@ func Test_remapHookConfigToHookConfig_ApplicationHook_InjectsNamespace(t *testin
 	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector)
 	assert.NotNil(t, result.Kubernetes[0].NamespaceSelector.NameSelector)
 	assert.Equal(t, []string{appName}, result.Kubernetes[0].NamespaceSelector.NameSelector.MatchNames)
-}
-
-// Case 3: Application Hook, but forgot to set the environment variable.
-// Waiting: The function returns an error (Fail Fast), the config is not generated.
-func Test_remapHookConfigToHookConfig_ApplicationHook_ErrorsOnMissingEnv(t *testing.T) {
-	os.Unsetenv(pkg.EnvApplicationNamespace)
-
-	config := &pkg.ApplicationHookConfig{
-		Metadata: pkg.HookMetadata{Name: "app-hook-broken"},
-		Kubernetes: []pkg.ApplicationKubernetesConfig{
-			{Name: "pods", APIVersion: "v1", Kind: "Pod"},
-		},
-	}
-
-	mockExec := &mockExecutor{isAppHook: true, config: config}
-
-	result, err := remapHookConfigToHookConfig(mockExec.Config())
-
-	require.Error(t, err)
-	assert.Nil(t, result)
-	assert.Contains(t, err.Error(), "application hook \"app-hook-broken\" requires APPLICATION_NAMESPACE env var to be set")
 }
 
 // Module Hook without the namespaceSelector.
