@@ -27,17 +27,17 @@ type Hook[T Input] struct {
 type Config interface {
 	GetMetadata() HookMetadata
 	SetMetadata(HookMetadata)
-	GetHookType() HookType
+	GetHookType() string
 	Validate() error
 }
 
 func (cfg *HookConfig) GetMetadata() HookMetadata  { return cfg.Metadata }
 func (cfg *HookConfig) SetMetadata(m HookMetadata) { cfg.Metadata = m }
-func (cfg *HookConfig) GetHookType() HookType      { return HookTypeModule }
+func (cfg *HookConfig) GetHookType() string        { return HookTypeModule }
 
 func (cfg *ApplicationHookConfig) GetMetadata() HookMetadata  { return cfg.Metadata }
 func (cfg *ApplicationHookConfig) SetMetadata(m HookMetadata) { cfg.Metadata = m }
-func (cfg *ApplicationHookConfig) GetHookType() HookType      { return HookTypeApplication }
+func (cfg *ApplicationHookConfig) GetHookType() string        { return HookTypeApplication }
 
 type ApplicationHookConfig struct {
 	Metadata HookMetadata
@@ -104,12 +104,9 @@ type HookMetadata struct {
 	Path string
 }
 
-// HookType defines the type of hook
-type HookType string
-
 const (
-	HookTypeModule      HookType = "module"
-	HookTypeApplication HookType = "application"
+	HookTypeModule      string = "module"
+	HookTypeApplication string = "application"
 )
 
 func (cfg *ApplicationHookConfig) Validate() error {

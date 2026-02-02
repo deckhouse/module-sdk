@@ -24,10 +24,6 @@ func (m *mockExecutor) Execute(_ context.Context, _ executor.Request) (executor.
 	return nil, nil
 }
 
-func (m *mockExecutor) IsApplicationHook() bool {
-	return m.isAppHook
-}
-
 // Module Hook without the namespaceSelector.
 // Waiting: The NamespaceSelector remains nil (monitors the entire cluster or works by default).
 func Test_remapHookConfigToHookConfig_ModuleHook_PreservesNilSelector(t *testing.T) {
