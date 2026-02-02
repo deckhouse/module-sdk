@@ -15,20 +15,20 @@ import (
 )
 
 type moduleExecutor struct {
-	hook   pkg.Hook[*pkg.HookInput]
+	hook   pkg.Hook[pkg.HookConfig, *pkg.HookInput]
 	logger *log.Logger
 }
 
-// NewModuleExecutor creates a new application hook
-func NewModuleExecutor(h pkg.Hook[*pkg.HookInput], logger *log.Logger) Executor {
+// NewModuleExecutor creates a new module hook executor
+func NewModuleExecutor(h pkg.Hook[pkg.HookConfig, *pkg.HookInput], logger *log.Logger) Executor {
 	return &moduleExecutor{
 		hook:   h,
 		logger: logger,
 	}
 }
 
-func (e *moduleExecutor) Config() pkg.Config {
-	return e.hook.Config
+func (e *moduleExecutor) Config() any {
+	return &e.hook.Config
 }
 
 func (e *moduleExecutor) Execute(ctx context.Context, req Request) (Result, error) {

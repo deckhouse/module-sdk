@@ -65,12 +65,10 @@ func addReadinessHook(reg *execregistry.Registry, cfg *ReadinessConfig) {
 	}
 
 	config, f := readiness.NewReadinessHookEM(readinessConfig)
-	meta := config.GetMetadata()
-	meta.Name = "readiness"
-	meta.Path = "common-hooks/readiness"
-	config.SetMetadata(meta)
+	config.Metadata.Name = "readiness"
+	config.Metadata.Path = "common-hooks/readiness"
 
-	reg.SetReadinessHook(pkg.Hook[*pkg.HookInput]{Config: config, HookFunc: f})
+	reg.SetReadinessHook(pkg.Hook[pkg.HookConfig, *pkg.HookInput]{Config: *config, HookFunc: f})
 }
 
 func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
@@ -78,7 +76,7 @@ func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
 
 	hooksmetas := make([]pkg.HookMetadata, 0, len(hooks))
 	for _, hook := range hooks {
-		hooksmetas = append(hooksmetas, hook.Config().GetMetadata())
+		hooksmetas = append(hooksmetas, getConfigMetadata(hook.Config()))
 	}
 
 	return hooksmetas
@@ -96,7 +94,7 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 
 	hook := hooks[idx]
 
-	transport := file.NewTransport(c.fConfig, hook.Config().GetMetadata().Name, c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, getConfigMetadata(hook.Config()).Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -129,7 +127,7 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 		return ErrReadinessHookDoesNotExists
 	}
 
-	transport := file.NewTransport(c.fConfig, hook.Config().GetMetadata().Name, c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, getConfigMetadata(hook.Config()).Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -255,122 +253,157 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	return nil
 }
 
-func remapHookConfigToHookConfig(cfg pkg.Config) *gohook.HookConfig {
-	isApplicationHook := cfg.GetHookType() == pkg.HookTypeApplication
+// getConfigMetadata extracts metadata from a hook config using type assertion.
+func getConfigMetadata(cfg any) pkg.HookMetadata {
+	switch c := cfg.(type) {
+	case *pkg.HookConfig:
+		return c.Metadata
+	case *pkg.ApplicationHookConfig:
+		return c.Metadata
+	default:
+		return pkg.HookMetadata{}
+	}
+}
+
+// remapHookConfigToHookConfig converts pkg config to gohook.HookConfig for shell-operator.
+func remapHookConfigToHookConfig(cfg any) *gohook.HookConfig {
 	newHookConfig := &gohook.HookConfig{
 		ConfigVersion: "v1",
-		Metadata:      gohook.GoHookMetadata(cfg.GetMetadata()),
+		Metadata:      gohook.GoHookMetadata(getConfigMetadata(cfg)),
 	}
 
-	var schedule []pkg.ScheduleConfig
-	var kubernetesConfigs []pkg.KubernetesConfigInterface
-	var queue string
-
-	if isApplicationHook {
-		appCfg := cfg.(*pkg.ApplicationHookConfig)
-		schedule = appCfg.Schedule
-		queue = appCfg.Queue
-		for i := range appCfg.Kubernetes {
-			kubernetesConfigs = append(kubernetesConfigs, &appCfg.Kubernetes[i])
-		}
-	} else {
-		moduleCfg := cfg.(*pkg.HookConfig)
-		schedule = moduleCfg.Schedule
-		queue = moduleCfg.Queue
-		for i := range moduleCfg.Kubernetes {
-			kubernetesConfigs = append(kubernetesConfigs, &moduleCfg.Kubernetes[i])
-		}
-	}
-
-	for _, scfg := range schedule {
-		newHookConfig.Schedule = append(newHookConfig.Schedule, gohook.ScheduleConfig{
-			Name:    scfg.Name,
-			Crontab: scfg.Crontab,
-			Queue:   queue,
-		})
-	}
-
-	for _, shcfg := range kubernetesConfigs {
-		newShCfg := gohook.KubernetesConfig{
-			APIVersion:                   shcfg.GetAPIVersion(),
-			Kind:                         shcfg.GetKind(),
-			Name:                         shcfg.GetName(),
-			NameSelector:                 (*gohook.NameSelector)(shcfg.GetNameSelector()),
-			LabelSelector:                shcfg.GetLabelSelector(),
-			ExecuteHookOnEvents:          shcfg.GetExecuteHookOnEvents(),
-			ExecuteHookOnSynchronization: shcfg.GetExecuteHookOnSynchronization(),
-			WaitForSynchronization:       shcfg.GetWaitForSynchronization(),
-			KeepFullObjectsInMemory:      ptr.To(false),
-			JqFilter:                     shcfg.GetJqFilter(),
-			AllowFailure:                 shcfg.GetAllowFailure(),
-			ResynchronizationPeriod:      shcfg.GetResynchronizationPeriod(),
-			Queue:                        queue,
-		}
-
-		if shcfg.GetJqFilter() == "" {
-			newShCfg.KeepFullObjectsInMemory = ptr.To(true)
-		}
-
-		if shcfg.GetNameSelector() != nil {
-			newShCfg.NameSelector = &gohook.NameSelector{
-				MatchNames: shcfg.GetNameSelector().MatchNames,
-			}
-		}
-
-		if hookNs := shcfg.GetNamespaceSelector(); hookNs != nil {
-			newShCfg.NamespaceSelector = &gohook.NamespaceSelector{
-				NameSelector: &gohook.NameSelector{
-					MatchNames: hookNs.NameSelector.MatchNames,
-				},
-				LabelSelector: hookNs.LabelSelector,
-			}
-		}
-
-		if fieldSelector := shcfg.GetFieldSelector(); fieldSelector != nil {
-			fs := &gohook.FieldSelector{
-				MatchExpressions: make([]gohook.FieldSelectorRequirement, 0, len(fieldSelector.MatchExpressions)),
-			}
-
-			for _, expr := range fieldSelector.MatchExpressions {
-				fs.MatchExpressions = append(fs.MatchExpressions, gohook.FieldSelectorRequirement(expr))
-			}
-
-			newShCfg.FieldSelector = fs
-		}
-
-		newHookConfig.Kubernetes = append(newHookConfig.Kubernetes, newShCfg)
-	}
-
-	var onStartup, onBeforeHelm, onAfterHelm, onAfterDeleteHelm *pkg.OrderedConfig
-	if isApplicationHook {
-		appCfg := cfg.(*pkg.ApplicationHookConfig)
-		onStartup = appCfg.OnStartup
-		onBeforeHelm = appCfg.OnBeforeHelm
-		onAfterHelm = appCfg.OnAfterHelm
-		onAfterDeleteHelm = appCfg.OnAfterDeleteHelm
-	} else {
-		moduleCfg := cfg.(*pkg.HookConfig)
-		onStartup = moduleCfg.OnStartup
-		onBeforeHelm = moduleCfg.OnBeforeHelm
-		onAfterHelm = moduleCfg.OnAfterHelm
-		onAfterDeleteHelm = moduleCfg.OnAfterDeleteHelm
-	}
-
-	if onStartup != nil {
-		newHookConfig.OnStartup = ptr.To(onStartup.Order)
-	}
-
-	if onBeforeHelm != nil {
-		newHookConfig.OnBeforeHelm = ptr.To(onBeforeHelm.Order)
-	}
-
-	if onAfterHelm != nil {
-		newHookConfig.OnAfterHelm = ptr.To(onAfterHelm.Order)
-	}
-
-	if onAfterDeleteHelm != nil {
-		newHookConfig.OnAfterDeleteHelm = ptr.To(onAfterDeleteHelm.Order)
+	switch c := cfg.(type) {
+	case *pkg.HookConfig:
+		remapModuleHookConfig(c, newHookConfig)
+	case *pkg.ApplicationHookConfig:
+		remapApplicationHookConfig(c, newHookConfig)
 	}
 
 	return newHookConfig
+}
+
+func remapModuleHookConfig(cfg *pkg.HookConfig, out *gohook.HookConfig) {
+	for _, scfg := range cfg.Schedule {
+		out.Schedule = append(out.Schedule, gohook.ScheduleConfig{
+			Name:    scfg.Name,
+			Crontab: scfg.Crontab,
+			Queue:   cfg.Queue,
+		})
+	}
+
+	for i := range cfg.Kubernetes {
+		k := &cfg.Kubernetes[i]
+		out.Kubernetes = append(out.Kubernetes, convertKubernetesConfig(k, cfg.Queue))
+	}
+
+	if cfg.OnStartup != nil {
+		out.OnStartup = ptr.To(cfg.OnStartup.Order)
+	}
+	if cfg.OnBeforeHelm != nil {
+		out.OnBeforeHelm = ptr.To(cfg.OnBeforeHelm.Order)
+	}
+	if cfg.OnAfterHelm != nil {
+		out.OnAfterHelm = ptr.To(cfg.OnAfterHelm.Order)
+	}
+	if cfg.OnAfterDeleteHelm != nil {
+		out.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
+	}
+}
+
+func remapApplicationHookConfig(cfg *pkg.ApplicationHookConfig, out *gohook.HookConfig) {
+	for _, scfg := range cfg.Schedule {
+		out.Schedule = append(out.Schedule, gohook.ScheduleConfig{
+			Name:    scfg.Name,
+			Crontab: scfg.Crontab,
+			Queue:   cfg.Queue,
+		})
+	}
+
+	for i := range cfg.Kubernetes {
+		k := &cfg.Kubernetes[i]
+		out.Kubernetes = append(out.Kubernetes, convertAppKubernetesConfig(k, cfg.Queue))
+	}
+
+	if cfg.OnStartup != nil {
+		out.OnStartup = ptr.To(cfg.OnStartup.Order)
+	}
+	if cfg.OnBeforeHelm != nil {
+		out.OnBeforeHelm = ptr.To(cfg.OnBeforeHelm.Order)
+	}
+	if cfg.OnAfterHelm != nil {
+		out.OnAfterHelm = ptr.To(cfg.OnAfterHelm.Order)
+	}
+	if cfg.OnAfterDeleteHelm != nil {
+		out.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
+	}
+}
+
+func convertKubernetesConfig(k *pkg.KubernetesConfig, queue string) gohook.KubernetesConfig {
+	cfg := gohook.KubernetesConfig{
+		APIVersion:                   k.APIVersion,
+		Kind:                         k.Kind,
+		Name:                         k.Name,
+		LabelSelector:                k.LabelSelector,
+		ExecuteHookOnEvents:          k.ExecuteHookOnEvents,
+		ExecuteHookOnSynchronization: k.ExecuteHookOnSynchronization,
+		WaitForSynchronization:       k.WaitForSynchronization,
+		KeepFullObjectsInMemory:      ptr.To(k.JqFilter == ""),
+		JqFilter:                     k.JqFilter,
+		AllowFailure:                 k.AllowFailure,
+		ResynchronizationPeriod:      k.ResynchronizationPeriod,
+		Queue:                        queue,
+	}
+
+	if k.NameSelector != nil {
+		cfg.NameSelector = &gohook.NameSelector{MatchNames: k.NameSelector.MatchNames}
+	}
+	if k.NamespaceSelector != nil {
+		cfg.NamespaceSelector = &gohook.NamespaceSelector{
+			NameSelector:  &gohook.NameSelector{MatchNames: k.NamespaceSelector.NameSelector.MatchNames},
+			LabelSelector: k.NamespaceSelector.LabelSelector,
+		}
+	}
+	if k.FieldSelector != nil {
+		fs := &gohook.FieldSelector{
+			MatchExpressions: make([]gohook.FieldSelectorRequirement, 0, len(k.FieldSelector.MatchExpressions)),
+		}
+		for _, expr := range k.FieldSelector.MatchExpressions {
+			fs.MatchExpressions = append(fs.MatchExpressions, gohook.FieldSelectorRequirement(expr))
+		}
+		cfg.FieldSelector = fs
+	}
+
+	return cfg
+}
+
+func convertAppKubernetesConfig(k *pkg.ApplicationKubernetesConfig, queue string) gohook.KubernetesConfig {
+	cfg := gohook.KubernetesConfig{
+		APIVersion:                   k.APIVersion,
+		Kind:                         k.Kind,
+		Name:                         k.Name,
+		LabelSelector:                k.LabelSelector,
+		ExecuteHookOnEvents:          k.ExecuteHookOnEvents,
+		ExecuteHookOnSynchronization: k.ExecuteHookOnSynchronization,
+		WaitForSynchronization:       k.WaitForSynchronization,
+		KeepFullObjectsInMemory:      ptr.To(k.JqFilter == ""),
+		JqFilter:                     k.JqFilter,
+		AllowFailure:                 k.AllowFailure,
+		ResynchronizationPeriod:      k.ResynchronizationPeriod,
+		Queue:                        queue,
+	}
+
+	if k.NameSelector != nil {
+		cfg.NameSelector = &gohook.NameSelector{MatchNames: k.NameSelector.MatchNames}
+	}
+	if k.FieldSelector != nil {
+		fs := &gohook.FieldSelector{
+			MatchExpressions: make([]gohook.FieldSelectorRequirement, 0, len(k.FieldSelector.MatchExpressions)),
+		}
+		for _, expr := range k.FieldSelector.MatchExpressions {
+			fs.MatchExpressions = append(fs.MatchExpressions, gohook.FieldSelectorRequirement(expr))
+		}
+		cfg.FieldSelector = fs
+	}
+
+	return cfg
 }

@@ -382,8 +382,8 @@ func Test_Go_Hook_Execute(t *testing.T) {
 		t.Run(tt.meta.name, func(t *testing.T) {
 			t.Parallel()
 
-			h := pkg.Hook[*pkg.HookInput]{
-				Config:   new(pkg.HookConfig),
+			h := pkg.Hook[pkg.HookConfig, *pkg.HookInput]{
+				Config:   pkg.HookConfig{},
 				HookFunc: tt.fields.setupHookReconcileFunc(t),
 			}
 

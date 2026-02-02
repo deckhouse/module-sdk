@@ -13,10 +13,10 @@ import (
 
 type mockExecutor struct {
 	isAppHook bool
-	config    pkg.Config
+	config    any
 }
 
-func (m *mockExecutor) Config() pkg.Config {
+func (m *mockExecutor) Config() any {
 	return m.config
 }
 

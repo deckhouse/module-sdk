@@ -34,20 +34,20 @@ func (r *Registry) Readiness() executor.Executor {
 	return r.readinessExecutor
 }
 
-func (r *Registry) RegisterModuleHooks(hooks ...pkg.Hook[*pkg.HookInput]) {
+func (r *Registry) RegisterModuleHooks(hooks ...pkg.Hook[pkg.HookConfig, *pkg.HookInput]) {
 	for _, h := range hooks {
-		exec := executor.NewModuleExecutor(h, r.logger.Named(h.Config.GetMetadata().Name))
+		exec := executor.NewModuleExecutor(h, r.logger.Named(h.Config.Metadata.Name))
 		r.executors = append(r.executors, exec)
 	}
 }
 
-func (r *Registry) RegisterAppHooks(hooks ...pkg.Hook[*pkg.ApplicationHookInput]) {
+func (r *Registry) RegisterAppHooks(hooks ...pkg.Hook[pkg.ApplicationHookConfig, *pkg.ApplicationHookInput]) {
 	for _, h := range hooks {
-		exec := executor.NewApplicationExecutor(h, r.logger.Named(h.Config.GetMetadata().Name))
+		exec := executor.NewApplicationExecutor(h, r.logger.Named(h.Config.Metadata.Name))
 		r.executors = append(r.executors, exec)
 	}
 }
 
-func (r *Registry) SetReadinessHook(h pkg.Hook[*pkg.HookInput]) {
-	r.readinessExecutor = executor.NewModuleExecutor(h, r.logger.Named(h.Config.GetMetadata().Name))
+func (r *Registry) SetReadinessHook(h pkg.Hook[pkg.HookConfig, *pkg.HookInput]) {
+	r.readinessExecutor = executor.NewModuleExecutor(h, r.logger.Named(h.Config.Metadata.Name))
 }
