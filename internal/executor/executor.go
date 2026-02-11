@@ -11,8 +11,8 @@ import (
 // Executor runs a hook with the provided request and returns results.
 // Implemented by moduleExecutor and applicationExecutor.
 type Executor interface {
-	// Config returns the hook's configuration (*HookConfig or *ApplicationHookConfig).
-	Config() any
+	// Config returns the hook's configuration as HookConfigLike (*HookConfig or *ApplicationHookConfig).
+	Config() pkg.HookConfigInterface
 	// Execute runs the hook logic and returns collected results.
 	Execute(ctx context.Context, req Request) (Result, error)
 }

@@ -76,7 +76,7 @@ func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
 
 	hooksmetas := make([]pkg.HookMetadata, 0, len(hooks))
 	for _, hook := range hooks {
-		hooksmetas = append(hooksmetas, getConfigMetadata(hook.Config()))
+		hooksmetas = append(hooksmetas, hook.Config().GetMetadata())
 	}
 
 	return hooksmetas
@@ -94,7 +94,7 @@ func (c *HookController) RunHook(ctx context.Context, idx int) error {
 
 	hook := hooks[idx]
 
-	transport := file.NewTransport(c.fConfig, getConfigMetadata(hook.Config()).Name, c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.Config().GetMetadata().Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -127,7 +127,7 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 		return ErrReadinessHookDoesNotExists
 	}
 
-	transport := file.NewTransport(c.fConfig, getConfigMetadata(hook.Config()).Name, c.dc, c.logger.Named("file-transport"))
+	transport := file.NewTransport(c.fConfig, hook.Config().GetMetadata().Name, c.dc, c.logger.Named("file-transport"))
 
 	hookRes, err := hook.Execute(ctx, transport.NewRequest())
 	if err != nil {
@@ -175,7 +175,7 @@ func (c *HookController) PrintHookConfigs() error {
 	configs := make([]gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Executors() {
-		hookConfig := remapHookConfigToHookConfig(hook.Config())
+		hookConfig := remapHookConfigToGohook(hook.Config())
 		configs = append(configs, *hookConfig)
 	}
 
@@ -185,7 +185,7 @@ func (c *HookController) PrintHookConfigs() error {
 	}
 
 	if c.registry.Readiness() != nil {
-		readinessConfig := remapHookConfigToHookConfig(c.registry.Readiness().Config())
+		readinessConfig := remapHookConfigToGohook(c.registry.Readiness().Config())
 		cfg.Readiness = readinessConfig
 	}
 
@@ -231,7 +231,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	configs := make([]gohook.HookConfig, 0, 1)
 
 	for _, hook := range c.registry.Executors() {
-		hookConfig := remapHookConfigToHookConfig(hook.Config())
+		hookConfig := remapHookConfigToGohook(hook.Config())
 		configs = append(configs, *hookConfig)
 	}
 
@@ -241,7 +241,7 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	}
 
 	if c.registry.Readiness() != nil {
-		readinessConfig := remapHookConfigToHookConfig(c.registry.Readiness().Config())
+		readinessConfig := remapHookConfigToGohook(c.registry.Readiness().Config())
 		cfg.Readiness = readinessConfig
 	}
 
@@ -253,33 +253,18 @@ func (c *HookController) WriteHookConfigsInFile() error {
 	return nil
 }
 
-// getConfigMetadata extracts metadata from a hook config using type assertion.
-func getConfigMetadata(cfg any) pkg.HookMetadata {
-	switch c := cfg.(type) {
-	case *pkg.HookConfig:
-		return c.Metadata
-	case *pkg.ApplicationHookConfig:
-		return c.Metadata
-	default:
-		return pkg.HookMetadata{}
-	}
-}
-
-// remapHookConfigToHookConfig converts pkg config to gohook.HookConfig for shell-operator.
-func remapHookConfigToHookConfig(cfg any) *gohook.HookConfig {
-	newHookConfig := &gohook.HookConfig{
+// remapHookConfigToGohook converts HookConfigLike to gohook.HookConfig for shell-operator.
+func remapHookConfigToGohook(cfg pkg.HookConfigInterface) *gohook.HookConfig {
+	out := &gohook.HookConfig{
 		ConfigVersion: "v1",
-		Metadata:      gohook.GoHookMetadata(getConfigMetadata(cfg)),
+		Metadata:      gohook.GoHookMetadata(cfg.GetMetadata()),
 	}
-
-	switch c := cfg.(type) {
-	case *pkg.HookConfig:
-		remapModuleHookConfig(c, newHookConfig)
-	case *pkg.ApplicationHookConfig:
-		remapApplicationHookConfig(c, newHookConfig)
+	if c, ok := cfg.AsHookConfig(); ok {
+		remapModuleHookConfig(c, out)
+	} else if c, ok := cfg.AsApplicationHookConfig(); ok {
+		remapApplicationHookConfig(c, out)
 	}
-
-	return newHookConfig
+	return out
 }
 
 func remapModuleHookConfig(cfg *pkg.HookConfig, out *gohook.HookConfig) {

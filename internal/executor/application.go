@@ -28,7 +28,7 @@ func NewApplicationExecutor(h pkg.Hook[pkg.ApplicationHookConfig, *pkg.Applicati
 	}
 }
 
-func (e *applicationExecutor) Config() any {
+func (e *applicationExecutor) Config() pkg.HookConfigInterface {
 	return &e.hook.Config
 }
 

@@ -100,6 +100,18 @@ type HookMetadata struct {
 	Path string
 }
 
+// HookConfigInterface is implemented by *HookConfig and *ApplicationHookConfig.
+// It provides type-safe access to common config fields and explicit conversion
+// to concrete types, avoiding unsafe type assertions on any.
+type HookConfigInterface interface {
+	GetMetadata() HookMetadata
+	GetQueue() string
+	// AsHookConfig returns the config as *HookConfig if it is a module hook config.
+	AsHookConfig() (*HookConfig, bool)
+	// AsApplicationHookConfig returns the config as *ApplicationHookConfig if it is an application hook config.
+	AsApplicationHookConfig() (*ApplicationHookConfig, bool)
+}
+
 // OrderedConfig specifies execution order for lifecycle hooks.
 type OrderedConfig struct {
 	Order uint
@@ -156,6 +168,18 @@ func (cfg *HookConfig) Validate() error {
 	return errs
 }
 
+// GetMetadata implements HookConfigLike.
+func (cfg *HookConfig) GetMetadata() HookMetadata { return cfg.Metadata }
+
+// GetQueue implements HookConfigLike.
+func (cfg *HookConfig) GetQueue() string { return cfg.Queue }
+
+// AsHookConfig implements HookConfigLike.
+func (cfg *HookConfig) AsHookConfig() (*HookConfig, bool) { return cfg, true }
+
+// AsApplicationHookConfig implements HookConfigLike.
+func (cfg *HookConfig) AsApplicationHookConfig() (*ApplicationHookConfig, bool) { return nil, false }
+
 // =============================================================================
 // Application Hook Configuration
 // =============================================================================
@@ -197,6 +221,20 @@ func (cfg *ApplicationHookConfig) Validate() error {
 	}
 
 	return errs
+}
+
+// GetMetadata implements HookConfigLike.
+func (cfg *ApplicationHookConfig) GetMetadata() HookMetadata { return cfg.Metadata }
+
+// GetQueue implements HookConfigLike.
+func (cfg *ApplicationHookConfig) GetQueue() string { return cfg.Queue }
+
+// AsHookConfig implements HookConfigLike.
+func (cfg *ApplicationHookConfig) AsHookConfig() (*HookConfig, bool) { return nil, false }
+
+// AsApplicationHookConfig implements HookConfigLike.
+func (cfg *ApplicationHookConfig) AsApplicationHookConfig() (*ApplicationHookConfig, bool) {
+	return cfg, true
 }
 
 // =============================================================================
