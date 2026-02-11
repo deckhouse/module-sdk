@@ -4,10 +4,11 @@ import (
 	"context"
 	"testing"
 
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/pkg/registry"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
 // TestApplicationHookRegistration runs from a path containing ".../hooks/001-hook-one/",

@@ -3,11 +3,11 @@ package controller
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestConvertAppKubernetesConfig(t *testing.T) {
@@ -98,10 +98,10 @@ func TestConvertAppKubernetesConfig(t *testing.T) {
 
 	t.Run("KeepFullObjectsInMemory is false when JqFilter is set", func(t *testing.T) {
 		k := &pkg.ApplicationKubernetesConfig{
-			Name:     "pods",
+			Name:       "pods",
 			APIVersion: "v1",
-			Kind:     "Pod",
-			JqFilter: ".items[]",
+			Kind:       "Pod",
+			JqFilter:   ".items[]",
 		}
 		cfg := convertAppKubernetesConfig(k, "main")
 		require.NotNil(t, cfg.KeepFullObjectsInMemory)
