@@ -191,7 +191,7 @@ type ApplicationHookConfig struct {
 
 	Kubernetes []ApplicationKubernetesConfig
 
-	// OnStartup runs hook on module/global startup
+	// OnStartup runs hook on application startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
 	OnStartup         *OrderedConfig

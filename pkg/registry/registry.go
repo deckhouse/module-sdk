@@ -10,7 +10,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 )
 
-const bindingsPanicMsg = "OnStartup hook always has binding context without Kubernetes snapshots. To prevent logic errors, don't use OnStartup and Kubernetes bindings in the same Go hook configuration."
+const BindingsPanicMsg = "OnStartup hook always has binding context without Kubernetes snapshots. To prevent logic errors, don't use OnStartup and Kubernetes bindings in the same Go hook configuration."
 
 var (
 	instance *HookRegistry
@@ -68,19 +68,19 @@ func registerHook[C pkg.Config, T pkg.Input](r *HookRegistry, cfg C, f pkg.HookF
 	switch c := any(cfg).(type) {
 	case *pkg.HookConfig:
 		if c.OnStartup != nil && len(c.Kubernetes) > 0 {
-			panic(bindingsPanicMsg)
+			panic(BindingsPanicMsg)
 		}
 	case pkg.HookConfig:
 		if c.OnStartup != nil && len(c.Kubernetes) > 0 {
-			panic(bindingsPanicMsg)
+			panic(BindingsPanicMsg)
 		}
 	case *pkg.ApplicationHookConfig:
 		if c.OnStartup != nil && len(c.Kubernetes) > 0 {
-			panic(bindingsPanicMsg)
+			panic(BindingsPanicMsg)
 		}
 	case pkg.ApplicationHookConfig:
 		if c.OnStartup != nil && len(c.Kubernetes) > 0 {
-			panic(bindingsPanicMsg)
+			panic(BindingsPanicMsg)
 		}
 	}
 

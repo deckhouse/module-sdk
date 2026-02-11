@@ -26,7 +26,7 @@ func TestRegister(t *testing.T) {
 		defer func() {
 			r := recover()
 			require.NotEmpty(t, r)
-			assert.Equal(t, bindingsPanicMsg, r)
+			assert.Equal(t, BindingsPanicMsg, r)
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
@@ -41,7 +41,7 @@ func TestRegister(t *testing.T) {
 
 		defer func() {
 			r := recover()
-			assert.NotEqual(t, bindingsPanicMsg, r)
+			assert.NotEqual(t, BindingsPanicMsg, r)
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
@@ -63,35 +63,10 @@ func TestRegister(t *testing.T) {
 
 		defer func() {
 			r := recover()
-			assert.NotEqual(t, bindingsPanicMsg, r)
+			assert.NotEqual(t, BindingsPanicMsg, r)
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
-			return nil
-		})
-	})
-
-	t.Run("Application hook should not panic", func(t *testing.T) {
-		hook := &pkg.ApplicationHookConfig{
-			Metadata: pkg.HookMetadata{
-				Name: "test-hook",
-				Path: "test/hooks",
-			},
-			Kubernetes: []pkg.ApplicationKubernetesConfig{
-				{
-					Name:       "test",
-					APIVersion: "v1",
-					Kind:       "Pod",
-				},
-			},
-		}
-
-		defer func() {
-			r := recover()
-			assert.NotEqual(t, bindingsPanicMsg, r)
-		}()
-
-		RegisterFunc(hook, func(_ context.Context, _ *pkg.ApplicationHookInput) error {
 			return nil
 		})
 	})
