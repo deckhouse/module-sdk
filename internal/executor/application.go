@@ -16,20 +16,20 @@ import (
 )
 
 type applicationExecutor struct {
-	hook   pkg.Hook[*pkg.ApplicationHookInput]
+	hook   pkg.Hook[pkg.ApplicationHookConfig, *pkg.ApplicationHookInput]
 	logger *log.Logger
 }
 
 // NewApplicationExecutor creates a new application executor
-func NewApplicationExecutor(h pkg.Hook[*pkg.ApplicationHookInput], logger *log.Logger) Executor {
+func NewApplicationExecutor(h pkg.Hook[pkg.ApplicationHookConfig, *pkg.ApplicationHookInput], logger *log.Logger) Executor {
 	return &applicationExecutor{
 		hook:   h,
 		logger: logger,
 	}
 }
 
-func (e *applicationExecutor) Config() *pkg.HookConfig {
-	return e.hook.Config
+func (e *applicationExecutor) Config() pkg.HookConfigInterface {
+	return &e.hook.Config
 }
 
 func (e *applicationExecutor) Execute(ctx context.Context, req Request) (Result, error) {

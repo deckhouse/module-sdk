@@ -26,7 +26,7 @@ func TestRegister(t *testing.T) {
 		defer func() {
 			r := recover()
 			require.NotEmpty(t, r)
-			assert.Equal(t, bindingsPanicMsg, r)
+			assert.Equal(t, BindingsPanicMsg, r)
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
@@ -41,7 +41,7 @@ func TestRegister(t *testing.T) {
 
 		defer func() {
 			r := recover()
-			assert.NotEqual(t, bindingsPanicMsg, r)
+			assert.NotEqual(t, BindingsPanicMsg, r)
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {
@@ -63,7 +63,7 @@ func TestRegister(t *testing.T) {
 
 		defer func() {
 			r := recover()
-			assert.NotEqual(t, bindingsPanicMsg, r)
+			assert.NotEqual(t, BindingsPanicMsg, r)
 		}()
 
 		RegisterFunc(hook, func(_ context.Context, _ *pkg.HookInput) error {

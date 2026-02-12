@@ -8,21 +8,36 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
+// Executor runs a hook with the provided request and returns results.
+// Implemented by moduleExecutor and applicationExecutor.
 type Executor interface {
-	Config() *pkg.HookConfig
+	// Config returns the hook's configuration as HookConfigLike (*HookConfig or *ApplicationHookConfig).
+	Config() pkg.HookConfigInterface
+	// Execute runs the hook logic and returns collected results.
 	Execute(ctx context.Context, req Request) (Result, error)
 }
 
+// Request provides input data for hook execution.
+// Implemented by transport layer (e.g., file transport).
 type Request interface {
+	// GetValues returns the current module values.
 	GetValues() (map[string]any, error)
+	// GetConfigValues returns the module's ConfigMap values.
 	GetConfigValues() (map[string]any, error)
+	// GetBindingContexts returns Kubernetes binding contexts with snapshots.
 	GetBindingContexts() ([]bctx.BindingContext, error)
+	// GetDependencyContainer returns the container with external dependencies.
 	GetDependencyContainer() pkg.DependencyContainer
 }
 
+// Result contains outputs collected during hook execution.
+// Used by transport layer to send results back to shell-operator.
 type Result interface {
+	// MetricsCollector returns collected Prometheus metrics.
 	MetricsCollector() pkg.Outputer
+	// ObjectPatchCollector returns collected Kubernetes object patches.
 	ObjectPatchCollector() pkg.Outputer
+	// ValuesPatchCollector returns collected values patches by type.
 	ValuesPatchCollector(key utils.ValuesPatchType) pkg.Outputer
 }
 
