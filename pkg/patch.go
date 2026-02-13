@@ -8,8 +8,6 @@ import (
 )
 
 type PatchCollector interface {
-	Outputer
-
 	// object must be Unstructured, map[string]any or runtime.Object
 	Create(object any)
 	// object must be Unstructured, map[string]any or runtime.Object
