@@ -55,8 +55,8 @@ type HookFunc[T Input] func(ctx context.Context, input T) error
 type HookInput struct {
 	Snapshots Snapshots
 
-	Values           PatchableValuesCollector
-	ConfigValues     PatchableValuesCollector
+	Values           OutputPatchableValuesCollector
+	ConfigValues     OutputPatchableValuesCollector
 	PatchCollector   OutputPatchCollector
 	MetricsCollector MetricsCollector
 
@@ -71,7 +71,7 @@ type ApplicationHookInput struct {
 
 	Instance Instance
 
-	Values           PatchableValuesCollector
+	Values           OutputPatchableValuesCollector
 	PatchCollector   OutputNamespacedPatchCollector
 	MetricsCollector MetricsCollector
 
