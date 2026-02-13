@@ -7,7 +7,7 @@ require (
 	github.com/deckhouse/module-sdk v0.0.0
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.36.1
-	k8s.io/apimachinery v0.33.7
+	k8s.io/apimachinery v0.33.8
 )
 
 require (
@@ -79,9 +79,9 @@ require (
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
-	k8s.io/api v0.33.7 // indirect
-	k8s.io/apiextensions-apiserver v0.33.7 // indirect
-	k8s.io/client-go v0.33.7 // indirect
+	k8s.io/api v0.33.8 // indirect
+	k8s.io/apiextensions-apiserver v0.33.8 // indirect
+	k8s.io/client-go v0.33.8 // indirect
 	k8s.io/klog/v2 v2.130.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20250318190949-c8a335a9a2ff // indirect
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738 // indirect
