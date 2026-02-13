@@ -1,10 +1,5 @@
 package pkg
 
-type OutputMetricsCollector interface {
-	MetricsCollector
-	Outputer
-}
-
 type MetricsCollector interface {
 	// Inc increments the specified Counter metric
 	Inc(name string, labels map[string]string, opts ...MetricCollectorOption)

@@ -7,22 +7,6 @@ import (
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
-type OutputPatchCollector interface {
-	// Deprecated: use PatchWithMerge instead
-	PatchCollector
-	Outputer
-}
-
-type OutputNamespacedPatchCollector interface {
-	NamespacedPatchCollector
-	Outputer
-}
-
-type OutputPatchableValuesCollector interface {
-	PatchableValuesCollector
-	Outputer
-}
-
 type PatchCollector interface {
 	// object must be Unstructured, map[string]any or runtime.Object
 	Create(object any)
