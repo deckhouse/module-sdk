@@ -57,7 +57,7 @@ type HookInput struct {
 
 	Values           PatchableValuesCollector
 	ConfigValues     PatchableValuesCollector
-	PatchCollector   PatchCollector
+	PatchCollector   OutputPatchCollector
 	MetricsCollector MetricsCollector
 
 	DC DependencyContainer
@@ -72,7 +72,7 @@ type ApplicationHookInput struct {
 	Instance Instance
 
 	Values           PatchableValuesCollector
-	PatchCollector   NamespacedPatchCollector
+	PatchCollector   OutputNamespacedPatchCollector
 	MetricsCollector MetricsCollector
 
 	DC ApplicationDependencyContainer
