@@ -28,6 +28,15 @@ type DependencyContainer interface {
 	GetClock() clockwork.Clock
 }
 
+type ApplicationDependencyContainer interface {
+	GetHTTPClient(options ...HTTPOption) HTTPClient
+
+	GetRegistryClient(repo string, options ...RegistryOption) (RegistryClient, error)
+	MustGetRegistryClient(repo string, options ...RegistryOption) RegistryClient
+
+	GetClock() clockwork.Clock
+}
+
 type HTTPClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }

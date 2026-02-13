@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	objectpatch "github.com/deckhouse/module-sdk/internal/object-patch"
+	"github.com/deckhouse/module-sdk/internal/objectpatch"
 	pkgobjectpatch "github.com/deckhouse/module-sdk/pkg/object-patch"
 )
 

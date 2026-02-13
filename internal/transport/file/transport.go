@@ -11,7 +11,7 @@ import (
 	"github.com/deckhouse/deckhouse/pkg/log"
 
 	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
-	"github.com/deckhouse/module-sdk/internal/hook"
+	"github.com/deckhouse/module-sdk/internal/executor"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
@@ -210,12 +210,12 @@ type Response struct {
 	logger *log.Logger
 }
 
-func (r *Response) Send(res *hook.HookResult) error {
+func (r *Response) Send(res executor.Result) error {
 	collectors := map[string]pkg.Outputer{
-		r.MetricsPath:          res.Metrics,
-		r.KubernetesPath:       res.ObjectPatcherOperations,
-		r.ValuesJSONPath:       res.Patches[utils.MemoryValuesPatch],
-		r.ConfigValuesJSONPath: res.Patches[utils.ConfigMapPatch],
+		r.MetricsPath:          res.MetricsCollector(),
+		r.KubernetesPath:       res.ObjectPatchCollector(),
+		r.ValuesJSONPath:       res.ValuesPatchCollector(utils.MemoryValuesPatch),
+		r.ConfigValuesJSONPath: res.ValuesPatchCollector(utils.ConfigMapPatch),
 	}
 
 	for path, collector := range collectors {
