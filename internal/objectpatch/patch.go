@@ -66,7 +66,7 @@ func (p *Patch) SetName(name string) {
 	if p.patchValues == nil {
 		p.patchValues = make(map[string]any)
 	}
-	p.patchValues["name"] = p.GetName()
+	p.patchValues["name"] = name
 }
 
 // WithSubresource sets the subresource to patch (e.g., "status", "scale").
