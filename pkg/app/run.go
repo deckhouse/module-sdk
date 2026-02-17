@@ -47,7 +47,7 @@ func Run() {
 
 	controller := controller.NewHookController(fConfig, logger.Named("hook-controller"))
 
-	c := newCMD(controller)
+	c := newCMD(controller, logger)
 
 	c.Execute()
 }

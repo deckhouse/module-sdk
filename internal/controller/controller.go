@@ -58,7 +58,7 @@ func (c *HookController) ListHooksMeta() []pkg.HookMetadata {
 	return hooksmetas
 }
 
-var ErrHookIndexIsNotExists = errors.New("hook index is not exists")
+var ErrHookIndexIsNotExists = errors.New("hook index does not exist")
 
 func (c *HookController) RunHook(ctx context.Context, idx int) error {
 	hooks := c.registry.Hooks()
