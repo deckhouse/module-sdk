@@ -219,6 +219,9 @@ func (r *Response) Send(res executor.Result) error {
 	}
 
 	for path, collector := range collectors {
+		if path == "" || collector == nil {
+			continue
+		}
 		err := r.send(path, collector)
 		if err != nil {
 			r.logger.Error("sending output", slog.String("path", path), slog.String("error", err.Error()))
