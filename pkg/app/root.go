@@ -82,14 +82,13 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Use:   "config",
 		Short: "Print hooks configs",
 		Long:  `Print list of hooks configs in json format`,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		Run: func(_ *cobra.Command, _ []string) {
 			err := c.controller.PrintHookConfigs()
 			if err != nil {
 				c.logger.Error("can not print configs", "error", err)
-				return fmt.Errorf("can not print configs: %w", err)
-			}
 
-			return nil
+				return
+			}
 		},
 	}
 	hooksCmd.AddCommand(configCmd)
@@ -99,16 +98,17 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Short:  "Dump hooks configs",
 		Long:   `Dump list of hooks configs in config.json file`,
 		Hidden: true,
-		RunE: func(_ *cobra.Command, _ []string) error {
+		Run: func(_ *cobra.Command, _ []string) {
 			err := c.controller.WriteHookConfigsInFile()
 			if err != nil {
 				c.logger.Error("can not write configs to file", "error", err)
-				return fmt.Errorf("can not write configs to file: %w", err)
+
+				return
 			}
 
 			fmt.Println("dump successfully")
 
-			return nil
+			return
 		},
 	}
 	hooksCmd.AddCommand(dumpCmd)
@@ -126,7 +126,7 @@ func (c *cmd) hooksCmd() *cobra.Command {
 			}
 			return nil
 		},
-		RunE: func(cmd *cobra.Command, args []string) error {
+		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 
 			idxRaw := args[0]
@@ -134,16 +134,15 @@ func (c *cmd) hooksCmd() *cobra.Command {
 			if err != nil {
 				c.logger.Error("invalid argument", "argument", idxRaw, "error", err)
 
-				return fmt.Errorf("invalid argument: %w", err)
+				return
 			}
 
 			err = c.controller.RunHook(ctx, idx)
 			if err != nil {
 				c.logger.Warn("hook shutdown", "error", err)
-				return fmt.Errorf("hook shutdown: %w", err)
-			}
 
-			return nil
+				return
+			}
 		},
 	}
 	hooksCmd.AddCommand(runCmd)
