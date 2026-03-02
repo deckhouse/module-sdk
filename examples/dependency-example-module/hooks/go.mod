@@ -3,7 +3,7 @@ module dependency-example-module
 go 1.24.0
 
 require (
-	github.com/deckhouse/deckhouse/pkg/log v0.1.0
+	github.com/deckhouse/deckhouse/pkg/log v0.2.0
 	github.com/deckhouse/module-sdk v0.0.0
 	github.com/gojuno/minimock/v3 v3.4.7
 	github.com/google/go-containerregistry v0.20.6
