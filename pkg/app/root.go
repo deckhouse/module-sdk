@@ -82,10 +82,11 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Use:   "config",
 		Short: "Print hooks configs",
 		Long:  `Print list of hooks configs in json format`,
-		RunE: func(_ *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			err := c.controller.PrintHookConfigs()
 			if err != nil {
 				c.logger.Error("can not print configs", "error", err)
+
 				return
 			}
 		},
@@ -97,10 +98,11 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Short:  "Dump hooks configs",
 		Long:   `Dump list of hooks configs in config.json file`,
 		Hidden: true,
-		RunE: func(_ *cobra.Command, _ []string) {
+		Run: func(_ *cobra.Command, _ []string) {
 			err := c.controller.WriteHookConfigsInFile()
 			if err != nil {
 				c.logger.Error("can not write configs to file", "error", err)
+
 				return
 			}
 
@@ -116,14 +118,13 @@ func (c *cmd) hooksCmd() *cobra.Command {
 		Short:  "Running hook",
 		Long:   `Run hook from binary registry`,
 		Hidden: true,
-		Args: func(_ *cobra.Command, args []string) {
+		Args: func(_ *cobra.Command, args []string) error {
 			if len(args) != 1 {
 				c.logger.Error("invalid number of arguments", "expected", 1, "received", len(args))
 
-				return
+				return fmt.Errorf("invalid number of arguments: expected 1, received %d", len(args))
 			}
-
-			return
+			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
