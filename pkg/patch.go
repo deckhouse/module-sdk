@@ -93,10 +93,7 @@ type NamespacedPatchCollector interface {
 // - filterOperation to modify object via Get-filter-Update process
 type PatchCollectorOperation interface {
 	Description() string
-	GetName() string
-	SetName(name string)
-	SetNamePrefix(prefix string)
-	GetNamespace() string
+	SetObjectPrefix(prefix string)
 }
 
 type PatchCollectorOption interface {

@@ -2,6 +2,7 @@ package objectpatch
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/deckhouse/module-sdk/pkg"
 )
@@ -27,46 +28,22 @@ func (p *Patch) Description() string {
 	return fmt.Sprintf("%v", op)
 }
 
-// GetName returns the name of the object to patch.
-func (p *Patch) GetName() string {
+// SetObjectPrefix sets prefix for object name.
+func (p *Patch) SetObjectPrefix(prefix string) {
+	if p.patchValues == nil {
+		return
+	}
+
 	name, ok := p.patchValues["name"]
 	if !ok {
-		return ""
+		return
 	}
 
-	// Handle both string and typed names
-	return fmt.Sprintf("%v", name)
-}
-
-// GetNamespace returns the namespace of the object to patch.
-func (p *Patch) GetNamespace() string {
-	ns, ok := p.patchValues["namespace"]
-	if !ok {
-		return ""
+	if strings.HasPrefix(name.(string), prefix+"-") {
+		return
 	}
 
-	// Handle both string and typed namespaces
-	return fmt.Sprintf("%v", ns)
-}
-
-// SetPrifixName sets the name for the patch operation with a prefix.
-func (p *Patch) SetNamePrefix(prefix string) {
-	// Set the name for the patch operation with a prefix.
-	// This is used to identify the target object in Kubernetes.
-	if p.patchValues == nil {
-		p.patchValues = make(map[string]any)
-	}
-	p.patchValues["name"] = fmt.Sprintf("%s-%s", prefix, p.GetName())
-}
-
-// SetName sets the name for the patch operation.
-func (p *Patch) SetName(name string) {
-	// Set the name for the patch operation.
-	// This is used to identify the target object in Kubernetes.
-	if p.patchValues == nil {
-		p.patchValues = make(map[string]any)
-	}
-	p.patchValues["name"] = name
+	p.patchValues["name"] = fmt.Sprintf("%s-%s", prefix, name.(string))
 }
 
 // WithSubresource sets the subresource to patch (e.g., "status", "scale").
