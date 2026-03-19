@@ -65,6 +65,7 @@ func NewClient(options ...pkg.HTTPOption) *http.Client {
 	}
 
 	tr := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
 		TLSClientConfig:       tlsConf,
 		IdleConnTimeout:       5 * time.Minute,
 		TLSHandshakeTimeout:   5 * time.Second,
