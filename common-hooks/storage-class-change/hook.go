@@ -195,7 +195,7 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 			},
 		}
 
-		input.Logger.Info("evict pod due",
+		input.Logger.Info("evict pod",
 			slog.String("namespace", pod.Namespace),
 			slog.String("pod", pod.Name),
 			slog.String("pvc", pvc.Name))
@@ -233,7 +233,7 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 			}
 		}
 
-		input.Logger.Info("storageClass changed. Deleting objects",
+		input.Logger.Info("storageClass changed, delete objects",
 			slog.String("namespace", args.Namespace),
 			slog.String("object_kind", args.ObjectKind),
 			slog.String("name", args.ObjectName))
@@ -252,13 +252,7 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 			}
 			err = kubeClient.Delete(ctx, obj)
 		case "Deployment":
-			obj := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      args.ObjectName,
-					Namespace: args.Namespace,
-				},
-			}
-			err = kubeClient.Delete(ctx, obj)
+			return nil
 		default:
 			return fmt.Errorf("unknown object kind %s", args.ObjectKind)
 		}
@@ -316,22 +310,11 @@ func calculateEffectiveStorageClass(input *pkg.HookInput, args Args, currentStor
 		internalValuesPath = fmt.Sprintf("%s.internal.%s.effectiveStorageClass", strcase.ToLowerCamel(args.ModuleName), args.InternalValuesSubPath)
 	}
 
-	emptydirUsageMetricValue := 0.0
 	if len(effectiveStorageClass) == 0 || effectiveStorageClass == "false" {
 		input.Values.Set(internalValuesPath, false)
-		emptydirUsageMetricValue = 1.0
 	} else {
 		input.Values.Set(internalValuesPath, effectiveStorageClass)
 	}
-
-	input.MetricsCollector.Set(
-		"d8_emptydir_usage",
-		emptydirUsageMetricValue,
-		map[string]string{
-			"namespace":   args.Namespace,
-			"module_name": args.ModuleName,
-		},
-	)
 
 	return effectiveStorageClass, nil
 }
