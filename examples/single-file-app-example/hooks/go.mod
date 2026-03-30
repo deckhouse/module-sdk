@@ -1,4 +1,4 @@
-module singlefileexample
+module singlefileappexample
 
 go 1.25.8
 
