@@ -1,6 +1,6 @@
 module basic-example-module
 
-go 1.24.0
+go 1.25
 
 require github.com/deckhouse/module-sdk v0.0.0
 
