@@ -1,6 +1,6 @@
 module dependency-example-module
 
-go 1.25
+go 1.25.8
 
 require (
 	github.com/deckhouse/deckhouse/pkg/log v0.2.0

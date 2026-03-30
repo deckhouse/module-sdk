@@ -1,6 +1,6 @@
 module valuescheck
 
-go 1.25
+go 1.25.8
 
 require github.com/deckhouse/module-sdk v0.0.0
 
