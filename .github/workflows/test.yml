@@ -59,7 +59,7 @@ jobs:
           name: go_work
           path: go.work
       - id: set-modules
-        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+        run: echo "modules=$(go work edit -json | jq -c '[.Use[].DiskPath]')" >> $GITHUB_OUTPUT
   go-mod-examples:
     needs: [detect-modules]
     runs-on: ubuntu-latest
