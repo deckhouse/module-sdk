@@ -1,6 +1,6 @@
-module singlefileexample
+module singlefileappexample
 
-go 1.24.0
+go 1.25.8
 
 require (
 	github.com/deckhouse/deckhouse/pkg/log v0.2.0

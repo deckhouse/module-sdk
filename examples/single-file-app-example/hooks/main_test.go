@@ -11,7 +11,7 @@ import (
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/deckhouse/module-sdk/testing/mock"
 
-	singlefileexample "singlefileexample"
+	singlefileappexample "singlefileappexample"
 )
 
 const (
@@ -21,7 +21,7 @@ const (
 
 var _ = Describe("handle hook single file example", func() {
 	snapshots := mock.NewSnapshotsMock(GinkgoT())
-	snapshots.GetMock.When(singlefileexample.SnapshotKey).Then(
+	snapshots.GetMock.When(singlefileappexample.SnapshotKey).Then(
 		[]pkg.Snapshot{
 			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
 				str := v.(*string)
@@ -49,7 +49,7 @@ var _ = Describe("handle hook single file example", func() {
 
 	Context("reconcile func", func() {
 		It("reconcile func executed correctly", func() {
-			err := singlefileexample.Handle(context.Background(), input)
+			err := singlefileappexample.Handle(context.Background(), input)
 			Expect(err).ShouldNot(HaveOccurred())
 		})
 	})

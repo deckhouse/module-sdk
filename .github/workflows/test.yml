@@ -5,8 +5,8 @@ on:
   push:
     branches-ignore: [main]
 env:
-  GO_VERSION: '1.26.0'
-  GOLANGCI_LINT_VERSION: 'v2.10.1'
+  GO_VERSION: '1.26.1'
+  GOLANGCI_LINT_VERSION: 'v2.11.4'
 jobs:
   # Check if there is any dirty change for go mod tidy
   go-mod:
@@ -59,7 +59,7 @@ jobs:
           name: go_work
           path: go.work
       - id: set-modules
-        run: echo "modules=$(go list -m -json | jq -s '.' | jq -c '[.[].Dir]')" >> $GITHUB_OUTPUT
+        run: echo "modules=$(go work edit -json | jq -c '[.Use[].DiskPath]')" >> $GITHUB_OUTPUT
   go-mod-examples:
     needs: [detect-modules]
     runs-on: ubuntu-latest
