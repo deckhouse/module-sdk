@@ -205,7 +205,7 @@ func (c *HookController) PrintHookConfigs() error {
 }
 
 func (c *HookController) WriteHookConfigsInFile() error {
-	if len(c.registry.Executors()) == 0 && c.settingsCheck == nil && c.registry.Readiness() == nil {
+	if len(c.registry.Executors()) == 0 && c.registry.Readiness() == nil {
 		return ErrNoHooksRegistered
 	}
 
