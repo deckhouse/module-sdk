@@ -168,7 +168,7 @@ func (c *HookController) CheckSettings(ctx context.Context) error {
 var ErrNoHooksRegistered = errors.New("no hooks registered")
 
 func (c *HookController) PrintHookConfigs() error {
-	if len(c.registry.Executors()) == 0 && c.settingsCheck == nil {
+	if len(c.registry.Executors()) == 0 && c.settingsCheck == nil && c.registry.Readiness() == nil {
 		return ErrNoHooksRegistered
 	}
 
@@ -205,7 +205,7 @@ func (c *HookController) PrintHookConfigs() error {
 }
 
 func (c *HookController) WriteHookConfigsInFile() error {
-	if len(c.registry.Executors()) == 0 {
+	if len(c.registry.Executors()) == 0 && c.settingsCheck == nil && c.registry.Readiness() == nil {
 		return ErrNoHooksRegistered
 	}
 
