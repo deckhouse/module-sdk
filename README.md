@@ -3,6 +3,23 @@ SDK to easy compile your hooks as a binary and integrate with addon operator
 
 ## Usage
 
+### Module-SDK version compatibility with Deckhouse
+| Module-SDK version | Deckhouse version|
+| --- | --- |
+| v0.2.X | < v1.71.0 |
+| v0.3.X | >=v1.71.0 |
+
+### Module-SDK features compatibility with Deckhouse
+| Module-SDK version | Deckhouse version|
+| --- | --- |
+| Readiness Probe | >= v1.71.0 |
+| Applications | Coming soon |
+| Applications Settings check | Coming soon |
+| Modules v2 | Coming soon |
+| Modules v2 Settings check | Coming soon |
+| Modules Settings check | Coming soon |
+
+
 ### One file example
 This file must be in 'hooks/' folder to build binary (see examples for correct layout)
 
