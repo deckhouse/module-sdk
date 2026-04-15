@@ -154,12 +154,17 @@ func (c *HookController) RunReadiness(ctx context.Context) error {
 func (c *HookController) CheckSettings(ctx context.Context) error {
 	res := settingscheck.Execute(ctx, c.settingsCheck, c.dc, c.logger)
 
+	if res.Valid && len(res.Warnings) == 0 && res.Message == "" {
+		os.Exit(0)
+		return nil
+	}
+
 	buf := bytes.NewBuffer([]byte{})
 	if err := json.NewEncoder(buf).Encode(res); err != nil {
 		return fmt.Errorf("encode error: %w", err)
 	}
 
-	fmt.Fprintln(os.Stderr, buf.String())
+	fmt.Fprint(os.Stderr, buf.String())
 	os.Exit(1)
 
 	return nil
