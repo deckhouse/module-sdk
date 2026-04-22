@@ -46,7 +46,7 @@ func (e *applicationExecutor) Execute(ctx context.Context, req Request) (Result,
 		return nil, fmt.Errorf("get patchable values: %w", err)
 	}
 
-	rawSettings, err := req.GetSettings()
+	rawSettings, err := req.GetConfigValues()
 	if err != nil {
 		e.logger.Error("get settings", slog.String("error", err.Error()))
 		return nil, fmt.Errorf("get settings: %w", err)

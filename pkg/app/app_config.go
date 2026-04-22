@@ -17,7 +17,6 @@ type hookConfig struct {
 	BindingContextPath string `env:"BINDING_CONTEXT_PATH" envDefault:"in/binding_context.json"`
 	ValuesPath         string `env:"VALUES_PATH" envDefault:"in/values_path.json"`
 	ConfigValuesPath   string `env:"CONFIG_VALUES_PATH" envDefault:"in/config_values_path.json"`
-	SettingsPath       string `env:"SETTINGS_PATH" envDefault:"in/settings_path.json"`
 
 	// send to addon operator when config requested
 	HookConfigPath string `env:"HOOK_CONFIG_PATH" envDefault:"out/hook_config.json"`
@@ -80,7 +79,6 @@ func remapConfigToControllerConfig(input *config) *controller.Config {
 			BindingContextPath:    input.HookConfig.BindingContextPath,
 			ValuesPath:            input.HookConfig.ValuesPath,
 			ConfigValuesPath:      input.HookConfig.ConfigValuesPath,
-			SettingsPath:          input.HookConfig.SettingsPath,
 			HookConfigPath:        input.HookConfig.HookConfigPath,
 			MetricsPath:           input.HookConfig.MetricsPath,
 			KubernetesPath:        input.HookConfig.KubernetesPath,

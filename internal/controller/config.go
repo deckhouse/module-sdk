@@ -14,7 +14,6 @@ type HookConfig struct {
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
-	SettingsPath       string
 
 	// send to addon operator when config requested
 	HookConfigPath string
@@ -48,7 +47,6 @@ func (cfg *Config) GetFileConfig() *file.Config {
 		BindingContextPath: cfg.HookConfig.BindingContextPath,
 		ValuesPath:         cfg.HookConfig.ValuesPath,
 		ConfigValuesPath:   cfg.HookConfig.ConfigValuesPath,
-		SettingsPath:       cfg.HookConfig.SettingsPath,
 
 		HookConfigPath: cfg.HookConfig.HookConfigPath,
 
