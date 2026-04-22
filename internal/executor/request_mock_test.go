@@ -2,24 +2,24 @@
 
 package executor_test
 
-//go:generate minimock -i github.com/deckhouse/module-sdk/internal/executor.Request -o hook_request_mock_test.go -n HookRequestMock -p hook_test
+//go:generate minimock -i github.com/deckhouse/module-sdk/internal/executor.Request -o request_mock_test.go -n HookRequestMock -p executor_test
 
 import (
 	"sync"
 	mm_atomic "sync/atomic"
 	mm_time "time"
 
-	bindingcontext "github.com/deckhouse/module-sdk/internal/binding-context"
+	bctx "github.com/deckhouse/module-sdk/internal/binding-context"
 	"github.com/deckhouse/module-sdk/pkg"
 	"github.com/gojuno/minimock/v3"
 )
 
-// HookRequestMock implements HookRequest
+// HookRequestMock implements Request
 type HookRequestMock struct {
 	t          minimock.Tester
 	finishOnce sync.Once
 
-	funcGetBindingContexts          func() (ba1 []bindingcontext.BindingContext, err error)
+	funcGetBindingContexts          func() (ba1 []bctx.BindingContext, err error)
 	funcGetBindingContextsOrigin    string
 	inspectFuncGetBindingContexts   func()
 	afterGetBindingContextsCounter  uint64
@@ -40,6 +40,13 @@ type HookRequestMock struct {
 	beforeGetDependencyContainerCounter uint64
 	GetDependencyContainerMock          mHookRequestMockGetDependencyContainer
 
+	funcGetSettings          func() (m1 map[string]any, err error)
+	funcGetSettingsOrigin    string
+	inspectFuncGetSettings   func()
+	afterGetSettingsCounter  uint64
+	beforeGetSettingsCounter uint64
+	GetSettingsMock          mHookRequestMockGetSettings
+
 	funcGetValues          func() (m1 map[string]any, err error)
 	funcGetValuesOrigin    string
 	inspectFuncGetValues   func()
@@ -48,7 +55,7 @@ type HookRequestMock struct {
 	GetValuesMock          mHookRequestMockGetValues
 }
 
-// NewHookRequestMock returns a mock for HookRequest
+// NewHookRequestMock returns a mock for Request
 func NewHookRequestMock(t minimock.Tester) *HookRequestMock {
 	m := &HookRequestMock{t: t}
 
@@ -61,6 +68,8 @@ func NewHookRequestMock(t minimock.Tester) *HookRequestMock {
 	m.GetConfigValuesMock = mHookRequestMockGetConfigValues{mock: m}
 
 	m.GetDependencyContainerMock = mHookRequestMockGetDependencyContainer{mock: m}
+
+	m.GetSettingsMock = mHookRequestMockGetSettings{mock: m}
 
 	m.GetValuesMock = mHookRequestMockGetValues{mock: m}
 
@@ -79,7 +88,7 @@ type mHookRequestMockGetBindingContexts struct {
 	expectedInvocationsOrigin string
 }
 
-// HookRequestMockGetBindingContextsExpectation specifies expectation struct of the HookRequest.GetBindingContexts
+// HookRequestMockGetBindingContextsExpectation specifies expectation struct of the Request.GetBindingContexts
 type HookRequestMockGetBindingContextsExpectation struct {
 	mock *HookRequestMock
 
@@ -88,9 +97,9 @@ type HookRequestMockGetBindingContextsExpectation struct {
 	Counter      uint64
 }
 
-// HookRequestMockGetBindingContextsResults contains results of the HookRequest.GetBindingContexts
+// HookRequestMockGetBindingContextsResults contains results of the Request.GetBindingContexts
 type HookRequestMockGetBindingContextsResults struct {
-	ba1 []bindingcontext.BindingContext
+	ba1 []bctx.BindingContext
 	err error
 }
 
@@ -104,7 +113,7 @@ func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Optional() *mHoo
 	return mmGetBindingContexts
 }
 
-// Expect sets up expected params for HookRequest.GetBindingContexts
+// Expect sets up expected params for Request.GetBindingContexts
 func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Expect() *mHookRequestMockGetBindingContexts {
 	if mmGetBindingContexts.mock.funcGetBindingContexts != nil {
 		mmGetBindingContexts.mock.t.Fatalf("HookRequestMock.GetBindingContexts mock is already set by Set")
@@ -117,7 +126,7 @@ func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Expect() *mHookR
 	return mmGetBindingContexts
 }
 
-// Inspect accepts an inspector function that has same arguments as the HookRequest.GetBindingContexts
+// Inspect accepts an inspector function that has same arguments as the Request.GetBindingContexts
 func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Inspect(f func()) *mHookRequestMockGetBindingContexts {
 	if mmGetBindingContexts.mock.inspectFuncGetBindingContexts != nil {
 		mmGetBindingContexts.mock.t.Fatalf("Inspect function is already set for HookRequestMock.GetBindingContexts")
@@ -128,8 +137,8 @@ func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Inspect(f func()
 	return mmGetBindingContexts
 }
 
-// Return sets up results that will be returned by HookRequest.GetBindingContexts
-func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Return(ba1 []bindingcontext.BindingContext, err error) *HookRequestMock {
+// Return sets up results that will be returned by Request.GetBindingContexts
+func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Return(ba1 []bctx.BindingContext, err error) *HookRequestMock {
 	if mmGetBindingContexts.mock.funcGetBindingContexts != nil {
 		mmGetBindingContexts.mock.t.Fatalf("HookRequestMock.GetBindingContexts mock is already set by Set")
 	}
@@ -142,14 +151,14 @@ func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Return(ba1 []bin
 	return mmGetBindingContexts.mock
 }
 
-// Set uses given function f to mock the HookRequest.GetBindingContexts method
-func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Set(f func() (ba1 []bindingcontext.BindingContext, err error)) *HookRequestMock {
+// Set uses given function f to mock the Request.GetBindingContexts method
+func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Set(f func() (ba1 []bctx.BindingContext, err error)) *HookRequestMock {
 	if mmGetBindingContexts.defaultExpectation != nil {
-		mmGetBindingContexts.mock.t.Fatalf("Default expectation is already set for the HookRequest.GetBindingContexts method")
+		mmGetBindingContexts.mock.t.Fatalf("Default expectation is already set for the Request.GetBindingContexts method")
 	}
 
 	if len(mmGetBindingContexts.expectations) > 0 {
-		mmGetBindingContexts.mock.t.Fatalf("Some expectations are already set for the HookRequest.GetBindingContexts method")
+		mmGetBindingContexts.mock.t.Fatalf("Some expectations are already set for the Request.GetBindingContexts method")
 	}
 
 	mmGetBindingContexts.mock.funcGetBindingContexts = f
@@ -157,7 +166,7 @@ func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Set(f func() (ba
 	return mmGetBindingContexts.mock
 }
 
-// Times sets number of times HookRequest.GetBindingContexts should be invoked
+// Times sets number of times Request.GetBindingContexts should be invoked
 func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) Times(n uint64) *mHookRequestMockGetBindingContexts {
 	if n == 0 {
 		mmGetBindingContexts.mock.t.Fatalf("Times of HookRequestMock.GetBindingContexts mock can not be zero")
@@ -178,8 +187,8 @@ func (mmGetBindingContexts *mHookRequestMockGetBindingContexts) invocationsDone(
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// GetBindingContexts implements HookRequest
-func (mmGetBindingContexts *HookRequestMock) GetBindingContexts() (ba1 []bindingcontext.BindingContext, err error) {
+// GetBindingContexts implements Request
+func (mmGetBindingContexts *HookRequestMock) GetBindingContexts() (ba1 []bctx.BindingContext, err error) {
 	mm_atomic.AddUint64(&mmGetBindingContexts.beforeGetBindingContextsCounter, 1)
 	defer mm_atomic.AddUint64(&mmGetBindingContexts.afterGetBindingContextsCounter, 1)
 
@@ -266,7 +275,7 @@ type mHookRequestMockGetConfigValues struct {
 	expectedInvocationsOrigin string
 }
 
-// HookRequestMockGetConfigValuesExpectation specifies expectation struct of the HookRequest.GetConfigValues
+// HookRequestMockGetConfigValuesExpectation specifies expectation struct of the Request.GetConfigValues
 type HookRequestMockGetConfigValuesExpectation struct {
 	mock *HookRequestMock
 
@@ -275,7 +284,7 @@ type HookRequestMockGetConfigValuesExpectation struct {
 	Counter      uint64
 }
 
-// HookRequestMockGetConfigValuesResults contains results of the HookRequest.GetConfigValues
+// HookRequestMockGetConfigValuesResults contains results of the Request.GetConfigValues
 type HookRequestMockGetConfigValuesResults struct {
 	m1  map[string]any
 	err error
@@ -291,7 +300,7 @@ func (mmGetConfigValues *mHookRequestMockGetConfigValues) Optional() *mHookReque
 	return mmGetConfigValues
 }
 
-// Expect sets up expected params for HookRequest.GetConfigValues
+// Expect sets up expected params for Request.GetConfigValues
 func (mmGetConfigValues *mHookRequestMockGetConfigValues) Expect() *mHookRequestMockGetConfigValues {
 	if mmGetConfigValues.mock.funcGetConfigValues != nil {
 		mmGetConfigValues.mock.t.Fatalf("HookRequestMock.GetConfigValues mock is already set by Set")
@@ -304,7 +313,7 @@ func (mmGetConfigValues *mHookRequestMockGetConfigValues) Expect() *mHookRequest
 	return mmGetConfigValues
 }
 
-// Inspect accepts an inspector function that has same arguments as the HookRequest.GetConfigValues
+// Inspect accepts an inspector function that has same arguments as the Request.GetConfigValues
 func (mmGetConfigValues *mHookRequestMockGetConfigValues) Inspect(f func()) *mHookRequestMockGetConfigValues {
 	if mmGetConfigValues.mock.inspectFuncGetConfigValues != nil {
 		mmGetConfigValues.mock.t.Fatalf("Inspect function is already set for HookRequestMock.GetConfigValues")
@@ -315,7 +324,7 @@ func (mmGetConfigValues *mHookRequestMockGetConfigValues) Inspect(f func()) *mHo
 	return mmGetConfigValues
 }
 
-// Return sets up results that will be returned by HookRequest.GetConfigValues
+// Return sets up results that will be returned by Request.GetConfigValues
 func (mmGetConfigValues *mHookRequestMockGetConfigValues) Return(m1 map[string]any, err error) *HookRequestMock {
 	if mmGetConfigValues.mock.funcGetConfigValues != nil {
 		mmGetConfigValues.mock.t.Fatalf("HookRequestMock.GetConfigValues mock is already set by Set")
@@ -329,14 +338,14 @@ func (mmGetConfigValues *mHookRequestMockGetConfigValues) Return(m1 map[string]a
 	return mmGetConfigValues.mock
 }
 
-// Set uses given function f to mock the HookRequest.GetConfigValues method
+// Set uses given function f to mock the Request.GetConfigValues method
 func (mmGetConfigValues *mHookRequestMockGetConfigValues) Set(f func() (m1 map[string]any, err error)) *HookRequestMock {
 	if mmGetConfigValues.defaultExpectation != nil {
-		mmGetConfigValues.mock.t.Fatalf("Default expectation is already set for the HookRequest.GetConfigValues method")
+		mmGetConfigValues.mock.t.Fatalf("Default expectation is already set for the Request.GetConfigValues method")
 	}
 
 	if len(mmGetConfigValues.expectations) > 0 {
-		mmGetConfigValues.mock.t.Fatalf("Some expectations are already set for the HookRequest.GetConfigValues method")
+		mmGetConfigValues.mock.t.Fatalf("Some expectations are already set for the Request.GetConfigValues method")
 	}
 
 	mmGetConfigValues.mock.funcGetConfigValues = f
@@ -344,7 +353,7 @@ func (mmGetConfigValues *mHookRequestMockGetConfigValues) Set(f func() (m1 map[s
 	return mmGetConfigValues.mock
 }
 
-// Times sets number of times HookRequest.GetConfigValues should be invoked
+// Times sets number of times Request.GetConfigValues should be invoked
 func (mmGetConfigValues *mHookRequestMockGetConfigValues) Times(n uint64) *mHookRequestMockGetConfigValues {
 	if n == 0 {
 		mmGetConfigValues.mock.t.Fatalf("Times of HookRequestMock.GetConfigValues mock can not be zero")
@@ -365,7 +374,7 @@ func (mmGetConfigValues *mHookRequestMockGetConfigValues) invocationsDone() bool
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// GetConfigValues implements HookRequest
+// GetConfigValues implements Request
 func (mmGetConfigValues *HookRequestMock) GetConfigValues() (m1 map[string]any, err error) {
 	mm_atomic.AddUint64(&mmGetConfigValues.beforeGetConfigValuesCounter, 1)
 	defer mm_atomic.AddUint64(&mmGetConfigValues.afterGetConfigValuesCounter, 1)
@@ -453,7 +462,7 @@ type mHookRequestMockGetDependencyContainer struct {
 	expectedInvocationsOrigin string
 }
 
-// HookRequestMockGetDependencyContainerExpectation specifies expectation struct of the HookRequest.GetDependencyContainer
+// HookRequestMockGetDependencyContainerExpectation specifies expectation struct of the Request.GetDependencyContainer
 type HookRequestMockGetDependencyContainerExpectation struct {
 	mock *HookRequestMock
 
@@ -462,7 +471,7 @@ type HookRequestMockGetDependencyContainerExpectation struct {
 	Counter      uint64
 }
 
-// HookRequestMockGetDependencyContainerResults contains results of the HookRequest.GetDependencyContainer
+// HookRequestMockGetDependencyContainerResults contains results of the Request.GetDependencyContainer
 type HookRequestMockGetDependencyContainerResults struct {
 	d1 pkg.DependencyContainer
 }
@@ -477,7 +486,7 @@ func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Optional
 	return mmGetDependencyContainer
 }
 
-// Expect sets up expected params for HookRequest.GetDependencyContainer
+// Expect sets up expected params for Request.GetDependencyContainer
 func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Expect() *mHookRequestMockGetDependencyContainer {
 	if mmGetDependencyContainer.mock.funcGetDependencyContainer != nil {
 		mmGetDependencyContainer.mock.t.Fatalf("HookRequestMock.GetDependencyContainer mock is already set by Set")
@@ -490,7 +499,7 @@ func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Expect()
 	return mmGetDependencyContainer
 }
 
-// Inspect accepts an inspector function that has same arguments as the HookRequest.GetDependencyContainer
+// Inspect accepts an inspector function that has same arguments as the Request.GetDependencyContainer
 func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Inspect(f func()) *mHookRequestMockGetDependencyContainer {
 	if mmGetDependencyContainer.mock.inspectFuncGetDependencyContainer != nil {
 		mmGetDependencyContainer.mock.t.Fatalf("Inspect function is already set for HookRequestMock.GetDependencyContainer")
@@ -501,7 +510,7 @@ func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Inspect(
 	return mmGetDependencyContainer
 }
 
-// Return sets up results that will be returned by HookRequest.GetDependencyContainer
+// Return sets up results that will be returned by Request.GetDependencyContainer
 func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Return(d1 pkg.DependencyContainer) *HookRequestMock {
 	if mmGetDependencyContainer.mock.funcGetDependencyContainer != nil {
 		mmGetDependencyContainer.mock.t.Fatalf("HookRequestMock.GetDependencyContainer mock is already set by Set")
@@ -515,14 +524,14 @@ func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Return(d
 	return mmGetDependencyContainer.mock
 }
 
-// Set uses given function f to mock the HookRequest.GetDependencyContainer method
+// Set uses given function f to mock the Request.GetDependencyContainer method
 func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Set(f func() (d1 pkg.DependencyContainer)) *HookRequestMock {
 	if mmGetDependencyContainer.defaultExpectation != nil {
-		mmGetDependencyContainer.mock.t.Fatalf("Default expectation is already set for the HookRequest.GetDependencyContainer method")
+		mmGetDependencyContainer.mock.t.Fatalf("Default expectation is already set for the Request.GetDependencyContainer method")
 	}
 
 	if len(mmGetDependencyContainer.expectations) > 0 {
-		mmGetDependencyContainer.mock.t.Fatalf("Some expectations are already set for the HookRequest.GetDependencyContainer method")
+		mmGetDependencyContainer.mock.t.Fatalf("Some expectations are already set for the Request.GetDependencyContainer method")
 	}
 
 	mmGetDependencyContainer.mock.funcGetDependencyContainer = f
@@ -530,7 +539,7 @@ func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Set(f fu
 	return mmGetDependencyContainer.mock
 }
 
-// Times sets number of times HookRequest.GetDependencyContainer should be invoked
+// Times sets number of times Request.GetDependencyContainer should be invoked
 func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) Times(n uint64) *mHookRequestMockGetDependencyContainer {
 	if n == 0 {
 		mmGetDependencyContainer.mock.t.Fatalf("Times of HookRequestMock.GetDependencyContainer mock can not be zero")
@@ -551,7 +560,7 @@ func (mmGetDependencyContainer *mHookRequestMockGetDependencyContainer) invocati
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// GetDependencyContainer implements HookRequest
+// GetDependencyContainer implements Request
 func (mmGetDependencyContainer *HookRequestMock) GetDependencyContainer() (d1 pkg.DependencyContainer) {
 	mm_atomic.AddUint64(&mmGetDependencyContainer.beforeGetDependencyContainerCounter, 1)
 	defer mm_atomic.AddUint64(&mmGetDependencyContainer.afterGetDependencyContainerCounter, 1)
@@ -629,6 +638,193 @@ func (m *HookRequestMock) MinimockGetDependencyContainerInspect() {
 	}
 }
 
+type mHookRequestMockGetSettings struct {
+	optional           bool
+	mock               *HookRequestMock
+	defaultExpectation *HookRequestMockGetSettingsExpectation
+	expectations       []*HookRequestMockGetSettingsExpectation
+
+	expectedInvocations       uint64
+	expectedInvocationsOrigin string
+}
+
+// HookRequestMockGetSettingsExpectation specifies expectation struct of the Request.GetSettings
+type HookRequestMockGetSettingsExpectation struct {
+	mock *HookRequestMock
+
+	results      *HookRequestMockGetSettingsResults
+	returnOrigin string
+	Counter      uint64
+}
+
+// HookRequestMockGetSettingsResults contains results of the Request.GetSettings
+type HookRequestMockGetSettingsResults struct {
+	m1  map[string]any
+	err error
+}
+
+// Marks this method to be optional. The default behavior of any method with Return() is '1 or more', meaning
+// the test will fail minimock's automatic final call check if the mocked method was not called at least once.
+// Optional() makes method check to work in '0 or more' mode.
+// It is NOT RECOMMENDED to use this option unless you really need it, as default behaviour helps to
+// catch the problems when the expected method call is totally skipped during test run.
+func (mmGetSettings *mHookRequestMockGetSettings) Optional() *mHookRequestMockGetSettings {
+	mmGetSettings.optional = true
+	return mmGetSettings
+}
+
+// Expect sets up expected params for Request.GetSettings
+func (mmGetSettings *mHookRequestMockGetSettings) Expect() *mHookRequestMockGetSettings {
+	if mmGetSettings.mock.funcGetSettings != nil {
+		mmGetSettings.mock.t.Fatalf("HookRequestMock.GetSettings mock is already set by Set")
+	}
+
+	if mmGetSettings.defaultExpectation == nil {
+		mmGetSettings.defaultExpectation = &HookRequestMockGetSettingsExpectation{}
+	}
+
+	return mmGetSettings
+}
+
+// Inspect accepts an inspector function that has same arguments as the Request.GetSettings
+func (mmGetSettings *mHookRequestMockGetSettings) Inspect(f func()) *mHookRequestMockGetSettings {
+	if mmGetSettings.mock.inspectFuncGetSettings != nil {
+		mmGetSettings.mock.t.Fatalf("Inspect function is already set for HookRequestMock.GetSettings")
+	}
+
+	mmGetSettings.mock.inspectFuncGetSettings = f
+
+	return mmGetSettings
+}
+
+// Return sets up results that will be returned by Request.GetSettings
+func (mmGetSettings *mHookRequestMockGetSettings) Return(m1 map[string]any, err error) *HookRequestMock {
+	if mmGetSettings.mock.funcGetSettings != nil {
+		mmGetSettings.mock.t.Fatalf("HookRequestMock.GetSettings mock is already set by Set")
+	}
+
+	if mmGetSettings.defaultExpectation == nil {
+		mmGetSettings.defaultExpectation = &HookRequestMockGetSettingsExpectation{mock: mmGetSettings.mock}
+	}
+	mmGetSettings.defaultExpectation.results = &HookRequestMockGetSettingsResults{m1, err}
+	mmGetSettings.defaultExpectation.returnOrigin = minimock.CallerInfo(1)
+	return mmGetSettings.mock
+}
+
+// Set uses given function f to mock the Request.GetSettings method
+func (mmGetSettings *mHookRequestMockGetSettings) Set(f func() (m1 map[string]any, err error)) *HookRequestMock {
+	if mmGetSettings.defaultExpectation != nil {
+		mmGetSettings.mock.t.Fatalf("Default expectation is already set for the Request.GetSettings method")
+	}
+
+	if len(mmGetSettings.expectations) > 0 {
+		mmGetSettings.mock.t.Fatalf("Some expectations are already set for the Request.GetSettings method")
+	}
+
+	mmGetSettings.mock.funcGetSettings = f
+	mmGetSettings.mock.funcGetSettingsOrigin = minimock.CallerInfo(1)
+	return mmGetSettings.mock
+}
+
+// Times sets number of times Request.GetSettings should be invoked
+func (mmGetSettings *mHookRequestMockGetSettings) Times(n uint64) *mHookRequestMockGetSettings {
+	if n == 0 {
+		mmGetSettings.mock.t.Fatalf("Times of HookRequestMock.GetSettings mock can not be zero")
+	}
+	mm_atomic.StoreUint64(&mmGetSettings.expectedInvocations, n)
+	mmGetSettings.expectedInvocationsOrigin = minimock.CallerInfo(1)
+	return mmGetSettings
+}
+
+func (mmGetSettings *mHookRequestMockGetSettings) invocationsDone() bool {
+	if len(mmGetSettings.expectations) == 0 && mmGetSettings.defaultExpectation == nil && mmGetSettings.mock.funcGetSettings == nil {
+		return true
+	}
+
+	totalInvocations := mm_atomic.LoadUint64(&mmGetSettings.mock.afterGetSettingsCounter)
+	expectedInvocations := mm_atomic.LoadUint64(&mmGetSettings.expectedInvocations)
+
+	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
+}
+
+// GetSettings implements Request
+func (mmGetSettings *HookRequestMock) GetSettings() (m1 map[string]any, err error) {
+	mm_atomic.AddUint64(&mmGetSettings.beforeGetSettingsCounter, 1)
+	defer mm_atomic.AddUint64(&mmGetSettings.afterGetSettingsCounter, 1)
+
+	mmGetSettings.t.Helper()
+
+	if mmGetSettings.inspectFuncGetSettings != nil {
+		mmGetSettings.inspectFuncGetSettings()
+	}
+
+	if mmGetSettings.GetSettingsMock.defaultExpectation != nil {
+		mm_atomic.AddUint64(&mmGetSettings.GetSettingsMock.defaultExpectation.Counter, 1)
+
+		mm_results := mmGetSettings.GetSettingsMock.defaultExpectation.results
+		if mm_results == nil {
+			mmGetSettings.t.Fatal("No results are set for the HookRequestMock.GetSettings")
+		}
+		return (*mm_results).m1, (*mm_results).err
+	}
+	if mmGetSettings.funcGetSettings != nil {
+		return mmGetSettings.funcGetSettings()
+	}
+	mmGetSettings.t.Fatalf("Unexpected call to HookRequestMock.GetSettings.")
+	return
+}
+
+// GetSettingsAfterCounter returns a count of finished HookRequestMock.GetSettings invocations
+func (mmGetSettings *HookRequestMock) GetSettingsAfterCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetSettings.afterGetSettingsCounter)
+}
+
+// GetSettingsBeforeCounter returns a count of HookRequestMock.GetSettings invocations
+func (mmGetSettings *HookRequestMock) GetSettingsBeforeCounter() uint64 {
+	return mm_atomic.LoadUint64(&mmGetSettings.beforeGetSettingsCounter)
+}
+
+// MinimockGetSettingsDone returns true if the count of the GetSettings invocations corresponds
+// the number of defined expectations
+func (m *HookRequestMock) MinimockGetSettingsDone() bool {
+	if m.GetSettingsMock.optional {
+		// Optional methods provide '0 or more' call count restriction.
+		return true
+	}
+
+	for _, e := range m.GetSettingsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			return false
+		}
+	}
+
+	return m.GetSettingsMock.invocationsDone()
+}
+
+// MinimockGetSettingsInspect logs each unmet expectation
+func (m *HookRequestMock) MinimockGetSettingsInspect() {
+	for _, e := range m.GetSettingsMock.expectations {
+		if mm_atomic.LoadUint64(&e.Counter) < 1 {
+			m.t.Error("Expected call to HookRequestMock.GetSettings")
+		}
+	}
+
+	afterGetSettingsCounter := mm_atomic.LoadUint64(&m.afterGetSettingsCounter)
+	// if default expectation was set then invocations count should be greater than zero
+	if m.GetSettingsMock.defaultExpectation != nil && afterGetSettingsCounter < 1 {
+		m.t.Errorf("Expected call to HookRequestMock.GetSettings at\n%s", m.GetSettingsMock.defaultExpectation.returnOrigin)
+	}
+	// if func was set then invocations count should be greater than zero
+	if m.funcGetSettings != nil && afterGetSettingsCounter < 1 {
+		m.t.Errorf("Expected call to HookRequestMock.GetSettings at\n%s", m.funcGetSettingsOrigin)
+	}
+
+	if !m.GetSettingsMock.invocationsDone() && afterGetSettingsCounter > 0 {
+		m.t.Errorf("Expected %d calls to HookRequestMock.GetSettings at\n%s but found %d calls",
+			mm_atomic.LoadUint64(&m.GetSettingsMock.expectedInvocations), m.GetSettingsMock.expectedInvocationsOrigin, afterGetSettingsCounter)
+	}
+}
+
 type mHookRequestMockGetValues struct {
 	optional           bool
 	mock               *HookRequestMock
@@ -639,7 +835,7 @@ type mHookRequestMockGetValues struct {
 	expectedInvocationsOrigin string
 }
 
-// HookRequestMockGetValuesExpectation specifies expectation struct of the HookRequest.GetValues
+// HookRequestMockGetValuesExpectation specifies expectation struct of the Request.GetValues
 type HookRequestMockGetValuesExpectation struct {
 	mock *HookRequestMock
 
@@ -648,7 +844,7 @@ type HookRequestMockGetValuesExpectation struct {
 	Counter      uint64
 }
 
-// HookRequestMockGetValuesResults contains results of the HookRequest.GetValues
+// HookRequestMockGetValuesResults contains results of the Request.GetValues
 type HookRequestMockGetValuesResults struct {
 	m1  map[string]any
 	err error
@@ -664,7 +860,7 @@ func (mmGetValues *mHookRequestMockGetValues) Optional() *mHookRequestMockGetVal
 	return mmGetValues
 }
 
-// Expect sets up expected params for HookRequest.GetValues
+// Expect sets up expected params for Request.GetValues
 func (mmGetValues *mHookRequestMockGetValues) Expect() *mHookRequestMockGetValues {
 	if mmGetValues.mock.funcGetValues != nil {
 		mmGetValues.mock.t.Fatalf("HookRequestMock.GetValues mock is already set by Set")
@@ -677,7 +873,7 @@ func (mmGetValues *mHookRequestMockGetValues) Expect() *mHookRequestMockGetValue
 	return mmGetValues
 }
 
-// Inspect accepts an inspector function that has same arguments as the HookRequest.GetValues
+// Inspect accepts an inspector function that has same arguments as the Request.GetValues
 func (mmGetValues *mHookRequestMockGetValues) Inspect(f func()) *mHookRequestMockGetValues {
 	if mmGetValues.mock.inspectFuncGetValues != nil {
 		mmGetValues.mock.t.Fatalf("Inspect function is already set for HookRequestMock.GetValues")
@@ -688,7 +884,7 @@ func (mmGetValues *mHookRequestMockGetValues) Inspect(f func()) *mHookRequestMoc
 	return mmGetValues
 }
 
-// Return sets up results that will be returned by HookRequest.GetValues
+// Return sets up results that will be returned by Request.GetValues
 func (mmGetValues *mHookRequestMockGetValues) Return(m1 map[string]any, err error) *HookRequestMock {
 	if mmGetValues.mock.funcGetValues != nil {
 		mmGetValues.mock.t.Fatalf("HookRequestMock.GetValues mock is already set by Set")
@@ -702,14 +898,14 @@ func (mmGetValues *mHookRequestMockGetValues) Return(m1 map[string]any, err erro
 	return mmGetValues.mock
 }
 
-// Set uses given function f to mock the HookRequest.GetValues method
+// Set uses given function f to mock the Request.GetValues method
 func (mmGetValues *mHookRequestMockGetValues) Set(f func() (m1 map[string]any, err error)) *HookRequestMock {
 	if mmGetValues.defaultExpectation != nil {
-		mmGetValues.mock.t.Fatalf("Default expectation is already set for the HookRequest.GetValues method")
+		mmGetValues.mock.t.Fatalf("Default expectation is already set for the Request.GetValues method")
 	}
 
 	if len(mmGetValues.expectations) > 0 {
-		mmGetValues.mock.t.Fatalf("Some expectations are already set for the HookRequest.GetValues method")
+		mmGetValues.mock.t.Fatalf("Some expectations are already set for the Request.GetValues method")
 	}
 
 	mmGetValues.mock.funcGetValues = f
@@ -717,7 +913,7 @@ func (mmGetValues *mHookRequestMockGetValues) Set(f func() (m1 map[string]any, e
 	return mmGetValues.mock
 }
 
-// Times sets number of times HookRequest.GetValues should be invoked
+// Times sets number of times Request.GetValues should be invoked
 func (mmGetValues *mHookRequestMockGetValues) Times(n uint64) *mHookRequestMockGetValues {
 	if n == 0 {
 		mmGetValues.mock.t.Fatalf("Times of HookRequestMock.GetValues mock can not be zero")
@@ -738,7 +934,7 @@ func (mmGetValues *mHookRequestMockGetValues) invocationsDone() bool {
 	return totalInvocations > 0 && (expectedInvocations == 0 || expectedInvocations == totalInvocations)
 }
 
-// GetValues implements HookRequest
+// GetValues implements Request
 func (mmGetValues *HookRequestMock) GetValues() (m1 map[string]any, err error) {
 	mm_atomic.AddUint64(&mmGetValues.beforeGetValuesCounter, 1)
 	defer mm_atomic.AddUint64(&mmGetValues.afterGetValuesCounter, 1)
@@ -826,6 +1022,8 @@ func (m *HookRequestMock) MinimockFinish() {
 
 			m.MinimockGetDependencyContainerInspect()
 
+			m.MinimockGetSettingsInspect()
+
 			m.MinimockGetValuesInspect()
 		}
 	})
@@ -853,5 +1051,6 @@ func (m *HookRequestMock) minimockDone() bool {
 		m.MinimockGetBindingContextsDone() &&
 		m.MinimockGetConfigValuesDone() &&
 		m.MinimockGetDependencyContainerDone() &&
+		m.MinimockGetSettingsDone() &&
 		m.MinimockGetValuesDone()
 }

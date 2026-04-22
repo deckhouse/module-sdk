@@ -21,6 +21,7 @@ type Config struct {
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
+	SettingsPath       string
 
 	// output
 	MetricsPath          string
@@ -40,6 +41,7 @@ type Transport struct {
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
+	SettingsPath       string
 
 	// output
 	MetricsPath          string
@@ -65,6 +67,7 @@ func NewTransport(cfg *Config, hookName string, dc pkg.DependencyContainer, logg
 		BindingContextPath: cfg.BindingContextPath,
 		ValuesPath:         cfg.ValuesPath,
 		ConfigValuesPath:   cfg.ConfigValuesPath,
+		SettingsPath:       cfg.SettingsPath,
 
 		MetricsPath:          cfg.MetricsPath,
 		KubernetesPath:       cfg.KubernetesPath,
@@ -86,6 +89,7 @@ func (t *Transport) NewRequest() *Request {
 		BindingContextPath: t.BindingContextPath,
 		ValuesPath:         t.ValuesPath,
 		ConfigValuesPath:   t.ConfigValuesPath,
+		SettingsPath:       t.SettingsPath,
 
 		dc: t.dc,
 
@@ -99,6 +103,7 @@ type Request struct {
 	BindingContextPath string
 	ValuesPath         string
 	ConfigValuesPath   string
+	SettingsPath       string
 
 	dc pkg.DependencyContainer
 
@@ -118,6 +123,15 @@ func (r *Request) GetConfigValues() (map[string]any, error) {
 	values, err := r.loadValuesFromFile(r.ConfigValuesPath)
 	if err != nil {
 		return nil, fmt.Errorf("load values from file: %w", err)
+	}
+
+	return values, nil
+}
+
+func (r *Request) GetSettings() (map[string]any, error) {
+	values, err := r.loadValuesFromFile(r.SettingsPath)
+	if err != nil {
+		return nil, fmt.Errorf("load settings from file: %w", err)
 	}
 
 	return values, nil

@@ -24,6 +24,8 @@ type Request interface {
 	GetValues() (map[string]any, error)
 	// GetConfigValues returns the module's ConfigMap values.
 	GetConfigValues() (map[string]any, error)
+	// GetSettings returns the application's readonly Settings (may be nil).
+	GetSettings() (map[string]any, error)
 	// GetBindingContexts returns Kubernetes binding contexts with snapshots.
 	GetBindingContexts() ([]bctx.BindingContext, error)
 	// GetDependencyContainer returns the container with external dependencies.

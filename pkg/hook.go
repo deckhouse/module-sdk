@@ -72,6 +72,7 @@ type ApplicationHookInput struct {
 	Instance Instance
 
 	Values           PatchableValuesCollector
+	Settings         ReadableValuesCollector
 	PatchCollector   NamespacedPatchCollector
 	MetricsCollector MetricsCollector
 

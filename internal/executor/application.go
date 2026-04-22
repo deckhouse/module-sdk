@@ -46,6 +46,18 @@ func (e *applicationExecutor) Execute(ctx context.Context, req Request) (Result,
 		return nil, fmt.Errorf("get patchable values: %w", err)
 	}
 
+	rawSettings, err := req.GetSettings()
+	if err != nil {
+		e.logger.Error("get settings", slog.String("error", err.Error()))
+		return nil, fmt.Errorf("get settings: %w", err)
+	}
+
+	patchableSettings, err := patchablevalues.NewPatchableValues(rawSettings)
+	if err != nil {
+		e.logger.Error("new patchable settings", slog.String("error", err.Error()))
+		return nil, fmt.Errorf("get patchable settings: %w", err)
+	}
+
 	bContext, err := req.GetBindingContexts()
 	if err != nil {
 		e.logger.Warn("get binding context", slog.String("error", err.Error()))
@@ -85,6 +97,7 @@ func (e *applicationExecutor) Execute(ctx context.Context, req Request) (Result,
 		Snapshots:        formattedSnapshots,
 		Instance:         inst,
 		Values:           patchableValues,
+		Settings:         patchableSettings,
 		PatchCollector:   namespacedPatchCollector,
 		MetricsCollector: metricsCollector,
 		DC:               dc,
