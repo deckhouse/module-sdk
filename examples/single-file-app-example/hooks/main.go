@@ -36,6 +36,12 @@ var config = &pkg.ApplicationHookConfig{
 }
 
 func Handle(_ context.Context, input *pkg.ApplicationHookInput) error {
+	enabled, ok := input.Settings.GetOk("apiServersDiscovery.enabled")
+	if !ok || !enabled.Bool() {
+		input.Logger.Info("apiServersDiscovery.enabled is not set — skipping")
+		return nil
+	}
+
 	podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, SnapshotKey)
 	if err != nil {
 		return err
