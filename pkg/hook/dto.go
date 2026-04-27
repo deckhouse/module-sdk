@@ -32,11 +32,12 @@ type HookConfig struct {
 	// OnStartup runs hook on module/global startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
-	OnStartup         *uint `yaml:"onStartup,omitempty" json:"onStartup,omitempty"`
-	OnBeforeHelm      *uint `yaml:"beforeHelm,omitempty" json:"beforeHelm,omitempty"`
-	OnAfterHelm       *uint `yaml:"afterHelm,omitempty" json:"afterHelm,omitempty"`
-	OnAfterDeleteHelm *uint `yaml:"afterDeleteHelm,omitempty" json:"afterDeleteHelm,omitempty"`
-	AllowFailure      *bool `yaml:"allowFailure,omitempty" json:"allowFailure,omitempty"`
+	OnStartup          *uint `yaml:"onStartup,omitempty" json:"onStartup,omitempty"`
+	OnBeforeHelm       *uint `yaml:"beforeHelm,omitempty" json:"beforeHelm,omitempty"`
+	OnAfterHelm        *uint `yaml:"afterHelm,omitempty" json:"afterHelm,omitempty"`
+	OnBeforeDeleteHelm *uint `yaml:"beforeDeleteHelm,omitempty" json:"beforeDeleteHelm,omitempty"`
+	OnAfterDeleteHelm  *uint `yaml:"afterDeleteHelm,omitempty" json:"afterDeleteHelm,omitempty"`
+	AllowFailure       *bool `yaml:"allowFailure,omitempty" json:"allowFailure,omitempty"`
 
 	Settings *HookConfigSettings `yaml:"settings,omitempty" json:"settings,omitempty"`
 
