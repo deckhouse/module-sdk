@@ -548,6 +548,64 @@ func Test_GenSelfSignedTLS(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("common ca with custom cert field name", func(t *testing.T) {
+		dc := mock.NewDependencyContainerMock(t)
+
+		snapshots := mock.NewSnapshotsMock(t)
+		snapshots.GetMock.When(tlscertificate.InternalTLSSnapshotKey).Then([]pkg.Snapshot{})
+
+		ca, err := certificate.GenerateCA(
+			"cert-name",
+			certificate.WithKeyAlgo("ecdsa"),
+			certificate.WithKeySize(256),
+			certificate.WithCAExpiry(tenYears))
+		assert.NoError(t, err)
+
+		values := mock.NewOutputPatchableValuesCollectorMock(t)
+
+		values.GetMock.When("global.discovery.clusterDomain").Then(gjson.Result{Type: gjson.String, Str: "cluster.local"})
+		values.GetMock.When("global.modules.publicDomainTemplate").Then(gjson.Result{Type: gjson.String, Str: "%s.127.0.0.1.sslip.io"})
+
+		// CA is stored at custom field name "cert" instead of default "crt"
+		values.GetOkMock.When("global.internal.modules.kubeRBACProxyCA.cert").Then(gjson.Result{Type: gjson.String, Str: string(ca.Cert)}, true)
+		values.GetOkMock.When("global.internal.modules.kubeRBACProxyCA.key").Then(gjson.Result{Type: gjson.String, Str: string(ca.Key)}, true)
+
+		values.SetMock.Set(func(path string, v any) {
+			assert.Equal(t, "d8-example-module.internal.kubeRBACProxyCert", path)
+
+			vals, ok := v.(tlscertificate.CertValues)
+			assert.True(t, ok)
+
+			assert.NotEmpty(t, vals.CA)
+			assert.NotEmpty(t, vals.Crt)
+			assert.NotEmpty(t, vals.Key)
+
+			parsedCert, err := certificate.ParseCertificate([]byte(vals.Crt))
+			assert.NoError(t, err)
+			assert.Equal(t, parsedCert.Issuer.CommonName, "cert-name")
+		})
+
+		var input = &pkg.HookInput{
+			Snapshots: snapshots,
+			Values:    values,
+			DC:        dc,
+			Logger:    log.NewNop(),
+		}
+
+		config := tlscertificate.GenSelfSignedTLSHookConf{
+			CN:                   "cert-name",
+			TLSSecretName:        "secret-kube-rbac-proxy-cert",
+			Namespace:            "some-namespace",
+			SANs:                 tlscertificate.DefaultSANs([]string{"example-svc"}),
+			FullValuesPathPrefix: "d8-example-module.internal.kubeRBACProxyCert",
+			CommonCAValuesPath:   "global.internal.modules.kubeRBACProxyCA",
+			CommonCACertField:    "cert",
+		}
+
+		err = tlscertificate.GenSelfSignedTLS(config)(context.Background(), input)
+		assert.NoError(t, err)
+	})
+
 	t.Run("wrong certificate expiry duration in snapshot", func(t *testing.T) {
 		dc := mock.NewDependencyContainerMock(t)
 
