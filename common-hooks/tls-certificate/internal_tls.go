@@ -19,7 +19,6 @@ package tlscertificate
 import (
 	"context"
 	"crypto/x509"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -101,11 +100,18 @@ type GenSelfSignedTLSHookConf struct {
 	//   CommonCAValuesPath
 	// Example: CommonCAValuesPath =  'commonCaPath'
 	// Values to store:
-	// commonCaPath.key
-	// commonCaPath.crt
+	// commonCaPath.<CommonCACertField>  (default: commonCaPath.crt)
+	// commonCaPath.<CommonCAKeyField>   (default: commonCaPath.key)
 	// Data in values store as plain text
 	// In helm templates you need use `b64enc` function to encode
 	CommonCAValuesPath string
+	// CommonCACertField - field name for the cert within CommonCAValuesPath object.
+	// Defaults to "crt" if empty.
+	// Example: set to "cert" if the CA is stored as commonCaPath.cert instead of commonCaPath.crt
+	CommonCACertField string
+	// CommonCAKeyField - field name for the key within CommonCAValuesPath object.
+	// Defaults to "key" if empty.
+	CommonCAKeyField string
 	// Canonical name (CN) of common CA certificate.
 	// If not specified (empty), then (if no CA cert already generated) using CN property of this struct
 	CommonCACanonicalName string
@@ -132,6 +138,20 @@ func (gss GenSelfSignedTLSHookConf) Path() string {
 
 func (gss GenSelfSignedTLSHookConf) CommonCAPath() string {
 	return strings.TrimSuffix(gss.CommonCAValuesPath, ".")
+}
+
+func (gss GenSelfSignedTLSHookConf) CACertField() string {
+	if gss.CommonCACertField == "" {
+		return "crt"
+	}
+	return gss.CommonCACertField
+}
+
+func (gss GenSelfSignedTLSHookConf) CAKeyField() string {
+	if gss.CommonCAKeyField == "" {
+		return "key"
+	}
+	return gss.CommonCAKeyField
 }
 
 // SANsGenerator function for generating sans
@@ -281,7 +301,7 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 		// 2.2) save new common ca in values
 		// 2.3) mark certificates to regenerate
 		if useCommonCA {
-			auth, err = getCommonCA(input, conf.CommonCAPath(), caExpiryDuration, caOutdatedDuration)
+			auth, err = getCommonCA(input, conf.CommonCAPath(), conf.CACertField(), conf.CAKeyField(), caExpiryDuration, caOutdatedDuration)
 			if err != nil {
 				commonCACanonicalName := conf.CommonCACanonicalName
 
@@ -298,7 +318,8 @@ func GenSelfSignedTLS(conf GenSelfSignedTLSHookConf) func(ctx context.Context, i
 					return fmt.Errorf("generate ca: %w", err)
 				}
 
-				input.Values.Set(conf.CommonCAPath(), auth)
+				input.Values.Set(conf.CommonCAPath()+"."+conf.CACertField(), string(auth.Cert))
+				input.Values.Set(conf.CommonCAPath()+"."+conf.CAKeyField(), string(auth.Key))
 
 				mustGenerate = true
 			}
@@ -384,17 +405,20 @@ func convCertToValues(cert *certificate.Certificate) CertValues {
 var ErrCertificateIsNotFound = errors.New("certificate is not found")
 var ErrCAIsInvalidOrOutdated = errors.New("ca is invalid or outdated")
 
-func getCommonCA(input *pkg.HookInput, valKey string, caExpiryDuration, caOutdatedDuration time.Duration) (*certificate.Authority, error) {
-	auth := new(certificate.Authority)
-
-	ca, ok := input.Values.GetOk(valKey)
+func getCommonCA(input *pkg.HookInput, valKey, certField, keyField string, caExpiryDuration, caOutdatedDuration time.Duration) (*certificate.Authority, error) {
+	certVal, ok := input.Values.GetOk(valKey + "." + certField)
 	if !ok {
 		return nil, ErrCertificateIsNotFound
 	}
 
-	err := json.Unmarshal([]byte(ca.String()), auth)
-	if err != nil {
-		return nil, err
+	keyVal, ok := input.Values.GetOk(valKey + "." + keyField)
+	if !ok {
+		return nil, ErrCertificateIsNotFound
+	}
+
+	auth := &certificate.Authority{
+		Cert: []byte(certVal.String()),
+		Key:  []byte(keyVal.String()),
 	}
 
 	outdated, err := isOutdatedCA(auth.Cert, caExpiryDuration, caOutdatedDuration)
