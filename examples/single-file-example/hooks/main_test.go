@@ -2,55 +2,41 @@ package main_test
 
 import (
 	"context"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
-	"github.com/deckhouse/deckhouse/pkg/log"
-
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 
 	singlefileexample "singlefileexample"
 )
 
-const (
-	firstSnapshot  = "one"
-	secondSnapshot = "two"
-)
+func TestHandle_PopulatesValuesFromSnapshot(t *testing.T) {
+	in := helpers.NewInputBuilder(t).
+		WithSnapshot(singlefileexample.SnapshotKey,
+			helpers.SnapshotFromObject("apiserver-1"),
+			helpers.SnapshotFromObject("apiserver-2"),
+		).
+		Build()
 
-var _ = Describe("handle hook single file example", func() {
-	snapshots := mock.NewSnapshotsMock(GinkgoT())
-	snapshots.GetMock.When(singlefileexample.SnapshotKey).Then(
-		[]pkg.Snapshot{
-			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
-				str := v.(*string)
-				*str = firstSnapshot
+	require.NoError(t, singlefileexample.Handle(context.Background(), in))
 
-				return nil
-			}),
-			mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
-				str := v.(*string)
-				*str = secondSnapshot
+	patches := in.Values.GetPatches()
+	require.Len(t, patches, 1, "expected exactly one Set call")
 
-				return nil
-			}),
-		},
-	)
+	op := patches[0]
+	assert.Equal(t, "add", op.Op)
+	assert.Equal(t, "/test/internal/apiServers", op.Path)
+	assert.JSONEq(t, `["apiserver-1","apiserver-2"]`, string(op.Value))
+}
 
-	values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-	values.SetMock.When("test.internal.apiServers", []string{firstSnapshot, secondSnapshot})
+func TestHandle_NoSnapshotsWritesEmptySlice(t *testing.T) {
+	in := helpers.NewInputBuilder(t).Build()
 
-	var input = &pkg.HookInput{
-		Snapshots: snapshots,
-		Values:    values,
-		Logger:    log.NewNop(),
-	}
+	require.NoError(t, singlefileexample.Handle(context.Background(), in))
 
-	Context("refoncile func", func() {
-		It("reconcile func executed correctly", func() {
-			err := singlefileexample.Handle(context.Background(), input)
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-	})
-})
+	patches := in.Values.GetPatches()
+	require.Len(t, patches, 1)
+	assert.JSONEq(t, `[]`, string(patches[0].Value))
+}

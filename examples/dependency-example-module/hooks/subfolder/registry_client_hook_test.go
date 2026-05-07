@@ -3,16 +3,15 @@ package hookinfolder_test
 import (
 	"context"
 	"errors"
-	"fmt"
+	"testing"
 
 	"github.com/gojuno/minimock/v3"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 	"github.com/deckhouse/module-sdk/testing/mock"
 
 	subfolder "dependency-example-module/subfolder"
@@ -23,175 +22,104 @@ const (
 	secondTag = "v2.0.0"
 )
 
-var _ = Describe("registry client hook example", func() {
-	Context("refoncile func", func() {
-		When("all services works correctly", func() {
-			dc := mock.NewDependencyContainerMock(GinkgoT())
+// registryDC wires a DependencyContainerMock whose MustGetRegistryClient
+// returns the provided RegistryClientMock for the configured registry
+// address. The caller fully owns the mock (set up tags, image, digest, …).
+func registryDC(t *testing.T, regClient *mock.RegistryClientMock) pkg.DependencyContainer {
+	t.Helper()
+	dc := mock.NewDependencyContainerMock(t)
+	dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).Then(regClient)
+	return dc
+}
 
-			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
-				return []string{
-					firstTag, secondTag,
-				}, nil
-			})
+func TestHandlerRegistryClient_AllOK(t *testing.T) {
+	rc := mock.NewRegistryClientMock(t)
+	rc.ListTagsMock.Return([]string{firstTag, secondTag}, nil)
 
-			regClient.ImageMock.When(minimock.AnyContext, firstTag).
-				Then(mock.NewRegistryImageMock(GinkgoT()).ConfigNameMock.Expect().
-					Return(v1.Hash{Algorithm: "sha256", Hex: "abcdef1"}, nil), nil)
-			regClient.DigestMock.When(minimock.AnyContext, firstTag).
-				Then("first digest", nil)
+	rc.ImageMock.When(minimock.AnyContext, firstTag).
+		Then(mock.NewRegistryImageMock(t).ConfigNameMock.Expect().
+			Return(v1.Hash{Algorithm: "sha256", Hex: "abcdef1"}, nil), nil)
+	rc.ImageMock.When(minimock.AnyContext, secondTag).
+		Then(mock.NewRegistryImageMock(t).ConfigNameMock.Expect().
+			Return(v1.Hash{Algorithm: "sha256", Hex: "abcdef2"}, nil), nil)
 
-			regClient.ImageMock.When(minimock.AnyContext, secondTag).
-				Then(mock.NewRegistryImageMock(GinkgoT()).ConfigNameMock.Expect().
-					Return(v1.Hash{Algorithm: "sha256", Hex: "abcdef2"}, nil), nil)
-			regClient.DigestMock.When(minimock.AnyContext, secondTag).
-				Then("second digest", nil)
+	rc.DigestMock.When(minimock.AnyContext, firstTag).Then("first digest", nil)
+	rc.DigestMock.When(minimock.AnyContext, secondTag).Then("second digest", nil)
 
-			dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).
-				Then(regClient)
+	in := helpers.NewInputBuilder(t).
+		WithDependencyContainer(registryDC(t, rc)).
+		Build()
 
-			var input = &pkg.HookInput{
-				DC:     dc,
-				Logger: log.NewNop(),
-			}
+	require.NoError(t, subfolder.HandlerRegistryClient(context.Background(), in))
+}
 
-			It("reconcile func executed correctly", func() {
-				err := subfolder.HandlerRegistryClient(context.Background(), input)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
+func TestHandlerRegistryClient_NoTagsOK(t *testing.T) {
+	rc := mock.NewRegistryClientMock(t)
+	rc.ListTagsMock.Return([]string{}, nil)
+
+	in := helpers.NewInputBuilder(t).
+		WithDependencyContainer(registryDC(t, rc)).
+		Build()
+
+	require.NoError(t, subfolder.HandlerRegistryClient(context.Background(), in))
+}
+
+func TestHandlerRegistryClient_FailureCases(t *testing.T) {
+	cases := []struct {
+		name      string
+		setup     func(*mock.RegistryClientMock)
+		wantInMsg string
+	}{
+		{
+			name: "list tags error",
+			setup: func(rc *mock.RegistryClientMock) {
+				rc.ListTagsMock.Return(nil, errors.New("boom"))
+			},
+			wantInMsg: "list tags:",
+		},
+		{
+			name: "image error",
+			setup: func(rc *mock.RegistryClientMock) {
+				rc.ListTagsMock.Return([]string{firstTag, secondTag}, nil)
+				rc.ImageMock.When(minimock.AnyContext, firstTag).Then(nil, errors.New("boom"))
+			},
+			wantInMsg: "image:",
+		},
+		{
+			name: "config name error",
+			setup: func(rc *mock.RegistryClientMock) {
+				rc.ListTagsMock.Return([]string{firstTag, secondTag}, nil)
+				rc.ImageMock.When(minimock.AnyContext, firstTag).
+					Then(mock.NewRegistryImageMock(t).ConfigNameMock.Expect().
+						Return(v1.Hash{}, errors.New("boom")), nil)
+			},
+			wantInMsg: "config name:",
+		},
+		{
+			name: "digest error",
+			setup: func(rc *mock.RegistryClientMock) {
+				rc.ListTagsMock.Return([]string{firstTag, secondTag}, nil)
+				rc.ImageMock.When(minimock.AnyContext, firstTag).
+					Then(mock.NewRegistryImageMock(t).ConfigNameMock.Expect().
+						Return(v1.Hash{Algorithm: "sha256", Hex: "abcdef1"}, nil), nil)
+				rc.DigestMock.When(minimock.AnyContext, firstTag).Then("", errors.New("boom"))
+			},
+			wantInMsg: "digest:",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			rc := mock.NewRegistryClientMock(t)
+			tc.setup(rc)
+
+			in := helpers.NewInputBuilder(t).
+				WithDependencyContainer(registryDC(t, rc)).
+				Build()
+
+			err := subfolder.HandlerRegistryClient(context.Background(), in)
+			require.Error(t, err)
+			assert.ErrorContains(t, err, tc.wantInMsg)
 		})
-
-		When("no tags listed", func() {
-			dc := mock.NewDependencyContainerMock(GinkgoT())
-
-			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
-				return []string{}, nil
-			})
-
-			dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).
-				Then(regClient)
-
-			var input = &pkg.HookInput{
-				DC:     dc,
-				Logger: log.NewNop(),
-			}
-
-			It("reconcile func executed correctly", func() {
-				err := subfolder.HandlerRegistryClient(context.Background(), input)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
-
-		When("list tags error", func() {
-			dc := mock.NewDependencyContainerMock(GinkgoT())
-
-			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
-				return nil, errors.New("error")
-			})
-
-			dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).
-				Then(regClient)
-
-			var input = &pkg.HookInput{
-				DC:     dc,
-				Logger: log.NewNop(),
-			}
-
-			It("error has occurred", func() {
-				err := subfolder.HandlerRegistryClient(context.Background(), input)
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(Equal(fmt.Errorf("list tags: %w", errors.New("error"))))
-			})
-		})
-
-		When("getting image errror", func() {
-			dc := mock.NewDependencyContainerMock(GinkgoT())
-
-			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
-				return []string{
-					firstTag, secondTag,
-				}, nil
-			})
-
-			regClient.ImageMock.When(minimock.AnyContext, firstTag).
-				Then(nil, errors.New("error"))
-
-			dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).
-				Then(regClient)
-
-			var input = &pkg.HookInput{
-				DC:     dc,
-				Logger: log.NewNop(),
-			}
-
-			It("error has occurred", func() {
-				err := subfolder.HandlerRegistryClient(context.Background(), input)
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(Equal(fmt.Errorf("image: %w", errors.New("error"))))
-			})
-		})
-
-		When("config name error", func() {
-			dc := mock.NewDependencyContainerMock(GinkgoT())
-
-			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
-				return []string{
-					firstTag, secondTag,
-				}, nil
-			})
-
-			regClient.ImageMock.When(minimock.AnyContext, firstTag).
-				Then(mock.NewRegistryImageMock(GinkgoT()).ConfigNameMock.Expect().
-					Return(v1.Hash{}, errors.New("error")), nil)
-
-			dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).
-				Then(regClient)
-
-			var input = &pkg.HookInput{
-				DC:     dc,
-				Logger: log.NewNop(),
-			}
-
-			It("error has occurred", func() {
-				err := subfolder.HandlerRegistryClient(context.Background(), input)
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(Equal(fmt.Errorf("config name: %w", errors.New("error"))))
-			})
-		})
-
-		When("get digest error", func() {
-			dc := mock.NewDependencyContainerMock(GinkgoT())
-
-			regClient := mock.NewRegistryClientMock(GinkgoT())
-			regClient.ListTagsMock.Set(func(_ context.Context) ([]string, error) {
-				return []string{
-					firstTag, secondTag,
-				}, nil
-			})
-
-			regClient.ImageMock.When(minimock.AnyContext, firstTag).
-				Then(mock.NewRegistryImageMock(GinkgoT()).ConfigNameMock.Expect().
-					Return(v1.Hash{Algorithm: "sha256", Hex: "abcdef1"}, nil), nil)
-			regClient.DigestMock.When(minimock.AnyContext, firstTag).
-				Then("", errors.New("error"))
-
-			dc.MustGetRegistryClientMock.When(subfolder.RegistryAddress).
-				Then(regClient)
-
-			var input = &pkg.HookInput{
-				DC:     dc,
-				Logger: log.NewNop(),
-			}
-
-			It("error has occurred", func() {
-				err := subfolder.HandlerRegistryClient(context.Background(), input)
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(Equal(fmt.Errorf("digest: %w", errors.New("error"))))
-			})
-		})
-	})
-})
+	}
+}

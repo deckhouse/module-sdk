@@ -17,86 +17,77 @@ limitations under the License.
 package tlscertificate_test
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	tlscertificate "github.com/deckhouse/module-sdk/common-hooks/tls-certificate"
 	"github.com/deckhouse/module-sdk/pkg/certificate"
-	"github.com/deckhouse/module-sdk/pkg/jq"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 )
 
-func Test_JQFilterApplyCertificateSecret(t *testing.T) {
-	t.Run("apply tls", func(t *testing.T) {
-		const rawSecret = `
-		{
-	  "apiVersion": "v1",
-	  "data": {
-		"ca.crt": "c29tZS1jYQ==",
-		"tls.crt": "c29tZS1jcnQ=",
-		"tls.key": "c29tZS1rZXk="
-	  },
-	  "kind": "Secret",
-	  "metadata": {
-		"name": "some-cert",
-		"namespace": "some-ns"
-	  },
-	  "type": "kubernetes.io/tls"
-	}`
-
-		q, err := jq.NewQuery(tlscertificate.JQFilterApplyCertificateSecret)
-		assert.NoError(t, err)
-
-		res, err := q.FilterStringObject(context.Background(), rawSecret)
-		assert.NoError(t, err)
-
-		auth := new(certificate.Certificate)
-		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(auth)
-		assert.NoError(t, err)
-
-		assert.Equal(t, "some-key", string(auth.Key))
-		assert.Equal(t, "some-crt", string(auth.Cert))
-		assert.Equal(t, "some-cert", auth.Name)
-	})
-
-	t.Run("apply tls from client", func(t *testing.T) {
-		const rawSecret = `
-		{
-	  "apiVersion": "v1",
-	  "data": {
-		"ca.crt": "c29tZS1jYQ==",
-		"client.crt": "c29tZS1jcnQ=",
-		"client.key": "c29tZS1rZXk="
-	  },
-	  "kind": "Secret",
-	  "metadata": {
-		"name": "some-cert",
-		"namespace": "some-ns"
-	  },
-	  "type": "kubernetes.io/tls"
-	}`
-
-		q, err := jq.NewQuery(tlscertificate.JQFilterApplyCertificateSecret)
-		assert.NoError(t, err)
-
-		res, err := q.FilterStringObject(context.Background(), rawSecret)
-		assert.NoError(t, err)
-
-		cert := new(certificate.Certificate)
-		err = json.NewDecoder(bytes.NewBufferString(res.String())).Decode(cert)
-		assert.NoError(t, err)
-
-		assert.Equal(t, "some-key", string(cert.Key))
-		assert.Equal(t, "some-crt", string(cert.Cert))
-		assert.Equal(t, "some-cert", cert.Name)
-	})
+// secretWithKeys is a small helper that returns a JSON-encoded TLS Secret
+// whose `data.<keyPrefix>.crt`, `data.<keyPrefix>.key`, and `data.ca.crt`
+// fields are pre-populated with base64 of the expected plaintext values.
+func secretWithKeys(keyPrefix string) string {
+	switch keyPrefix {
+	case "tls":
+		return `{
+  "apiVersion": "v1",
+  "data": {
+    "ca.crt":  "c29tZS1jYQ==",
+    "tls.crt": "c29tZS1jcnQ=",
+    "tls.key": "c29tZS1rZXk="
+  },
+  "kind": "Secret",
+  "metadata": {"name": "some-cert", "namespace": "some-ns"},
+  "type": "kubernetes.io/tls"
+}`
+	case "client":
+		return `{
+  "apiVersion": "v1",
+  "data": {
+    "ca.crt":     "c29tZS1jYQ==",
+    "client.crt": "c29tZS1jcnQ=",
+    "client.key": "c29tZS1rZXk="
+  },
+  "kind": "Secret",
+  "metadata": {"name": "some-cert", "namespace": "some-ns"},
+  "type": "kubernetes.io/tls"
+}`
+	}
+	panic("unsupported prefix")
 }
 
-func Test_CertificateHandlerConfig(t *testing.T) {
-	t.Run("config is valid", func(t *testing.T) {
-		assert.NoError(t, tlscertificate.CertificateHandlerConfig([]string{}, []string{}).Validate())
-	})
+func TestJQFilterApplyCertificateSecret(t *testing.T) {
+	cases := []struct {
+		name      string
+		keyPrefix string
+	}{
+		{name: "tls keys", keyPrefix: "tls"},
+		{name: "client keys", keyPrefix: "client"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cert := new(certificate.Certificate)
+
+			require.NoError(t, helpers.JQRunOnString(
+				context.Background(),
+				tlscertificate.JQFilterApplyCertificateSecret,
+				secretWithKeys(tc.keyPrefix),
+				cert,
+			))
+
+			assert.Equal(t, "some-cert", cert.Name)
+			assert.Equal(t, "some-key", string(cert.Key))
+			assert.Equal(t, "some-crt", string(cert.Cert))
+		})
+	}
+}
+
+func TestCertificateHandlerConfig_IsValid(t *testing.T) {
+	require.NoError(t, tlscertificate.CertificateHandlerConfig([]string{}, []string{}).Validate())
 }

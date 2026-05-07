@@ -2,78 +2,54 @@ package main_test
 
 import (
 	"context"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/tidwall/gjson"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 
 	singlefileappexample "singlefileappexample"
 )
 
-const (
-	firstSnapshot  = "one"
-	secondSnapshot = "two"
-)
+// newAppInput builds a *pkg.ApplicationHookInput from an InputBuilder.
+// The application hook input has a different shape than the regular
+// HookInput, so we re-pack the relevant collectors.
+func newAppInput(b *helpers.InputBuilder, settings pkg.ReadableValuesCollector) *pkg.ApplicationHookInput {
+	in := b.Build()
+	return &pkg.ApplicationHookInput{
+		Snapshots: in.Snapshots,
+		Values:    in.Values,
+		Settings:  settings,
+		Logger:    in.Logger,
+	}
+}
 
-var _ = Describe("handle hook single file example", func() {
-	Context("settings gate closed", func() {
-		settings := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-		settings.GetOkMock.When("apiServersDiscovery.enabled").Then(gjson.Result{}, false)
+func TestHandle_GateClosed_LeavesValuesUntouched(t *testing.T) {
+	settings := helpers.NewValuesFromJSON(`{"apiServersDiscovery":{"enabled":false}}`)
 
-		values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
+	b := helpers.NewInputBuilder(t)
+	in := newAppInput(b, settings)
 
-		var input = &pkg.ApplicationHookInput{
-			Values:   values,
-			Settings: settings,
-			Logger:   log.NewNop(),
-		}
+	require.NoError(t, singlefileappexample.Handle(context.Background(), in))
+	assert.Empty(t, in.Values.GetPatches(), "no patches expected when gate is closed")
+}
 
-		It("does not touch values when the gate is closed", func() {
-			err := singlefileappexample.Handle(context.Background(), input)
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-	})
+func TestHandle_GateOpen_WritesDiscoveredPodsIntoValues(t *testing.T) {
+	settings := helpers.NewValuesFromJSON(`{"apiServersDiscovery":{"enabled":true}}`)
 
-	Context("settings gate open", func() {
-		snapshots := mock.NewSnapshotsMock(GinkgoT())
-		snapshots.GetMock.When(singlefileappexample.SnapshotKey).Then(
-			[]pkg.Snapshot{
-				mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
-					str := v.(*string)
-					*str = firstSnapshot
-
-					return nil
-				}),
-				mock.NewSnapshotMock(GinkgoT()).UnmarshalToMock.Set(func(v any) error {
-					str := v.(*string)
-					*str = secondSnapshot
-
-					return nil
-				}),
-			},
+	b := helpers.NewInputBuilder(t).
+		WithSnapshot(singlefileappexample.SnapshotKey,
+			helpers.SnapshotFromObject("kube-apiserver-1"),
+			helpers.SnapshotFromObject("kube-apiserver-2"),
 		)
+	in := newAppInput(b, settings)
 
-		settings := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-		settings.GetOkMock.When("apiServersDiscovery.enabled").Then(gjson.Result{Type: gjson.True}, true)
+	require.NoError(t, singlefileappexample.Handle(context.Background(), in))
 
-		values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-		values.SetMock.When("test.internal.apiServers", []string{firstSnapshot, secondSnapshot})
-
-		var input = &pkg.ApplicationHookInput{
-			Snapshots: snapshots,
-			Values:    values,
-			Settings:  settings,
-			Logger:    log.NewNop(),
-		}
-
-		It("writes discovered pods into values when the gate is open", func() {
-			err := singlefileappexample.Handle(context.Background(), input)
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-	})
-})
+	patches := in.Values.GetPatches()
+	require.Len(t, patches, 1)
+	assert.Equal(t, "/test/internal/apiServers", patches[0].Path)
+	assert.JSONEq(t, `["kube-apiserver-1","kube-apiserver-2"]`, string(patches[0].Value))
+}

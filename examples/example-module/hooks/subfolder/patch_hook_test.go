@@ -1,120 +1,70 @@
 package hookinfolder_test
 
 import (
-	"bytes"
 	"context"
 	"strings"
-	"time"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/deckhouse/deckhouse/pkg/log"
-
-	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/testing/mock"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 
 	subfolder "example-module/subfolder"
 )
 
-var _ = Describe("patch hook", func() {
-	Context("HandlerHookPatch function", func() {
-		var (
-			patchCollector *mock.PatchCollectorMock
-			buf            *bytes.Buffer
-			input          *pkg.HookInput
-		)
+// TestHandlerHookPatch_RecordsExpectedOperations verifies that the patch
+// hook issues the full sequence of Create/Delete/Patch operations against
+// its PatchCollector.
+//
+// The RecordingPatchCollector lets us assert on each call without the
+// minimock boilerplate the original Ginkgo test required.
+func TestHandlerHookPatch_RecordsExpectedOperations(t *testing.T) {
+	b := helpers.NewInputBuilder(t).
+		WithRecordingPatchCollector().
+		WithCapturedLogger()
 
-		BeforeEach(func() {
-			patchCollector = mock.NewPatchCollectorMock(GinkgoT())
-			buf = bytes.NewBuffer([]byte{})
+	require.NoError(t, subfolder.HandlerHookPatch(context.Background(), b.Build()))
 
-			input = &pkg.HookInput{
-				PatchCollector: patchCollector,
-				Logger: log.NewLogger(
-					log.WithLevel(log.LevelDebug.Level()),
-					log.WithOutput(buf),
-					log.WithTimeFunc(func(_ time.Time) time.Time {
-						parsedTime, err := time.Parse(time.DateTime, "2006-01-02 15:04:05")
-						Expect(err).ShouldNot(HaveOccurred())
-						return parsedTime
-					}),
-				),
-			}
-		})
+	ops := b.RecordingPatchCollector().Recorded()
+	require.Len(t, ops, 7, "expected 3 creates, 3 deletes and 1 merge patch")
 
-		It("logs hello message and executes patch collector operations", func() {
-			// Set expectations for Create
-			patchCollector.CreateMock.Set(func(obj any) {
-				pod, ok := obj.(*corev1.Pod)
-				Expect(ok).To(BeTrue())
-				Expect(pod.Name).To(Equal("my-first-pod"))
-				Expect(pod.Namespace).To(Equal("default"))
-				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-			})
+	// Creates
+	assert.Equal(t, "Create", ops[0].Op)
+	assert.Equal(t, "my-first-pod", ops[0].Object.(*corev1.Pod).Name)
 
-			// Set expectations for CreateOrUpdate
-			patchCollector.CreateOrUpdateMock.Set(func(obj any) {
-				pod, ok := obj.(*corev1.Pod)
-				Expect(ok).To(BeTrue())
-				Expect(pod.Name).To(Equal("my-second-pod"))
-				Expect(pod.Namespace).To(Equal("default"))
-				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-			})
+	assert.Equal(t, "CreateOrUpdate", ops[1].Op)
+	assert.Equal(t, "my-second-pod", ops[1].Object.(*corev1.Pod).Name)
 
-			// Set expectations for CreateIfNotExists
-			patchCollector.CreateIfNotExistsMock.Set(func(obj any) {
-				pod, ok := obj.(*corev1.Pod)
-				Expect(ok).To(BeTrue())
-				Expect(pod.Name).To(Equal("my-third-pod"))
-				Expect(pod.Namespace).To(Equal("default"))
-				Expect(pod.Status.Phase).To(Equal(corev1.PodRunning))
-			})
+	assert.Equal(t, "CreateIfNotExists", ops[2].Op)
+	assert.Equal(t, "my-third-pod", ops[2].Object.(*corev1.Pod).Name)
 
-			// Set expectations for Delete
-			patchCollector.DeleteMock.Set(func(apiVersion, kind, namespace, name string) {
-				Expect(apiVersion).To(Equal("v1"))
-				Expect(kind).To(Equal("Pod"))
-				Expect(namespace).To(Equal("default"))
-				Expect(name).To(Equal("my-first-pod"))
-			})
+	// Deletes
+	for i, expected := range []struct {
+		op   string
+		name string
+	}{
+		{"Delete", "my-first-pod"},
+		{"DeleteInBackground", "my-second-pod"},
+		{"DeleteNonCascading", "my-third-pod"},
+	} {
+		op := ops[3+i]
+		assert.Equal(t, expected.op, op.Op)
+		assert.Equal(t, "v1", op.APIVersion)
+		assert.Equal(t, "Pod", op.Kind)
+		assert.Equal(t, "default", op.Namespace)
+		assert.Equal(t, expected.name, op.Name)
+	}
 
-			// Set expectations for DeleteInBackground
-			patchCollector.DeleteInBackgroundMock.Set(func(apiVersion, kind, namespace, name string) {
-				Expect(apiVersion).To(Equal("v1"))
-				Expect(kind).To(Equal("Pod"))
-				Expect(namespace).To(Equal("default"))
-				Expect(name).To(Equal("my-second-pod"))
-			})
+	// Merge patch with options
+	mp := ops[6]
+	assert.Equal(t, "MergePatch", mp.Op)
+	assert.Equal(t, "my-third-pod", mp.Name)
+	assert.Equal(t, map[string]any{"/status": "newStatus"}, mp.Patch)
+	assert.Len(t, mp.Options, 2, "WithSubresource + WithIgnoreMissingObject expected")
 
-			// Set expectations for DeleteNonCascading
-			patchCollector.DeleteNonCascadingMock.Set(func(apiVersion, kind, namespace, name string) {
-				Expect(apiVersion).To(Equal("v1"))
-				Expect(kind).To(Equal("Pod"))
-				Expect(namespace).To(Equal("default"))
-				Expect(name).To(Equal("my-third-pod"))
-			})
-
-			// Set expectations for PatchWithMerge
-			patchCollector.PatchWithMergeMock.Set(func(mergePatch any, apiVersion, kind, namespace, name string, opts ...pkg.PatchCollectorOption) {
-				patchMap, ok := mergePatch.(map[string]any)
-				Expect(ok).To(BeTrue())
-				Expect(patchMap).To(HaveKeyWithValue("/status", "newStatus"))
-				Expect(apiVersion).To(Equal("v1"))
-				Expect(kind).To(Equal("Pod"))
-				Expect(namespace).To(Equal("default"))
-				Expect(name).To(Equal("my-third-pod"))
-				Expect(len(opts)).To(Equal(2))
-			})
-
-			// Execute the handler function
-			err := subfolder.HandlerHookPatch(context.Background(), input)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			// Verify log messages
-			logs := strings.Split(buf.String(), "\n")
-			Expect(logs[0]).To(ContainSubstring(`"level":"info","msg":"hello from patch hook"`))
-		})
-	})
-})
+	// Logger asserts
+	logs := strings.Split(b.LogBuffer().String(), "\n")
+	assert.Contains(t, logs[0], `"msg":"hello from patch hook"`)
+}
