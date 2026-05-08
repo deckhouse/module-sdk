@@ -105,6 +105,17 @@ After `RunHook`, you assert on:
 - collected metrics,
 - captured logs.
 
+The framework can also seed values and config values with defaults from the module's OpenAPI schemas (`openapi/values.yaml`, `openapi/config-values.yaml`), so a test sees the same starting state addon-operator would build in production:
+
+```go
+f := framework.NewHookExecutionConfig(t, cfg, handler,
+    framework.WithOpenAPIDir("../openapi"),
+    framework.WithInitialValues(`{"https": {"mode": "CertManager"}}`),
+)
+```
+
+Schema defaults form the baseline; `WithInitialValues` is deep-merged on top so the test always wins on conflicts. See [`testing/framework/README.md`](./testing/framework/README.md#openapi-defaults) for details.
+
 Typical test:
 
 ```go

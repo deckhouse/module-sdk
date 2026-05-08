@@ -137,6 +137,25 @@ func NewHookExecutionConfig(t testing.TB, config *pkg.HookConfig, handler HookFu
 		t.Fatalf("framework: parse initial config values: %v", err)
 	}
 
+	// Apply defaults extracted from the OpenAPI schemas, if any. The
+	// user-supplied init values are deep-merged on top so they always
+	// win on conflicts, matching the behaviour Helm/addon-operator
+	// produces in a real environment.
+	if cfg.configValuesSchemaPath != "" {
+		schema, err := LoadOpenAPISchema(cfg.configValuesSchemaPath)
+		if err != nil {
+			t.Fatalf("framework: load config values schema: %v", err)
+		}
+		hec.configValues.values = MergeValues(SchemaDefaults(schema), hec.configValues.values)
+	}
+	if cfg.valuesSchemaPath != "" {
+		schema, err := LoadOpenAPISchema(cfg.valuesSchemaPath)
+		if err != nil {
+			t.Fatalf("framework: load values schema: %v", err)
+		}
+		hec.values.values = MergeValues(SchemaDefaults(schema), hec.values.values)
+	}
+
 	hec.fakeClient = dynamicfake.NewSimpleDynamicClientWithCustomListKinds(unstructuredScheme, hec.gvrToListKind)
 
 	for _, crd := range cfg.crds {
