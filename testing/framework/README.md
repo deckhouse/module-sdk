@@ -76,7 +76,7 @@ metadata:
 | Function | Purpose |
 | --- | --- |
 | `HookExecutionConfigInit(t, cfg, handler, initValues, initConfigValues)` | Deckhouse-compatible constructor. `initValues` / `initConfigValues` accept JSON or YAML; pass `"{}"` if not needed. |
-| `NewHookExecutionConfig(t, cfg, handler, opts...)` | Same, but with explicit `Option`s. Accepts `WithInitialValues`, `WithInitialConfigValues`, `WithSchemeBuilder`, `WithCRD`. |
+| `NewHookExecutionConfig(t, cfg, handler, opts...)` | Same, but with explicit `Option`s. Accepts `WithInitialValues`, `WithInitialConfigValues`, `WithSchemeBuilder`, `WithCRD`, `WithOpenAPIDir`, `WithValuesSchema`, `WithConfigValuesSchema`. |
 
 `t` is a `testing.TB`, so `*testing.T`, sub-tests, and `GinkgoT()` all work.
 
@@ -103,6 +103,37 @@ f.RegisterCRD("acme.io", "v1", "Widget", true)
 ```
 
 `WithSchemeBuilder` is preferred when the CRD has Go types you can import; `WithCRD` / `RegisterCRD` is used to teach the GVR resolver about a kind that lives only in YAML.
+
+### OpenAPI defaults
+
+In production, addon-operator applies defaults from the module's OpenAPI schemas (`openapi/values.yaml` and `openapi/config-values.yaml`) before invoking a hook. The framework can do the same so tests don't drift from real-world behaviour:
+
+```go
+f := framework.NewHookExecutionConfig(t, cfg, handler,
+    framework.WithOpenAPIDir("../openapi"),
+    framework.WithInitialValues(`{"https": {"mode": "CertManager"}}`),
+)
+```
+
+Behaviour:
+
+- `WithOpenAPIDir(dir)` looks for `<dir>/values.yaml` and `<dir>/config-values.yaml`. Whichever ones are present are loaded.
+- For each schema, the framework extracts every `default:` declared in it and uses the result as a baseline values document.
+- Anything passed via `WithInitialValues` / `WithInitialConfigValues` is then deep-merged on top — your test's values always override schema defaults.
+- The `x-extend` extension is honoured. If `values.yaml` declares `x-extend.schema: config-values.yaml`, the values store inherits all defaults from `config-values.yaml` plus its own.
+
+For more granular control use `WithValuesSchema(path)` / `WithConfigValuesSchema(path)` instead — they fail the test if the file is missing.
+
+The lower-level helpers `LoadOpenAPISchema`, `SchemaDefaults`, and `MergeValues` are also exported, which is handy when you want to assemble a full values document outside `NewHookExecutionConfig`:
+
+```go
+schema, err := framework.LoadOpenAPISchema("../openapi/values.yaml")
+require.NoError(t, err)
+defaults := framework.SchemaDefaults(schema)
+merged := framework.MergeValues(defaults, map[string]any{
+    "replicas": 5,
+})
+```
 
 ### Values
 
