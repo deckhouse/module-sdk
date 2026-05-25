@@ -1,0 +1,179 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "timezone": "UTC",
+  "schedule": [
+    "before 06:00 on monday"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "rangeStrategy": "bump",
+  "automerge": false,
+  "platformAutomerge": false,
+  "dependencyDashboard": true,
+  "dependencyDashboardTitle": "Renovate Dependency Dashboard",
+  "dependencyDashboardApproval": false,
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 0,
+  "branchConcurrentLimit": 10,
+  "ignorePaths": [
+    "**/vendor/**",
+    "**/node_modules/**"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy",
+    "gomodUpdateImportPaths"
+  ],
+  "gomod": {
+    "enabled": true
+  },
+  "github-actions": {
+    "enabled": true
+  },
+  "dockerfile": {
+    "enabled": true
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "automerge": false,
+    "labels": [
+      "dependencies",
+      "renovate",
+      "security"
+    ]
+  },
+  "osvVulnerabilityAlerts": true,
+  "packageRules": [
+    {
+      "description": "Group all Kubernetes packages together; they must move in lockstep.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "k8s.io/**",
+        "sigs.k8s.io/**"
+      ],
+      "groupName": "kubernetes packages",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "go",
+        "kubernetes"
+      ]
+    },
+    {
+      "description": "Group all golang.org/x/* packages together.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "golang.org/x/**"
+      ],
+      "groupName": "golang.org/x packages",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "go"
+      ]
+    },
+    {
+      "description": "Track the Go toolchain version (the `go` directive in go.mod) on its own.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "go"
+      ],
+      "groupName": "go toolchain",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "go",
+        "toolchain"
+      ]
+    },
+    {
+      "description": "Enable indirect Go dependencies (off by default) and group them separately.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "indirect"
+      ],
+      "enabled": true,
+      "groupName": "go indirect dependencies",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "go",
+        "indirect"
+      ]
+    },
+    {
+      "description": "Group non-major Go module updates (direct dependencies).",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepTypes": [
+        "require"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch",
+        "digest"
+      ],
+      "groupName": "go modules (non-major)",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "go"
+      ]
+    },
+    {
+      "description": "Isolate major Go module updates so they get extra scrutiny.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "groupName": "go modules (major)",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "go",
+        "major-update"
+      ]
+    },
+    {
+      "description": "Group all GitHub Actions updates into a single PR per run.",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github actions",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "github-actions"
+      ]
+    },
+    {
+      "description": "Group Docker base image updates (e.g. golang, alpine) into a single PR.",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "docker base images",
+      "labels": [
+        "dependencies",
+        "renovate",
+        "docker"
+      ]
+    }
+  ]
+}
