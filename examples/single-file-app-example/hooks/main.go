@@ -18,16 +18,14 @@ const (
 
 var _ = registry.RegisterFunc(config, Handle)
 
-var config = &pkg.HookConfig{
-	Kubernetes: []pkg.KubernetesConfig{
+var config = &pkg.ApplicationHookConfig{
+	Kubernetes: []pkg.ApplicationKubernetesConfig{
 		{
 			Name:       SnapshotKey,
 			APIVersion: "v1",
 			Kind:       "Pod",
-			NamespaceSelector: &pkg.NamespaceSelector{
-				NameSelector: &pkg.NameSelector{
-					MatchNames: []string{"kube-system"},
-				},
+			NameSelector: &pkg.NameSelector{
+				MatchNames: []string{"kube-apiserver"},
 			},
 			LabelSelector: &metav1.LabelSelector{
 				MatchLabels: map[string]string{"component": "kube-apiserver"},
@@ -38,6 +36,12 @@ var config = &pkg.HookConfig{
 }
 
 func Handle(_ context.Context, input *pkg.ApplicationHookInput) error {
+	enabled, ok := input.Settings.GetOk("apiServersDiscovery.enabled")
+	if !ok || !enabled.Bool() {
+		input.Logger.Info("apiServersDiscovery.enabled is not set — skipping")
+		return nil
+	}
+
 	podNames, err := objectpatch.UnmarshalToStruct[string](input.Snapshots, SnapshotKey)
 	if err != nil {
 		return err

@@ -208,7 +208,7 @@ func AppendValuesPatch(valuesPatches []ValuesPatch, newValuesPatch ValuesPatch) 
 }
 
 func CompactValuesPatches(valuesPatches []ValuesPatch, newValuesPatch ValuesPatch) []ValuesPatch {
-	operations := []*utils.ValuesPatchOperation{}
+	operations := make([]*utils.ValuesPatchOperation, 0, len(valuesPatches))
 
 	for _, patch := range valuesPatches {
 		operations = append(operations, patch.Operations...)
@@ -268,13 +268,13 @@ func CompactPatches(existedOperations []*utils.ValuesPatchOperation, newOperatio
 	}
 
 	// Sort paths for proper 'add' sequence
-	paths := []string{}
+	paths := make([]string, 0, len(patchesTree))
 	for path := range patchesTree {
 		paths = append(paths, path)
 	}
 	sort.Strings(paths)
 
-	newOps := []*utils.ValuesPatchOperation{}
+	newOps := make([]*utils.ValuesPatchOperation, 0, len(paths))
 	for _, path := range paths {
 		newOps = append(newOps, patchesTree[path]...)
 	}

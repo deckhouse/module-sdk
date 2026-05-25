@@ -1,0 +1,21 @@
+# Stub values OpenAPI schema used by the testing/framework tests.
+# It exercises x-extend: properties from config-values.yaml are inherited
+# at the top level, plus the values-only `internal` and `registry`
+# sections.
+x-extend:
+  schema: config-values.yaml
+type: object
+properties:
+  internal:
+    type: object
+    default: {}
+    properties:
+      golangVersions:
+        type: array
+        default: []
+        items:
+          type: string
+  registry:
+    type: object
+    description: |
+      System field, overwritten by Deckhouse. Not defaulted on purpose.

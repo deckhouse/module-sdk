@@ -8,8 +8,6 @@ import (
 )
 
 type PatchCollector interface {
-	Outputer
-
 	// object must be Unstructured, map[string]any or runtime.Object
 	Create(object any)
 	// object must be Unstructured, map[string]any or runtime.Object
@@ -95,6 +93,7 @@ type NamespacedPatchCollector interface {
 // - filterOperation to modify object via Get-filter-Update process
 type PatchCollectorOperation interface {
 	Description() string
+	SetObjectPrefix(prefix string)
 }
 
 type PatchCollectorOption interface {

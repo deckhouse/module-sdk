@@ -1,0 +1,44 @@
+# Stub config-values OpenAPI schema used by the testing/framework tests.
+# It is intentionally self-contained (does not reference any module's
+# schemas) so the tests do not depend on the example modules.
+type: object
+properties:
+  replicas:
+    type: integer
+    description: |
+      Replica count.
+    default: 1
+  https:
+    type: object
+    description: |
+      HTTPS settings for the module.
+    properties:
+      mode:
+        type: string
+        default: "Disabled"
+        description: HTTPS usage mode.
+        enum:
+          - "Disabled"
+          - "CertManager"
+          - "CustomCertificate"
+      certManager:
+        type: object
+        properties:
+          clusterIssuerName:
+            type: string
+            default: "letsencrypt"
+      customCertificate:
+        type: object
+        default: {}
+        properties:
+          secretName:
+            type: string
+            default: "false"
+  tags:
+    type: array
+    description: |
+      Free-form tags. Defaults to an empty list so hooks can append to it
+      without having to check existence first.
+    default: []
+    items:
+      type: string

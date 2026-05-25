@@ -1,0 +1,56 @@
+type: object
+properties:
+  replicas:
+    type: integer
+    description: |
+      replicas count.
+    default: 1
+  https:
+    type: object
+    x-examples:
+      - mode: CustomCertificate
+        customCertificate:
+          secretName: "foobar"
+      - mode: CertManager
+        certManager:
+          clusterIssuerName: letsencrypt
+    description: |
+      What certificate type to use with frontend and status apps.
+
+      This parameter completely overrides the `global.modules.https` settings.
+    properties:
+      mode:
+        type: string
+        default: "Disabled"
+        description: |
+          The HTTPS usage mode:
+          - `Disabled` — frontend will work over HTTP only;
+          - `CertManager` — frontend will use HTTPS and get a certificate from the clusterissuer defined in the `certManager.clusterIssuerName` parameter.
+          - `CustomCertificate` — frontend will use HTTPS using the certificate from the `d8-system` namespace.
+          - `OnlyInURI` — frontend will work over HTTP (thinking that there is an external HTTPS load balancer in front that terminates HTTPS traffic). All the links in the `user-authn` will be generated using the HTTPS scheme.
+        enum:
+          - "Disabled"
+          - "CertManager"
+          - "CustomCertificate"
+          - "OnlyInURI"
+      certManager:
+        type: object
+        properties:
+          clusterIssuerName:
+            type: string
+            default: "letsencrypt"
+            description: |
+              What ClusterIssuer to use for frontend.
+
+              Currently, `letsencrypt`, `letsencrypt-staging`, `selfsigned` are available. Also, you can define your own.
+      customCertificate:
+        type: object
+        default: {}
+        properties:
+          secretName:
+            type: string
+            description: |
+              The name of the secret in the `d8-system` namespace to use with frontend.
+
+              This secret must have the [kubernetes.io/tls](https://kubernetes.github.io/ingress-nginx/user-guide/tls/#tls-secrets) format.
+            default: "false"

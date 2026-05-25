@@ -3,6 +3,23 @@ SDK to easy compile your hooks as a binary and integrate with addon operator
 
 ## Usage
 
+### Module-SDK version compatibility with Deckhouse
+| Module-SDK version | Deckhouse version|
+| --- | --- |
+| v0.2.X | < v1.71.0 |
+| v0.3.X | >=v1.71.0 |
+
+### Module-SDK features compatibility with Deckhouse
+| Module-SDK version | Deckhouse version|
+| --- | --- |
+| Readiness Probe | >= v1.71.0 |
+| Applications | Coming soon |
+| Applications Settings check | Coming soon |
+| Modules v2 | Coming soon |
+| Modules v2 Settings check | Coming soon |
+| Modules Settings check | Coming soon |
+
+
 ### One file example
 This file must be in 'hooks/' folder to build binary (see examples for correct layout)
 
@@ -59,7 +76,16 @@ func main() {
 }
 ```
 
-More examples you can find [here](./examples)
+More examples you can find [here](./examples).
+
+### Reusable building blocks
+
+| Area | What you get | Read more |
+| --- | --- | --- |
+| Common hooks | Battery-included hooks for TLS, custom certificates, storage-class changes, external auth, CRD installation. | [`common-hooks/`](./common-hooks) |
+| Testing — unit tests | `InputBuilder`, `StaticSnapshots`, `RecordingPatchCollector`, `JQRunOn*` and friends. | [`testing/helpers/`](./testing/helpers) |
+| Testing — functional tests | Deckhouse-style harness with a fake K8s cluster, snapshot generator, and patch replayer. | [`testing/framework/`](./testing/framework) |
+| Testing — strategy | Picking the right test layer, project-wide conventions. | [`TESTING.md`](./TESTING.md) |
 
 ## Adding Readiness Probes
 
@@ -244,7 +270,52 @@ Settings validation allows you to validate module configuration values before th
 
 ## Testing
 
-If you want to test your JQ filter, you can use JQ helper like in example [here](./pkg/jq/jq_test.go)
+The SDK ships with a layered testing toolkit that lets you test hooks at three levels of fidelity:
+
+- **Unit tests** — quick handler-level tests using [`testing/helpers`](./testing/helpers): `InputBuilder`, real values store, `RecordingPatchCollector`, JQ helpers.
+- **Functional tests** — deckhouse-style end-to-end tests using [`testing/framework`](./testing/framework): a fake Kubernetes cluster, real snapshot generation, replayed patches.
+- **Mocks** — minimock-generated mocks for every `pkg.*` interface ([`testing/mock`](./testing/mock)) when you need precise control over a single collaborator.
+
+Quick hook unit test:
+
+```go
+import "github.com/deckhouse/module-sdk/testing/helpers"
+
+func TestMyHook(t *testing.T) {
+    in := helpers.NewInputBuilder(t).
+        WithSnapshot("nodes", helpers.SnapshotJSON(`{"name":"n1"}`)).
+        WithValuesJSON(`{}`).
+        Build()
+
+    require.NoError(t, MyHook(context.Background(), in))
+    require.Len(t, in.Values.GetPatches(), 1)
+}
+```
+
+Quick hook functional test:
+
+```go
+import "github.com/deckhouse/module-sdk/testing/framework"
+
+func TestMyHook_Functional(t *testing.T) {
+    f := framework.HookExecutionConfigInit(t, cfg, MyHook, `{}`, `{}`)
+    f.KubeStateSet(`apiVersion: v1
+kind: Node
+metadata: {name: n1}`)
+    f.RunHook()
+
+    require.NoError(t, f.HookError())
+    require.Len(t, f.Snapshots().Get("nodes"), 1)
+}
+```
+
+Pure JQ filter test:
+
+```go
+helpers.JQRunOnString(ctx, ".metadata.name", `{"metadata":{"name":"x"}}`, &out)
+```
+
+For the project-wide testing strategy and conventions, see [`TESTING.md`](./TESTING.md).
 
 ## For deckhouse developers
 

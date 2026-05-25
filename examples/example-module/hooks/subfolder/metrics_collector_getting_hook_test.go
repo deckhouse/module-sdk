@@ -2,47 +2,64 @@ package hookinfolder_test
 
 import (
 	"context"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
-	"github.com/deckhouse/deckhouse/pkg/log"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"github.com/deckhouse/module-sdk/pkg"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 	"github.com/deckhouse/module-sdk/testing/mock"
 
 	subfolder "example-module/subfolder"
 )
 
-var _ = Describe("metrics collector example", func() {
-	collector := mock.NewMetricsCollectorMock(GinkgoT())
+// recorder collects metrics emitted by the hook so the test can assert
+// on the parameters of every call.
+type recorder struct {
+	addCalls []metricCall
+	setCalls []metricCall
+	incCalls []metricCall
+}
 
-	collector.AddMock.Set(func(name string, value float64, labels map[string]string, _ ...pkg.MetricCollectorOption) {
-		Expect(name).Should(Equal("stub-add-metric"))
-		Expect(value).Should(Equal(float64(1)))
-		Expect(labels).Should(Equal(map[string]string{"node_found": "node_name"}))
+type metricCall struct {
+	name   string
+	value  float64
+	labels map[string]string
+}
+
+func newMetricsRecorder(t *testing.T) (pkg.MetricsCollector, *recorder) {
+	r := &recorder{}
+	m := mock.NewMetricsCollectorMock(t)
+
+	m.AddMock.Set(func(name string, value float64, labels map[string]string, _ ...pkg.MetricCollectorOption) {
+		r.addCalls = append(r.addCalls, metricCall{name: name, value: value, labels: labels})
+	})
+	m.SetMock.Set(func(name string, value float64, labels map[string]string, _ ...pkg.MetricCollectorOption) {
+		r.setCalls = append(r.setCalls, metricCall{name: name, value: value, labels: labels})
+	})
+	m.IncMock.Set(func(name string, labels map[string]string, _ ...pkg.MetricCollectorOption) {
+		r.incCalls = append(r.incCalls, metricCall{name: name, labels: labels})
 	})
 
-	collector.SetMock.Set(func(name string, value float64, labels map[string]string, _ ...pkg.MetricCollectorOption) {
-		Expect(name).Should(Equal("stub-set-metric"))
-		Expect(value).Should(Equal(float64(1)))
-		Expect(labels).Should(Equal(map[string]string{"node_found": "node_name"}))
-	})
+	return m, r
+}
 
-	collector.IncMock.Set(func(name string, labels map[string]string, _ ...pkg.MetricCollectorOption) {
-		Expect(name).Should(Equal("stub-inc-metric"))
-		Expect(labels).Should(Equal(map[string]string{"node_found": "node_name"}))
-	})
+func TestHandlerHookMetricsCollector_EmitsAllThreeMetrics(t *testing.T) {
+	collector, rec := newMetricsRecorder(t)
 
-	var input = &pkg.HookInput{
-		MetricsCollector: collector,
-		Logger:           log.NewNop(),
-	}
+	in := helpers.NewInputBuilder(t).
+		WithMetricsCollector(collector).
+		Build()
 
-	Context("refoncile func", func() {
-		It("reconcile func executed correctly", func() {
-			err := subfolder.HandlerHookMetricsCollector(context.Background(), input)
-			Expect(err).ShouldNot(HaveOccurred())
-		})
-	})
-})
+	require.NoError(t, subfolder.HandlerHookMetricsCollector(context.Background(), in))
+
+	require.Len(t, rec.addCalls, 1)
+	assert.Equal(t, metricCall{name: "stub-add-metric", value: 1, labels: map[string]string{"node_found": "node_name"}}, rec.addCalls[0])
+
+	require.Len(t, rec.setCalls, 1)
+	assert.Equal(t, metricCall{name: "stub-set-metric", value: 1, labels: map[string]string{"node_found": "node_name"}}, rec.setCalls[0])
+
+	require.Len(t, rec.incCalls, 1)
+	assert.Equal(t, metricCall{name: "stub-inc-metric", labels: map[string]string{"node_found": "node_name"}}, rec.incCalls[0])
+}

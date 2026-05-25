@@ -2,6 +2,7 @@ package objectpatch
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/deckhouse/module-sdk/pkg"
 )
@@ -25,6 +26,24 @@ func (p *Patch) Description() string {
 
 	// Handle both string and typed operation enums (CreateOperation, etc.)
 	return fmt.Sprintf("%v", op)
+}
+
+// SetObjectPrefix sets prefix for object name.
+func (p *Patch) SetObjectPrefix(prefix string) {
+	if p.patchValues == nil {
+		return
+	}
+
+	name, ok := p.patchValues["name"]
+	if !ok {
+		return
+	}
+
+	if strings.HasPrefix(name.(string), prefix+"-") {
+		return
+	}
+
+	p.patchValues["name"] = fmt.Sprintf("%s-%s", prefix, name.(string))
 }
 
 // WithSubresource sets the subresource to patch (e.g., "status", "scale").

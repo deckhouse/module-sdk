@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package http
+package httpclient
 
 //go:generate minimock -i Client -o http_mock.go
 
@@ -65,6 +65,7 @@ func NewClient(options ...pkg.HTTPOption) *http.Client {
 	}
 
 	tr := &http.Transport{
+		Proxy:                 http.ProxyFromEnvironment,
 		TLSClientConfig:       tlsConf,
 		IdleConnTimeout:       5 * time.Minute,
 		TLSHandshakeTimeout:   5 * time.Second,

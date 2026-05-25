@@ -1,17 +1,15 @@
 package main_test
 
 import (
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 
 	"github.com/deckhouse/module-sdk/pkg/registry"
 )
 
-var _ = Describe("validate hooks config", func() {
-	It("hook configs must be valid", func() {
-		hooks := registry.Registry().Hooks()
-		for _, hook := range hooks {
-			Expect(hook.Config.Validate()).ShouldNot(HaveOccurred())
-		}
-	})
-})
+func TestRegisteredHookConfigs_AreValid(t *testing.T) {
+	for _, hook := range registry.Registry().ModuleHooks() {
+		assert.NoError(t, hook.Config.Validate(), "hook config must be valid")
+	}
+}

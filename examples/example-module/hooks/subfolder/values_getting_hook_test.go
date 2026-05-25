@@ -2,127 +2,110 @@ package hookinfolder_test
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
+	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
 
 	"github.com/deckhouse/module-sdk/pkg"
-	"github.com/deckhouse/module-sdk/pkg/utils"
+	"github.com/deckhouse/module-sdk/testing/helpers"
 	"github.com/deckhouse/module-sdk/testing/mock"
 
 	subfolder "example-module/subfolder"
 )
 
-var _ = Describe("values example", func() {
-	Context("refoncile func", func() {
-		When("all services works correctly", func() {
-			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
-			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
-			values.GetPatchesMock.Return([]*utils.ValuesPatchOperation{
-				{
-					Op:    "add",
-					Path:  "/some/path/to/field",
-					Value: json.RawMessage(`{"name":"some-module"}`),
-				},
-			})
-			values.GetRawMock.When("some.path.to.field.someInt").Then(float64(1))
-			values.ExistsMock.When("some.path.to.field.str").Then(false)
-			values.SetMock.When("some.path.to.field.str", "some_string")
-			values.RemoveMock.When("some.path.to.field")
-			values.ArrayCountMock.When("some.path.to.field.array").Then(10, nil)
+// The values hook reads a few paths and writes one. Where possible we
+// drive it with a real PatchableValues store (via helpers.NewValuesFromJSON);
+// only the deliberately error-injecting cases keep the mock.
 
-			var input = &pkg.HookInput{
-				Values: values,
-				Logger: log.NewNop(),
-			}
+func TestHandlerHookValues_HappyPath(t *testing.T) {
+	values := helpers.NewValuesFromJSON(`{
+        "some": {
+            "path": {
+                "to": {
+                    "field": {
+                        "someInt": 1,
+                        "array":   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                    }
+                }
+            }
+        }
+    }`)
 
-			It("reconcile func executed correctly", func() {
-				err := subfolder.HandlerHookValues(context.Background(), input)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
+	in := helpers.NewInputBuilder(t).WithValues(values).Build()
 
-		When("get ok returns false", func() {
-			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
-			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, false)
-			values.ExistsMock.When("some.path.to.field.str").Then(false)
-			values.SetMock.When("some.path.to.field.str", "some_string")
-			values.RemoveMock.When("some.path.to.field")
-			values.ArrayCountMock.When("some.path.to.field.array").Then(10, nil)
+	require.NoError(t, subfolder.HandlerHookValues(context.Background(), in))
 
-			var input = &pkg.HookInput{
-				Values: values,
-				Logger: log.NewNop(),
-			}
+	patches := in.Values.GetPatches()
+	require.NotEmpty(t, patches)
 
-			It("reconcile func executed correctly", func() {
-				err := subfolder.HandlerHookValues(context.Background(), input)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
+	var setStr, removeOp bool
+	for _, p := range patches {
+		if p.Op == "add" && p.Path == "/some/path/to/field/str" {
+			setStr = true
+		}
+		if p.Op == "remove" && p.Path == "/some/path/to/field" {
+			removeOp = true
+		}
+	}
+	assert.True(t, setStr, "expected Set on .str path")
+	assert.True(t, removeOp, "expected Remove on .field path")
+}
 
-		When("get raw geturns not number", func() {
-			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
-			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
-			values.GetPatchesMock.Return([]*utils.ValuesPatchOperation{
-				{
-					Op:    "add",
-					Path:  "/some/path/to/field",
-					Value: json.RawMessage(`{"name":"some-module"}`),
-				},
-			})
-			values.GetRawMock.When("some.path.to.field.someInt").Then("not number")
-			values.ExistsMock.When("some.path.to.field.str").Then(false)
-			values.SetMock.When("some.path.to.field.str", "some_string")
-			values.RemoveMock.When("some.path.to.field")
-			values.ArrayCountMock.When("some.path.to.field.array").Then(10, nil)
+// The remaining cases use the typed mock since they need to inject
+// behaviour the real PatchableValues cannot reproduce easily (failing
+// ArrayCount, non-float GetRaw value, GetOk returning false on an
+// existing path).
 
-			var input = &pkg.HookInput{
-				Values: values,
-				Logger: log.NewNop(),
-			}
+func TestHandlerHookValues_GetOkReturnsFalse(t *testing.T) {
+	values := mock.NewOutputPatchableValuesCollectorMock(t)
+	values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
+	values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, false)
+	values.ExistsMock.When("some.path.to.field.str").Then(false)
+	values.SetMock.When("some.path.to.field.str", "some_string")
+	values.RemoveMock.When("some.path.to.field")
+	values.ArrayCountMock.When("some.path.to.field.array").Then(10, nil)
 
-			It("reconcile func executed correctly", func() {
-				err := subfolder.HandlerHookValues(context.Background(), input)
-				Expect(err).ShouldNot(HaveOccurred())
-			})
-		})
+	in := &pkg.HookInput{Values: values, Logger: log.NewNop()}
 
-		When("array count returns error", func() {
-			values := mock.NewOutputPatchableValuesCollectorMock(GinkgoT())
-			values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
-			values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
-			values.GetPatchesMock.Return([]*utils.ValuesPatchOperation{
-				{
-					Op:    "add",
-					Path:  "/some/path/to/field",
-					Value: json.RawMessage(`{"name":"some-module"}`),
-				},
-			})
-			values.GetRawMock.When("some.path.to.field.someInt").Then(float64(1))
-			values.ExistsMock.When("some.path.to.field.str").Then(false)
-			values.SetMock.When("some.path.to.field.str", "some_string")
-			values.RemoveMock.When("some.path.to.field")
-			values.ArrayCountMock.When("some.path.to.field.array").Then(0, errors.New("error"))
+	require.NoError(t, subfolder.HandlerHookValues(context.Background(), in))
+}
 
-			var input = &pkg.HookInput{
-				Values: values,
-				Logger: log.NewNop(),
-			}
+func TestHandlerHookValues_GetRawNotFloat(t *testing.T) {
+	values := mock.NewOutputPatchableValuesCollectorMock(t)
+	values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
+	values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
+	values.GetPatchesMock.Return(nil)
+	values.GetRawMock.When("some.path.to.field.someInt").Then("not-number")
+	values.ExistsMock.When("some.path.to.field.str").Then(false)
+	values.SetMock.When("some.path.to.field.str", "some_string")
+	values.RemoveMock.When("some.path.to.field")
+	values.ArrayCountMock.When("some.path.to.field.array").Then(10, nil)
 
-			It("reconcile func executed correctly", func() {
-				err := subfolder.HandlerHookValues(context.Background(), input)
-				Expect(err).Should(HaveOccurred())
-				Expect(err).Should(Equal(errors.New("error")))
-			})
-		})
-	})
-})
+	in := &pkg.HookInput{Values: values, Logger: log.NewNop()}
+	require.NoError(t, subfolder.HandlerHookValues(context.Background(), in))
+}
+
+func TestHandlerHookValues_ArrayCountReturnsError(t *testing.T) {
+	wantErr := errors.New("boom")
+
+	values := mock.NewOutputPatchableValuesCollectorMock(t)
+	values.GetMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"})
+	values.GetOkMock.When("some.path.to.field").Then(gjson.Result{Str: "str-value"}, true)
+	values.GetPatchesMock.Return(nil)
+	values.GetRawMock.When("some.path.to.field.someInt").Then(float64(1))
+	values.ExistsMock.When("some.path.to.field.str").Then(false)
+	values.SetMock.When("some.path.to.field.str", "some_string")
+	values.RemoveMock.When("some.path.to.field")
+	values.ArrayCountMock.When("some.path.to.field.array").Then(0, wantErr)
+
+	in := &pkg.HookInput{Values: values, Logger: log.NewNop()}
+
+	err := subfolder.HandlerHookValues(context.Background(), in)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, wantErr)
+}
