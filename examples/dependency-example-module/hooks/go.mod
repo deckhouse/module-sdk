@@ -5,7 +5,7 @@ go 1.25.8
 require (
 	github.com/deckhouse/module-sdk v0.0.0
 	github.com/gojuno/minimock/v3 v3.4.7
-	github.com/google/go-containerregistry v0.21.5
+	github.com/google/go-containerregistry v0.21.3
 	github.com/stretchr/testify v1.11.1
 	k8s.io/api v0.34.8
 	k8s.io/apimachinery v0.34.8
@@ -21,6 +21,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deckhouse/deckhouse/pkg/log v0.2.0 // indirect
 	github.com/docker/cli v29.4.0+incompatible // indirect
+	github.com/docker/distribution v2.8.3+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/emicklei/go-restful/v3 v3.13.0 // indirect
 	github.com/ettle/strcase v0.2.0 // indirect
