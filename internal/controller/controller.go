@@ -295,6 +295,9 @@ func remapModuleHookConfig(cfg *pkg.HookConfig, out *gohook.HookConfig) {
 	if cfg.OnAfterHelm != nil {
 		out.OnAfterHelm = ptr.To(cfg.OnAfterHelm.Order)
 	}
+	if cfg.OnBeforeDeleteHelm != nil {
+		out.OnBeforeDeleteHelm = ptr.To(cfg.OnBeforeDeleteHelm.Order)
+	}
 	if cfg.OnAfterDeleteHelm != nil {
 		out.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
 	}
@@ -322,6 +325,9 @@ func remapApplicationHookConfig(cfg *pkg.ApplicationHookConfig, out *gohook.Hook
 	}
 	if cfg.OnAfterHelm != nil {
 		out.OnAfterHelm = ptr.To(cfg.OnAfterHelm.Order)
+	}
+	if cfg.OnBeforeDeleteHelm != nil {
+		out.OnBeforeDeleteHelm = ptr.To(cfg.OnBeforeDeleteHelm.Order)
 	}
 	if cfg.OnAfterDeleteHelm != nil {
 		out.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)

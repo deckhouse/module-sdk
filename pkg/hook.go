@@ -138,10 +138,11 @@ type HookConfig struct {
 	// OnStartup runs hook on module/global startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
-	OnStartup         *OrderedConfig
-	OnBeforeHelm      *OrderedConfig
-	OnAfterHelm       *OrderedConfig
-	OnAfterDeleteHelm *OrderedConfig
+	OnStartup          *OrderedConfig
+	OnBeforeHelm       *OrderedConfig
+	OnAfterHelm        *OrderedConfig
+	OnBeforeDeleteHelm *OrderedConfig
+	OnAfterDeleteHelm  *OrderedConfig
 
 	AllowFailure bool
 	Queue        string
@@ -195,10 +196,11 @@ type ApplicationHookConfig struct {
 	// OnStartup runs hook on application startup
 	// Attention! During the startup you don't have snapshots available
 	// use native KubeClient to fetch resources
-	OnStartup         *OrderedConfig
-	OnBeforeHelm      *OrderedConfig
-	OnAfterHelm       *OrderedConfig
-	OnAfterDeleteHelm *OrderedConfig
+	OnStartup          *OrderedConfig
+	OnBeforeHelm       *OrderedConfig
+	OnAfterHelm        *OrderedConfig
+	OnBeforeDeleteHelm *OrderedConfig
+	OnAfterDeleteHelm  *OrderedConfig
 
 	AllowFailure bool
 	Queue        string
