@@ -15,6 +15,8 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachineryv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apimachineryYaml "k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/dynamic"
@@ -190,32 +192,29 @@ func (cp *CRDsInstaller) processCRD(ctx context.Context, crdFilePath string) err
 }
 
 func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reader, bufferSize int) error {
-	var crd *apiextensionsv1.CustomResourceDefinition
-
-	err := apimachineryYaml.NewYAMLOrJSONDecoder(crdReader, bufferSize).Decode(&crd)
+	// Decode into unstructured so vendor schema extensions (x-kubernetes-*, x-ui-*, ...)
+	// survive verbatim; the typed struct below is used only to read metadata.
+	desired := &unstructured.Unstructured{}
+	err := apimachineryYaml.NewYAMLOrJSONDecoder(crdReader, bufferSize).Decode(&desired)
 	if err != nil {
 		return err
 	}
 
-	// it could be a comment or some other peace of yaml file, skip it
-	if crd == nil {
+	// it could be a comment or some other piece of yaml file, skip it
+	if len(desired.Object) == 0 {
 		return nil
 	}
 
+	crd := &apiextensionsv1.CustomResourceDefinition{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(desired.Object, crd); err != nil {
+		return err
+	}
 	if crd.APIVersion != apiextensionsv1.SchemeGroupVersion.String() && crd.Kind != "CustomResourceDefinition" {
 		return fmt.Errorf("invalid CRD document apiversion/kind: '%s/%s'", crd.APIVersion, crd.Kind)
 	}
 
-	if len(crd.ObjectMeta.Labels) == 0 {
-		crd.ObjectMeta.Labels = make(map[string]string, 1)
-	}
-
-	for crdExtraLabel := range cp.crdExtraLabels {
-		crd.ObjectMeta.Labels[crdExtraLabel] = cp.crdExtraLabels[crdExtraLabel]
-	}
-
 	cp.k8sTasks.Go(func() error {
-		err := cp.updateOrInsertCRD(ctx, crd)
+		err := cp.updateOrInsertCRD(ctx, crd, desired)
 		if err == nil {
 			var crdGroup, crdKind string
 
@@ -255,16 +254,13 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	return nil
 }
 
-func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition) error {
+func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, desired *unstructured.Unstructured) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
-		existCRD, err := cp.GetCRDFromCluster(ctx, crd.GetName())
+		existing, err := cp.k8sClient.Resource(crdGVR).Get(ctx, crd.GetName(), apimachineryv1.GetOptions{})
 		if apierrors.IsNotFound(err) {
-			ucrd, err := utils.ToUnstructured(crd)
-			if err != nil {
-				return err
-			}
+			mergeLabels(desired, cp.crdExtraLabels)
 
-			_, err = cp.k8sClient.Resource(crdGVR).Create(ctx, ucrd, apimachineryv1.CreateOptions{})
+			_, err = cp.k8sClient.Resource(crdGVR).Create(ctx, desired, apimachineryv1.CreateOptions{})
 			if err != nil {
 				return fmt.Errorf("create crd: %w", err)
 			}
@@ -274,6 +270,13 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 
 		if err != nil {
 			return fmt.Errorf("get crd from cluster: %w", err)
+		}
+
+		// typed view of the existing object is used only to reconcile storedVersions;
+		// it is never written back as the CRD body (that would drop vendor extensions).
+		existCRD := &apiextensionsv1.CustomResourceDefinition{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(existing.Object, existCRD); err != nil {
+			return fmt.Errorf("existing crd from unstructured: %w", err)
 		}
 
 		versionsFromNewSpec := make(map[string]struct{}, len(crd.Spec.Versions))
@@ -288,8 +291,10 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			}
 		}
 
+		resourceVersion := existing.GetResourceVersion()
 		if !slices.Equal(newStoredVersions, existCRD.Status.StoredVersions) {
 			existCRD.Status.StoredVersions = newStoredVersions
+			// the status subresource update ignores .spec, so writing the typed (lossy) body here is safe
 			ucrd, err := utils.ToUnstructured(existCRD)
 			if err != nil {
 				return fmt.Errorf("crd to unstructured: %w", err)
@@ -301,44 +306,52 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			}
 
 			if resp != nil {
-				existCRD.ObjectMeta.ResourceVersion = resp.GetResourceVersion()
+				resourceVersion = resp.GetResourceVersion()
 			}
 		}
 
-		if existCRD.Spec.Conversion != nil {
-			crd.Spec.Conversion = existCRD.Spec.Conversion
+		// keep the in-cluster conversion webhook config (it is not present in the CRD file)
+		if conv, found, err := unstructured.NestedFieldCopy(existing.Object, "spec", "conversion"); err == nil && found {
+			if err := unstructured.SetNestedField(desired.Object, conv, "spec", "conversion"); err != nil {
+				return fmt.Errorf("preserve conversion: %w", err)
+			}
 		}
 
-		if cmp.Equal(existCRD.Spec, crd.Spec) &&
-			cmp.Equal(existCRD.GetLabels(), crd.GetLabels()) &&
-			cmp.Equal(existCRD.GetAnnotations(), crd.GetAnnotations()) {
+		mergeLabels(desired, cp.crdExtraLabels)
+
+		// diff on lossless unstructured specs so vendor extensions are not silently dropped
+		// ponytail: apiserver-defaulted .spec fields could cause reconcile churn; conversion is
+		// preserved above, extend here if a defaulted field ever churns.
+		desiredSpec, _, _ := unstructured.NestedMap(desired.Object, "spec")
+		existingSpec, _, _ := unstructured.NestedMap(existing.Object, "spec")
+		if cmp.Equal(existingSpec, desiredSpec) &&
+			cmp.Equal(existing.GetLabels(), desired.GetLabels()) &&
+			cmp.Equal(existing.GetAnnotations(), desired.GetAnnotations()) {
 			return nil
 		}
 
-		existCRD.Spec = crd.Spec
-		existCRD.Labels = crd.Labels
-		existCRD.Annotations = crd.Annotations
+		desired.SetResourceVersion(resourceVersion)
 
-		if len(existCRD.ObjectMeta.Labels) == 0 {
-			existCRD.ObjectMeta.Labels = make(map[string]string, 1)
-		}
-
-		for crdExtraLabel := range cp.crdExtraLabels {
-			existCRD.ObjectMeta.Labels[crdExtraLabel] = cp.crdExtraLabels[crdExtraLabel]
-		}
-
-		ucrd, err := utils.ToUnstructured(existCRD)
-		if err != nil {
-			return err
-		}
-
-		_, err = cp.k8sClient.Resource(crdGVR).Update(ctx, ucrd, apimachineryv1.UpdateOptions{})
+		_, err = cp.k8sClient.Resource(crdGVR).Update(ctx, desired, apimachineryv1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("update crd: %w", err)
 		}
 
 		return nil
 	})
+}
+
+func mergeLabels(u *unstructured.Unstructured, extra map[string]string) {
+	labels := u.GetLabels()
+	if labels == nil {
+		labels = make(map[string]string, len(extra))
+	}
+
+	for k, v := range extra {
+		labels[k] = v
+	}
+
+	u.SetLabels(labels)
 }
 
 func (cp *CRDsInstaller) GetCRDFromCluster(ctx context.Context, crdName string) (*apiextensionsv1.CustomResourceDefinition, error) {

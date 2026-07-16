@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apimachineryv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
@@ -65,5 +66,27 @@ func TestCRDInstaller(t *testing.T) {
 
 		f4 := crd.Spec.Versions[0].Schema.OpenAPIV3Schema.Properties["spec"].Properties["field4"].Type
 		assert.Equal(t, "boolean", f4)
+	})
+
+	// Regression: vendor schema extensions (x-kubernetes-sensitive-data and friends) must
+	// survive the install path. Decoding CRDs into the typed struct drops them, so the
+	// installer must apply the object as unstructured.
+	t.Run("preserves vendor schema extensions", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/3_sensitive.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "secrets.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		versions, found, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+		require.True(t, found, "spec.versions must be present")
+
+		token, found, err := unstructured.NestedMap(versions[0].(map[string]any),
+			"schema", "openAPIV3Schema", "properties", "spec", "properties", "token")
+		require.NoError(t, err)
+		require.True(t, found, "token property must be present")
+		assert.Equal(t, true, token["x-kubernetes-sensitive-data"],
+			"vendor extension must survive the install path")
 	})
 }
