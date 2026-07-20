@@ -1,0 +1,21 @@
+# leading comment document — decodes to null and must be skipped, not crash
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: comments.example.com
+spec:
+  group: example.com
+  names:
+    kind: Comment
+    listKind: CommentList
+    plural: comments
+    singular: comment
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
