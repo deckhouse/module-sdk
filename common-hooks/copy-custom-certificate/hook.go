@@ -18,7 +18,6 @@ package copycustomcertificate
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,10 +65,10 @@ func RegisterHook(moduleName string) bool {
 				JqFilter: JQFilterCustomCertificate,
 			},
 		},
-	}, copyCustomCertificatesHandler(moduleName))
+	}, CopyCustomCertificatesHandler(moduleName))
 }
 
-func copyCustomCertificatesHandler(moduleName string) func(ctx context.Context, input *pkg.HookInput) error {
+func CopyCustomCertificatesHandler(moduleName string) func(ctx context.Context, input *pkg.HookInput) error {
 	return func(_ context.Context, input *pkg.HookInput) error {
 		certs, err := objectpatch.UnmarshalToStruct[certificate.Certificate](input.Snapshots, snapshotKey)
 		if err != nil {
@@ -109,7 +108,9 @@ func copyCustomCertificatesHandler(moduleName string) func(ctx context.Context, 
 
 		cert, ok := customCertificates[secretName]
 		if !ok {
-			return errors.New("custom certificate secret name is configured, but secret with this name '" + secretName + "' doesn't exist")
+			input.Logger.Warn("custom certificate secret name is configured, but secret with this name doesn't exist", "secret_name", secretName)
+			input.Values.Set(valuesPath, certValues{CA: "<none>", TLSKey: "<none>", TLSCert: "<none>"})
+			return nil
 		}
 
 		input.Values.Set(valuesPath, certValues{
