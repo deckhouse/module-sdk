@@ -89,4 +89,72 @@ func TestCRDInstaller(t *testing.T) {
 		assert.Equal(t, true, token["x-kubernetes-sensitive-data"],
 			"vendor extension must survive the install path")
 	})
+
+	// Regression: updating an existing CRD must apply the manifest spec (with vendor
+	// extensions) while preserving server-managed metadata (finalizers) and the in-cluster
+	// conversion config, which is never present in the manifest.
+	t.Run("update preserves finalizers and in-cluster conversion", func(t *testing.T) {
+		seed := &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "apiextensions.k8s.io/v1",
+			"kind":       "CustomResourceDefinition",
+			"metadata": map[string]any{
+				"name":       "things.example.com",
+				"finalizers": []any{"customresourcecleanup.apiextensions.k8s.io"},
+			},
+			"spec": map[string]any{
+				"group": "example.com",
+				"names": map[string]any{
+					"kind": "Thing", "listKind": "ThingList", "plural": "things", "singular": "thing",
+				},
+				"scope": "Namespaced",
+				"conversion": map[string]any{
+					"strategy": "Webhook",
+					"webhook": map[string]any{
+						"conversionReviewVersions": []any{"v1"},
+						"clientConfig": map[string]any{
+							"service": map[string]any{"name": "conv", "namespace": "default"},
+						},
+					},
+				},
+				"versions": []any{
+					map[string]any{"name": "v1", "served": true, "storage": true},
+				},
+			},
+		}}
+		_, err := fc.Resource(gvr).Create(context.Background(), seed, apimachineryv1.CreateOptions{})
+		require.NoError(t, err)
+
+		inst := NewCRDsInstaller(fc, []string{"testdata/4_conversion.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "things.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		finalizers, found, err := unstructured.NestedStringSlice(un.Object, "metadata", "finalizers")
+		require.NoError(t, err)
+		require.True(t, found, "finalizers must be preserved")
+		assert.Contains(t, finalizers, "customresourcecleanup.apiextensions.k8s.io")
+
+		_, found, err = unstructured.NestedMap(un.Object, "spec", "conversion")
+		require.NoError(t, err)
+		assert.True(t, found, "in-cluster conversion must be preserved")
+
+		versions, _, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+		token, found, err := unstructured.NestedMap(versions[0].(map[string]any),
+			"schema", "openAPIV3Schema", "properties", "spec", "properties", "token")
+		require.NoError(t, err)
+		require.True(t, found, "manifest schema must be applied")
+		assert.Equal(t, true, token["x-kubernetes-sensitive-data"])
+	})
+
+	// Regression: a comment-only yaml document decodes to a nil object and must be skipped,
+	// not panic on the nil dereference.
+	t.Run("skips comment-only documents", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/5_comment.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		_, err := fc.Resource(gvr).Get(context.Background(), "comments.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+	})
 }

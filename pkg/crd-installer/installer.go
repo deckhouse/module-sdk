@@ -200,8 +200,8 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 		return err
 	}
 
-	// it could be a comment or some other piece of yaml file, skip it
-	if len(desired.Object) == 0 {
+	// a comment or other non-object yaml document decodes to a nil pointer / empty object, skip it
+	if desired == nil || len(desired.Object) == 0 {
 		return nil
 	}
 
@@ -209,7 +209,7 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(desired.Object, crd); err != nil {
 		return err
 	}
-	if crd.APIVersion != apiextensionsv1.SchemeGroupVersion.String() && crd.Kind != "CustomResourceDefinition" {
+	if crd.APIVersion != apiextensionsv1.SchemeGroupVersion.String() || crd.Kind != "CustomResourceDefinition" {
 		return fmt.Errorf("invalid CRD document apiversion/kind: '%s/%s'", crd.APIVersion, crd.Kind)
 	}
 
@@ -319,20 +319,35 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 
 		mergeLabels(desired, cp.crdExtraLabels)
 
+		desiredSpec, _, err := unstructured.NestedMap(desired.Object, "spec")
+		if err != nil {
+			return fmt.Errorf("read desired spec: %w", err)
+		}
+
+		existingSpec, _, err := unstructured.NestedMap(existing.Object, "spec")
+		if err != nil {
+			return fmt.Errorf("read existing spec: %w", err)
+		}
+
 		// diff on lossless unstructured specs so vendor extensions are not silently dropped
-		// ponytail: apiserver-defaulted .spec fields could cause reconcile churn; conversion is
-		// preserved above, extend here if a defaulted field ever churns.
-		desiredSpec, _, _ := unstructured.NestedMap(desired.Object, "spec")
-		existingSpec, _, _ := unstructured.NestedMap(existing.Object, "spec")
+		// ponytail: apiserver-defaulted .spec fields may differ from the manifest and cause
+		// reconcile churn; the update stays idempotent, tighten the diff here if it ever churns.
 		if cmp.Equal(existingSpec, desiredSpec) &&
 			cmp.Equal(existing.GetLabels(), desired.GetLabels()) &&
 			cmp.Equal(existing.GetAnnotations(), desired.GetAnnotations()) {
 			return nil
 		}
 
-		desired.SetResourceVersion(resourceVersion)
+		// write back the fetched object with only spec/labels/annotations overlaid, so
+		// server-managed metadata (finalizers, ownerReferences, uid, ...) is preserved.
+		if err := unstructured.SetNestedMap(existing.Object, desiredSpec, "spec"); err != nil {
+			return fmt.Errorf("set spec: %w", err)
+		}
+		existing.SetLabels(desired.GetLabels())
+		existing.SetAnnotations(desired.GetAnnotations())
+		existing.SetResourceVersion(resourceVersion)
 
-		_, err = cp.k8sClient.Resource(crdGVR).Update(ctx, desired, apimachineryv1.UpdateOptions{})
+		_, err = cp.k8sClient.Resource(crdGVR).Update(ctx, existing, apimachineryv1.UpdateOptions{})
 		if err != nil {
 			return fmt.Errorf("update crd: %w", err)
 		}
