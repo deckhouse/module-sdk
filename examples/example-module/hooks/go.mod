@@ -3,12 +3,12 @@ module example-module
 go 1.25.8
 
 require (
-	github.com/deckhouse/deckhouse/pkg/log v0.2.0
+	github.com/deckhouse/deckhouse/pkg/log v0.2.1
 	github.com/deckhouse/module-sdk v0.0.0
 	github.com/stretchr/testify v1.11.1
 	github.com/tidwall/gjson v1.19.0
-	k8s.io/api v0.34.8
-	k8s.io/apimachinery v0.34.8
+	k8s.io/api v0.36.3
+	k8s.io/apimachinery v0.36.3
 )
 
 require (
