@@ -31,7 +31,8 @@ func WithReadiness(cfg *ReadinessConfig) RunConfigOption {
 
 type ReadinessConfig struct {
 	IntervalInSeconds uint8
-	ProbeFunc         func(ctx context.Context, input *pkg.HookInput) error
+	// ProbeFunc         func(ctx context.Context, input *pkg.ReadinessInput) error
+	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
 func WithSettingsCheck(check settingscheck.Check) RunConfigOption {
