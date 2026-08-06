@@ -22,6 +22,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/util/retry"
 
+	"github.com/deckhouse/module-sdk/pkg/crd-installer/openapi"
 	"github.com/deckhouse/module-sdk/pkg/utils"
 )
 
@@ -192,8 +193,8 @@ func (cp *CRDsInstaller) processCRD(ctx context.Context, crdFilePath string) err
 }
 
 func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reader, bufferSize int) error {
-	// Decode into unstructured so vendor schema extensions (x-kubernetes-*, x-ui-*, ...)
-	// survive verbatim; the typed struct below is used only to read metadata.
+	// Decode into unstructured first: the typed struct below cannot hold
+	// x-kubernetes-sensitive-data, and sanitize needs the original document to recover it.
 	desired := &unstructured.Unstructured{}
 	err := apimachineryYaml.NewYAMLOrJSONDecoder(crdReader, bufferSize).Decode(&desired)
 	if err != nil {
@@ -211,6 +212,11 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	}
 	if crd.APIVersion != apiextensionsv1.SchemeGroupVersion.String() || crd.Kind != "CustomResourceDefinition" {
 		return fmt.Errorf("invalid CRD document apiversion/kind: '%s/%s'", crd.APIVersion, crd.Kind)
+	}
+
+	desired, err = sanitize(crd, desired.Object)
+	if err != nil {
+		return fmt.Errorf("sanitize %s: %w", crd.Name, err)
 	}
 
 	cp.k8sTasks.Go(func() error {
@@ -252,6 +258,99 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	})
 
 	return nil
+}
+
+// sanitize reduces the CRD document to the fields the apiserver actually knows.
+//
+// Everything else — x-doc-examples and friends, plus keys that look official but are
+// not, like x-kubernetes-immutable — is dropped here instead of being sent. The
+// apiserver prunes them anyway, after logging one "unknown field" warning per
+// occurrence, and because it prunes them the stored spec could never equal the desired
+// one, so every run issued a pointless Update.
+//
+// The typed CRD is that pruned document already, at every level. The single exception
+// is x-kubernetes-sensitive-data, which apiextensionsv1 does not model but the Deckhouse
+// apiserver does, so each version schema is re-decoded through the fork in
+// pkg/crd-installer/openapi that carries it.
+func sanitize(crd *apiextensionsv1.CustomResourceDefinition, raw map[string]any) (*unstructured.Unstructured, error) {
+	clean, err := utils.ToUnstructured(crd)
+	if err != nil {
+		return nil, fmt.Errorf("crd to unstructured: %w", err)
+	}
+
+	cleanVersions, found, err := unstructured.NestedSlice(clean.Object, "spec", "versions")
+	if err != nil {
+		return nil, fmt.Errorf("read versions: %w", err)
+	}
+
+	if !found {
+		return clean, nil
+	}
+
+	rawVersions, _, err := unstructured.NestedSlice(raw, "spec", "versions")
+	if err != nil {
+		return nil, fmt.Errorf("read desired versions: %w", err)
+	}
+
+	for i, version := range cleanVersions {
+		versionMap, ok := version.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		name, _, _ := unstructured.NestedString(versionMap, "name")
+
+		rawSchema, ok := findVersionSchema(rawVersions, name)
+		if !ok {
+			continue
+		}
+
+		props := &openapi.JSONSchemaProps{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(rawSchema, props); err != nil {
+			return nil, fmt.Errorf("decode version %q schema: %w", name, err)
+		}
+
+		cleanSchema, err := runtime.DefaultUnstructuredConverter.ToUnstructured(props)
+		if err != nil {
+			return nil, fmt.Errorf("encode version %q schema: %w", name, err)
+		}
+
+		if err := unstructured.SetNestedMap(versionMap, cleanSchema, "schema", "openAPIV3Schema"); err != nil {
+			return nil, fmt.Errorf("set version %q schema: %w", name, err)
+		}
+
+		cleanVersions[i] = versionMap
+	}
+
+	if err := unstructured.SetNestedSlice(clean.Object, cleanVersions, "spec", "versions"); err != nil {
+		return nil, fmt.Errorf("set versions: %w", err)
+	}
+
+	return clean, nil
+}
+
+// findVersionSchema returns the openAPIV3Schema of the named version, matching by name
+// rather than by index so it does not depend on the two documents agreeing on order.
+func findVersionSchema(versions []any, name string) (map[string]any, bool) {
+	for _, version := range versions {
+		versionMap, ok := version.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		if versionName, _, _ := unstructured.NestedString(versionMap, "name"); versionName != name {
+			continue
+		}
+
+		schemaMap, found, err := unstructured.NestedMap(versionMap, "schema", "openAPIV3Schema")
+		if err != nil || !found {
+			return nil, false
+		}
+
+		return schemaMap, true
+	}
+
+	return nil, false
 }
 
 func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, desired *unstructured.Unstructured) error {
@@ -329,7 +428,8 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			return fmt.Errorf("read existing spec: %w", err)
 		}
 
-		// diff on lossless unstructured specs so vendor extensions are not silently dropped
+		// both sides are pruned to the same field set now — the desired spec by sanitize,
+		// the existing one by the apiserver — so this can actually return early
 		// ponytail: apiserver-defaulted .spec fields may differ from the manifest and cause
 		// reconcile churn; the update stays idempotent, tighten the diff here if it ever churns.
 		if cmp.Equal(existingSpec, desiredSpec) &&

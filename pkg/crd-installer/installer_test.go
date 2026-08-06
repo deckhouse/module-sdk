@@ -13,7 +13,26 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
+
+func countUpdates(actions []k8stesting.Action, name string) int {
+	var n int
+
+	for _, action := range actions {
+		update, ok := action.(k8stesting.UpdateAction)
+		if !ok {
+			continue
+		}
+
+		obj, ok := update.GetObject().(*unstructured.Unstructured)
+		if ok && obj.GetName() == name {
+			n++
+		}
+	}
+
+	return n
+}
 
 func TestCRDInstaller(t *testing.T) {
 	crdScheme := runtime.NewScheme()
@@ -146,6 +165,70 @@ func TestCRDInstaller(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, found, "manifest schema must be applied")
 		assert.Equal(t, true, token["x-kubernetes-sensitive-data"])
+	})
+
+	// Regression: keys the apiserver does not know must never be sent. It prunes them
+	// anyway, one "unknown field" warning per occurrence, and the pruning is what made
+	// the desired spec permanently differ from the stored one.
+	t.Run("strips unknown schema extensions", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/6_unknown_extensions.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "extensions.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		versions, _, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+
+		root, found, err := unstructured.NestedMap(versions[0].(map[string]any), "schema", "openAPIV3Schema")
+		require.NoError(t, err)
+		require.True(t, found)
+
+		assert.NotContains(t, root, "x-doc-examples")
+		assert.NotContains(t, root, "x-description")
+
+		props, _, err := unstructured.NestedMap(root, "properties", "spec", "properties")
+		require.NoError(t, err)
+
+		token := props["token"].(map[string]any)
+		assert.Equal(t, true, token["x-kubernetes-sensitive-data"], "the one extension that must survive")
+		assert.NotContains(t, token, "x-doc-examples")
+
+		tags := props["tags"].(map[string]any)
+		assert.Equal(t, "set", tags["x-kubernetes-list-type"])
+		assert.NotContains(t, tags["items"].(map[string]any), "x-doc-examples")
+		assert.Equal(t, int64(1), tags["items"].(map[string]any)["minLength"])
+
+		assert.NotContains(t, props["labels"].(map[string]any)["additionalProperties"].(map[string]any), "x-doc-examples")
+		assert.Equal(t, true, props["free"].(map[string]any)["x-kubernetes-preserve-unknown-fields"])
+
+		legacy := props["legacy"].(map[string]any)
+		assert.Equal(t, "string", legacy["type"])
+		for _, key := range []string{
+			"x-kubernetes-immutable", "x-kubernetes-patch-strategy", "x-examples", "x-doc-default",
+		} {
+			assert.NotContains(t, legacy, key, "not a field of JSONSchemaProps")
+		}
+	})
+
+	// Regression: applying a manifest over the state the apiserver derives from it must be
+	// a no-op. The apiserver prunes the x-doc-* keys, so before the fix the desired spec
+	// (with them) could never equal the stored spec (without them) and every single run
+	// issued a full Update of every CRD.
+	//
+	// The fake client prunes nothing, so the pruned state has to be installed explicitly —
+	// reinstalling the same file twice would pass either way and prove nothing.
+	t.Run("applying a manifest over its stored form does not update", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/7_churn_stored.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		before := countUpdates(fc.Actions(), "churns.example.com")
+
+		inst = NewCRDsInstaller(fc, []string{"testdata/8_churn_manifest.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		assert.Equal(t, before, countUpdates(fc.Actions(), "churns.example.com"),
+			"the x-doc-* keys must not make the installer see a diff")
 	})
 
 	// Regression: a comment-only yaml document decodes to a nil object and must be skipped,
