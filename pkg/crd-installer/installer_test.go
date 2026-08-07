@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic/fake"
 	k8stesting "k8s.io/client-go/testing"
@@ -42,9 +41,7 @@ func countUpdates(actions []k8stesting.Action, name string) int {
 // exact Go values it is handed, so without this an object built with float64 numbers
 // reads back as float64 and a test can pass on state a real apiserver would never
 // return.
-func storeAsWire(t *testing.T, fc *fake.FakeDynamicClient) {
-	t.Helper()
-
+func storeAsWire(fc *fake.FakeDynamicClient) {
 	react := func(action k8stesting.Action) (bool, runtime.Object, error) {
 		withObject, ok := action.(interface{ GetObject() runtime.Object })
 		if !ok {
@@ -56,11 +53,18 @@ func storeAsWire(t *testing.T, fc *fake.FakeDynamicClient) {
 			return false, nil, nil
 		}
 
+		// the reactor runs on the installer's worker goroutines, so an error is returned to
+		// the caller rather than asserted: require.NoError would call t.FailNow off the test
+		// goroutine, which unwinds that worker and reports nothing about the CRD it dropped
 		data, err := json.Marshal(obj.Object)
-		require.NoError(t, err)
+		if err != nil {
+			return true, nil, err
+		}
 
 		wire := map[string]any{}
-		require.NoError(t, json.Unmarshal(data, &wire))
+		if err := json.Unmarshal(data, &wire); err != nil {
+			return true, nil, err
+		}
 
 		// ObjectMeta.Labels/Annotations are omitempty, so the apiserver never returns an
 		// empty map for them — it returns nothing
@@ -95,7 +99,7 @@ func TestCRDInstaller(t *testing.T) {
 	}
 
 	fc := fake.NewSimpleDynamicClient(crdScheme)
-	storeAsWire(t, fc)
+	storeAsWire(fc)
 
 	t.Run("install CRD", func(t *testing.T) {
 		inst := NewCRDsInstaller(fc, []string{"testdata/1_example.yaml"}, WithExtraLabels(map[string]string{"heritage": "deckhouse"}))
@@ -124,7 +128,9 @@ func TestCRDInstaller(t *testing.T) {
 		un, err := fc.Resource(gvr).Get(context.Background(), "widgets.example.com", apimachineryv1.GetOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, map[string]string{"foo": "bar", "one": "new", "another": "lab"}, un.GetLabels())
+		// heritage is from the previous run: labels are overlaid, so a key this run no longer
+		// declares is left in place rather than deleted
+		assert.Equal(t, map[string]string{"foo": "bar", "one": "new", "another": "lab", "heritage": "deckhouse"}, un.GetLabels())
 		assert.Equal(t, map[string]string{"bar": "baz", "two": "new"}, un.GetAnnotations())
 		var crd v1.CustomResourceDefinition
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &crd)
@@ -293,44 +299,85 @@ func TestCRDInstaller(t *testing.T) {
 	})
 
 	// Regression: sanitize runs before the CRD is queued, so an error from it used to abort
-	// the whole file and silently skip every document after the bad one.
+	// the whole file and silently skip every document after the bad one. It must not keep the
+	// CRD it failed on out of the cluster either: the apiserver prunes the key it cannot
+	// read, while a missing CRD takes every custom resource of that kind with it.
 	t.Run("a bad document does not skip the rest of the file", func(t *testing.T) {
 		inst := NewCRDsInstaller(fc, []string{"testdata/10_multi_document.yaml"})
 		require.Error(t, inst.Run(context.Background()), "the broken document must still be reported")
 
-		for _, name := range []string{"firsts.example.com", "lasts.example.com"} {
+		for _, name := range []string{"firsts.example.com", "broken.example.com", "lasts.example.com"} {
 			_, err := fc.Resource(gvr).Get(context.Background(), name, apimachineryv1.GetOptions{})
-			require.NoError(t, err, "%s is a valid CRD in the same file and must be installed", name)
+			require.NoError(t, err, "%s is in the same file and must be installed", name)
 		}
-	})
 
-	// Regression: annotations belong to whoever wrote them. Replacing the map wholesale
-	// dropped the Helm ownership keys, and the next helm upgrade of that chart then failed
-	// on "invalid ownership metadata".
-	t.Run("keeps annotations written by other actors", func(t *testing.T) {
-		// widgets.example.com is already in the cluster from the subtests above; give it the
-		// ownership annotations a helm-installed CRD carries
-		_, err := fc.Resource(gvr).Patch(context.Background(), "widgets.example.com", types.MergePatchType,
-			[]byte(`{"metadata":{"annotations":{"meta.helm.sh/release-name":"some-chart"}}}`),
-			apimachineryv1.PatchOptions{})
+		un, err := fc.Resource(gvr).Get(context.Background(), "broken.example.com", apimachineryv1.GetOptions{})
 		require.NoError(t, err)
 
-		inst := NewCRDsInstaller(fc, []string{"testdata/2_example.yaml"})
-		require.NoError(t, inst.Run(context.Background()))
+		versions, _, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+
+		token, found, err := unstructured.NestedMap(versions[0].(map[string]any),
+			"schema", "openAPIV3Schema", "properties", "token")
+		require.NoError(t, err)
+		require.True(t, found)
+
+		assert.Equal(t, "yes", token["x-kubernetes-sensitive-data"],
+			"a schema the fork cannot decode is sent as it came, for the apiserver to prune")
+	})
+
+	// Regression: labels and annotations belong to whoever wrote them. Replacing either map
+	// wholesale dropped the Helm ownership keys — app.kubernetes.io/managed-by among the
+	// labels, meta.helm.sh/* among the annotations — and the next helm upgrade of that chart
+	// then failed on "invalid ownership metadata".
+	t.Run("keeps labels and annotations written by other actors", func(t *testing.T) {
+		// own client: the CRD must be reached by the update path with nothing but the seeded
+		// state, otherwise a leftover from another subtest can be what forces the update
+		fc := fake.NewSimpleDynamicClient(crdScheme)
+		storeAsWire(fc)
+
+		// widgets.example.com as a helm chart installed it
+		seed := &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "apiextensions.k8s.io/v1",
+			"kind":       "CustomResourceDefinition",
+			"metadata": map[string]any{
+				"name":        "widgets.example.com",
+				"labels":      map[string]any{"app.kubernetes.io/managed-by": "Helm"},
+				"annotations": map[string]any{"meta.helm.sh/release-name": "some-chart"},
+			},
+			"spec": map[string]any{
+				"group": "example.com",
+				"names": map[string]any{
+					"kind": "Widget", "listKind": "WidgetList", "plural": "widgets", "singular": "widget",
+				},
+				"scope":    "Namespaced",
+				"versions": []any{map[string]any{"name": "v1", "served": true, "storage": true}},
+			},
+		}}
+		_, err := fc.Resource(gvr).Create(context.Background(), seed, apimachineryv1.CreateOptions{})
+		require.NoError(t, err)
+
+		extra := WithExtraLabels(map[string]string{"heritage": "deckhouse"})
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/2_example.yaml"}, extra).Run(context.Background()))
 
 		un, err := fc.Resource(gvr).Get(context.Background(), "widgets.example.com", apimachineryv1.GetOptions{})
 		require.NoError(t, err)
 
 		assert.Equal(t, map[string]string{
-			"bar": "baz", "two": "new", "meta.helm.sh/release-name": "some-chart",
-		}, un.GetAnnotations())
+			"foo": "bar", "one": "new", "heritage": "deckhouse",
+			"app.kubernetes.io/managed-by": "Helm",
+		}, un.GetLabels(), "the helm ownership label must survive the update")
+		assert.Equal(t, map[string]string{
+			"bar": "baz", "two": "new",
+			"meta.helm.sh/release-name": "some-chart",
+		}, un.GetAnnotations(), "the helm ownership annotation must survive the update")
 
 		before := countUpdates(fc.Actions(), "widgets.example.com")
 
-		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/2_example.yaml"}).Run(context.Background()))
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/2_example.yaml"}, extra).Run(context.Background()))
 
 		assert.Equal(t, before, countUpdates(fc.Actions(), "widgets.example.com"),
-			"a foreign annotation must not read as a diff either")
+			"foreign labels and annotations must not read as a diff either")
 	})
 
 	// Regression: a comment-only yaml document decodes to a nil object and must be skipped,

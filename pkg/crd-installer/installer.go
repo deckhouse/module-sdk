@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"sync"
@@ -174,7 +175,9 @@ func (cp *CRDsInstaller) processCRD(ctx context.Context, crdFilePath string) err
 				break
 			}
 
-			return err
+			// the documents read so far may already have failed: reporting only the read
+			// error would hide them
+			return errors.Join(errs, err)
 		}
 
 		data := cp.buffer[:n]
@@ -221,8 +224,13 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 		return fmt.Errorf("default %s: %w", crd.Name, err)
 	}
 
-	if err := sanitize(desired); err != nil {
-		return fmt.Errorf("sanitize %s: %w", crd.Name, err)
+	// a schema this build cannot decode must not keep the CRD out of the cluster: the
+	// document is queued as it came — what the installer did before it pruned anything —
+	// and the error is reported afterwards. The apiserver prunes the key it does not
+	// understand, while a missing CRD takes every custom resource of that kind with it.
+	sanitizeErr := sanitize(desired)
+	if sanitizeErr != nil {
+		sanitizeErr = fmt.Errorf("sanitize %s: %w", crd.Name, sanitizeErr)
 	}
 
 	cp.k8sTasks.Go(func() error {
@@ -263,7 +271,7 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 		return err
 	})
 
-	return nil
+	return sanitizeErr
 }
 
 // sanitize drops the schema keys the apiserver does not know from the CRD document.
@@ -328,8 +336,28 @@ func nestedValue(obj map[string]any, fields ...string) any {
 // applyServerDefaults writes the .spec fields the apiserver fills in itself into the
 // document, so a manifest that omits them does not differ from the stored object on
 // every single reconcile.
+//
+// ponytail: only the .spec fields known to churn are written here; if a CRD still updates
+// on every reconcile, diff the stored object against the manifest and add the field that
+// differs.
 func applyServerDefaults(crd *apiextensionsv1.CustomResourceDefinition, desired *unstructured.Unstructured) error {
 	apiextensionsv1.SetDefaults_CustomResourceDefinitionSpec(&crd.Spec)
+
+	// served and storage have no omitempty upstream, so the stored object always carries
+	// both on every version — a manifest that omits either would differ from it forever
+	versions, _ := nestedValue(desired.Object, "spec", "versions").([]any)
+	for _, version := range versions {
+		versionMap, ok := version.(map[string]any)
+		if !ok {
+			continue
+		}
+
+		for _, field := range []string{"served", "storage"} {
+			if _, ok := versionMap[field]; !ok {
+				versionMap[field] = false
+			}
+		}
+	}
 
 	// spec.conversion is defaulted too, but updateOrInsertCRD always takes the in-cluster
 	// one, which the apiserver has already defaulted
@@ -353,10 +381,10 @@ func applyServerDefaults(crd *apiextensionsv1.CustomResourceDefinition, desired 
 
 func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, desired *unstructured.Unstructured) error {
 	return retry.RetryOnConflict(retry.DefaultRetry, func() error {
+		desired.SetLabels(overlay(desired.GetLabels(), cp.crdExtraLabels))
+
 		existing, err := cp.k8sClient.Resource(crdGVR).Get(ctx, crd.GetName(), apimachineryv1.GetOptions{})
 		if apierrors.IsNotFound(err) {
-			mergeLabels(desired, cp.crdExtraLabels)
-
 			_, err = cp.k8sClient.Resource(crdGVR).Create(ctx, desired, apimachineryv1.CreateOptions{})
 			if err != nil {
 				return fmt.Errorf("create crd: %w", err)
@@ -414,8 +442,6 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			}
 		}
 
-		mergeLabels(desired, cp.crdExtraLabels)
-
 		desiredSpec, _, err := unstructured.NestedMap(desired.Object, "spec")
 		if err != nil {
 			return fmt.Errorf("read desired spec: %w", err)
@@ -426,15 +452,27 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			return fmt.Errorf("read existing spec: %w", err)
 		}
 
-		// both sides are pruned to the same field set now — the desired spec by sanitize,
-		// the existing one by the apiserver — so this can actually return early.
-		// Annotations are only checked for containment because they are merged, not replaced.
-		// ponytail: apiserver-defaulted .spec fields beyond spec.names may differ from the
-		// manifest and cause reconcile churn; the update stays idempotent, default them in
-		// applyServerDefaults if it ever churns.
+		// labels and annotations belong to whoever wrote them: dropping
+		// app.kubernetes.io/managed-by or meta.helm.sh/release-name breaks the next helm
+		// upgrade of the chart that installed the CRD, so both maps are overlaid, never
+		// replaced. The result is what the object must end up holding, which is also what
+		// makes the comparison below exact.
+		//
+		// ponytail: overlaying means a key the manifest stops declaring stays in the
+		// cluster — retracting one needs the field ownership the apiserver keeps for
+		// server-side apply; switch this whole update to Apply if that ever matters.
+		labels := overlay(existing.GetLabels(), desired.GetLabels())
+		annotations := overlay(existing.GetAnnotations(), desired.GetAnnotations())
+
+		// The specs are compared, not merged: the desired one is pruned by sanitize and the
+		// existing one by the apiserver, so a manifest applied over the state the apiserver
+		// derived from it is a no-op. A .spec key this cluster's apiserver does not know is
+		// the exception — it prunes the key while the desired document keeps it, so that CRD
+		// is updated on every reconcile. Deliberate: the key is sent so an apiserver that
+		// does know it gets it.
 		if cmp.Equal(existingSpec, desiredSpec) &&
-			cmp.Equal(existing.GetLabels(), desired.GetLabels()) &&
-			containsAll(existing.GetAnnotations(), desired.GetAnnotations()) {
+			cmp.Equal(existing.GetLabels(), labels) &&
+			cmp.Equal(existing.GetAnnotations(), annotations) {
 			return nil
 		}
 
@@ -443,11 +481,8 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 		if err := unstructured.SetNestedMap(existing.Object, desiredSpec, "spec"); err != nil {
 			return fmt.Errorf("set spec: %w", err)
 		}
-		existing.SetLabels(desired.GetLabels())
-		// annotations written by other actors — Helm ownership, kubectl last-applied — are
-		// merged with, not replaced by, the manifest's: dropping meta.helm.sh/release-name
-		// breaks the next helm upgrade of the chart that installed the CRD
-		existing.SetAnnotations(mergeAnnotations(existing.GetAnnotations(), desired.GetAnnotations()))
+		existing.SetLabels(labels)
+		existing.SetAnnotations(annotations)
 		existing.SetResourceVersion(resourceVersion)
 
 		_, err = cp.k8sClient.Resource(crdGVR).Update(ctx, existing, apimachineryv1.UpdateOptions{})
@@ -459,46 +494,22 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 	})
 }
 
-func mergeLabels(u *unstructured.Unstructured, extra map[string]string) {
-	if len(extra) == 0 {
-		// nothing to add: writing an empty map here would set metadata.labels: {}, which
-		// never compares equal to the absent labels the apiserver returns
-		return
+// overlay returns base with over's keys written on top of it. A key base holds and over
+// does not is kept.
+//
+// nil in, nil out: the apiserver returns no map at all for empty labels or annotations, and
+// an empty one written back would never compare equal to that — SetLabels/SetAnnotations
+// remove the field for nil and set metadata.labels: {} for an empty map.
+func overlay(base, over map[string]string) map[string]string {
+	if len(over) == 0 {
+		return base
 	}
 
-	labels := u.GetLabels()
-	if labels == nil {
-		labels = make(map[string]string, len(extra))
-	}
+	out := make(map[string]string, len(base)+len(over))
+	maps.Copy(out, base)
+	maps.Copy(out, over)
 
-	for k, v := range extra {
-		labels[k] = v
-	}
-
-	u.SetLabels(labels)
-}
-
-// containsAll reports whether super holds every key of sub with the same value.
-func containsAll(super, sub map[string]string) bool {
-	for k, v := range sub {
-		if super[k] != v {
-			return false
-		}
-	}
-
-	return true
-}
-
-func mergeAnnotations(existing, desired map[string]string) map[string]string {
-	if existing == nil {
-		return desired
-	}
-
-	for k, v := range desired {
-		existing[k] = v
-	}
-
-	return existing
+	return out
 }
 
 func (cp *CRDsInstaller) GetCRDFromCluster(ctx context.Context, crdName string) (*apiextensionsv1.CustomResourceDefinition, error) {

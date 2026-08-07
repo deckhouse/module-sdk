@@ -34,8 +34,12 @@ func TestForkCoversUpstreamFields(t *testing.T) {
 			continue
 		}
 
-		if f.typ != up.typ {
-			t.Errorf("JSONSchemaProps.%s (%q) is %s upstream but %s in the fork: the installer would mis-decode it", up.name, tag, up.typ, f.typ)
+		if want := forkType(up.typ); f.typ != want {
+			t.Errorf("JSONSchemaProps.%s (%q) is %s upstream, so the fork must declare it %s, not %s: the installer would mis-decode it", up.name, tag, up.typ, want, f.typ)
+		}
+
+		if f.opts != up.opts {
+			t.Errorf("JSONSchemaProps.%s (%q) has the json tag options %q upstream but %q in the fork: the installer would serialize it where the apiserver omits it, and every CRD would be updated on every reconcile", up.name, tag, up.opts, f.opts)
 		}
 	}
 
@@ -61,27 +65,29 @@ func TestForkCoversUpstreamUnions(t *testing.T) {
 		{reflect.TypeOf(JSONSchemaPropsOrStringArray{}), reflect.TypeOf(apiextensionsv1.JSONSchemaPropsOrStringArray{})},
 	} {
 		t.Run(tc.fork.Name(), func(t *testing.T) {
-			assert.Equal(t, structFields(tc.upstream), structFields(tc.fork),
+			assert.Equal(t, forkStructFields(tc.upstream), structFields(tc.fork),
 				"port the upstream change into types.go and marshal.go")
 		})
 	}
 }
 
-type fieldInfo struct{ name, typ string }
+type fieldInfo struct{ name, typ, opts string }
 
-// jsonFields maps the json tag of every serialized field to its name and type.
+// jsonFields maps the json tag name of every serialized field to its name, type and tag
+// options. The options are part of the contract: a field that lost omitempty is serialized
+// where the apiserver omits it, and the desired spec could never equal the stored one again.
 func jsonFields(t reflect.Type) map[string]fieldInfo {
 	out := make(map[string]fieldInfo, t.NumField())
 
 	for i := range t.NumField() {
 		field := t.Field(i)
 
-		tag, _, _ := strings.Cut(field.Tag.Get("json"), ",")
+		tag, opts, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if tag == "" || tag == "-" {
 			continue
 		}
 
-		out[tag] = fieldInfo{name: field.Name, typ: typeName(field.Type)}
+		out[tag] = fieldInfo{name: field.Name, typ: field.Type.String(), opts: opts}
 	}
 
 	return out
@@ -92,17 +98,45 @@ func structFields(t reflect.Type) map[string]string {
 	out := make(map[string]string, t.NumField())
 
 	for i := range t.NumField() {
-		out[t.Field(i).Name] = typeName(t.Field(i).Type)
+		out[t.Field(i).Name] = t.Field(i).Type.String()
 	}
 
 	return out
 }
 
-// typeName renders a type with this package's name replaced by the upstream one: every
-// nested schema position is retargeted here by hand, and that is the one difference the
-// guards must look through to see the ones that matter.
-func typeName(t reflect.Type) string {
-	return strings.ReplaceAll(t.String(), "openapi.", "v1.")
+// forkStructFields is structFields with every type rendered as the fork must declare it.
+func forkStructFields(t reflect.Type) map[string]string {
+	out := structFields(t)
+
+	for name, typ := range out {
+		out[name] = forkType(typ)
+	}
+
+	return out
+}
+
+// forkTypes are the upstream types this package retargets at itself. Every other type a
+// field can hold — v1.JSON, v1.JSONSchemaURL, v1.ValidationRules — must stay upstream.
+var forkTypes = []string{
+	"JSONSchemaProps",
+	"JSONSchemaPropsOrArray",
+	"JSONSchemaPropsOrBool",
+	"JSONSchemaPropsOrStringArray",
+	"JSONSchemaDependencies",
+	"JSONSchemaDefinitions",
+}
+
+// forkType renders an upstream field type as the fork must declare it. The mapping runs in
+// this direction on purpose: erasing the package name on both sides instead would let a
+// nested schema position left pointing at apiextensionsv1 compare equal — and that is the
+// one drift these guards exist to catch, because Prune would then silently strip
+// x-kubernetes-sensitive-data from every schema under it.
+func forkType(upstream string) string {
+	for _, name := range forkTypes {
+		upstream = strings.ReplaceAll(upstream, "v1."+name, "openapi."+name)
+	}
+
+	return upstream
 }
 
 // roundTrip runs a schema through the fork the same way the installer does.

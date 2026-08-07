@@ -18,8 +18,15 @@
 // accepted: the field is meaningless there anyway, and detecting it would mean probing
 // the apiserver build for every install.
 //
-// TestForkCoversUpstreamFields guards the copy against drift; read it before bumping
-// k8s.io/apiextensions-apiserver.
+// Being the allowlist cuts the other way too: a schema field the cluster's apiserver
+// understands and this build does not is dropped silently, and TestForkCoversUpstreamFields
+// only fires when this module bumps k8s.io/apiextensions-apiserver — never when the cluster
+// moves ahead of it. Keep the dependency in step with the apiserver Deckhouse ships. A
+// schema this fork cannot decode at all is not dropped: the installer sends that document
+// as it came and reports the error (see sanitize).
+//
+// TestForkCoversUpstreamFields and TestForkMarshalsLikeUpstream guard the copy against
+// drift; read them before bumping k8s.io/apiextensions-apiserver.
 package openapi
 
 import (

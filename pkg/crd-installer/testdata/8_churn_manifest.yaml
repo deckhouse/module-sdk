@@ -38,3 +38,8 @@ spec:
                   multipleOf: 2
                   x-doc-examples:
                     - 8080
+    - name: v1alpha1
+      served: true
+      schema:
+        openAPIV3Schema:
+          type: object

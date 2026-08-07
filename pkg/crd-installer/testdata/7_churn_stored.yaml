@@ -33,3 +33,11 @@ spec:
                   minimum: 1
                   maximum: 65535
                   multipleOf: 2
+    - name: v1alpha1
+      served: true
+      # the manifest omits this one: served and storage have no omitempty upstream, so the
+      # stored object carries both on every version no matter what the manifest says
+      storage: false
+      schema:
+        openAPIV3Schema:
+          type: object
