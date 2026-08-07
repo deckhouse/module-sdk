@@ -12,6 +12,12 @@
 // friends — is dropped on decode instead of being sent to the apiserver, which would
 // prune it anyway and log an "unknown field" warning for every occurrence.
 //
+// The contract holds only on the Deckhouse kube-apiserver. On a stock one — a managed
+// control plane, a dev cluster, CRDSensitiveData off — x-kubernetes-sensitive-data is
+// pruned server-side, so a CRD that carries it is updated on every reconcile. That is
+// accepted: the field is meaningless there anyway, and detecting it would mean probing
+// the apiserver build for every install.
+//
 // TestForkCoversUpstreamFields guards the copy against drift; read it before bumping
 // k8s.io/apiextensions-apiserver.
 package openapi

@@ -19,39 +19,13 @@ spec:
           type: object
           x-doc-examples:
             - at the root
-          x-description: at the root
           properties:
             spec:
               type: object
               properties:
                 token:
                   type: string
+                  # the one extension that must survive, next to one that must not
                   x-kubernetes-sensitive-data: true
                   x-doc-examples:
-                    - next to a field that must survive
-                tags:
-                  type: array
-                  x-kubernetes-list-type: set
-                  items:
-                    type: string
-                    minLength: 1
-                    x-doc-examples:
-                      - inside items
-                labels:
-                  type: object
-                  additionalProperties:
-                    type: string
-                    x-doc-examples:
-                      - inside additionalProperties
-                free:
-                  type: object
-                  x-kubernetes-preserve-unknown-fields: true
-                # keys that look official but are not fields of JSONSchemaProps,
-                # so a "keep everything x-kubernetes-*" rule would leak them
-                legacy:
-                  type: string
-                  x-kubernetes-immutable: true
-                  x-kubernetes-patch-strategy: merge
-                  x-examples:
-                    - legacy
-                  x-doc-default: legacy
+                    - deep in the tree

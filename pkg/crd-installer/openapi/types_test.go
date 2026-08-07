@@ -8,7 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // forkOnlyFields are the json keys this package adds on top of upstream
@@ -18,33 +17,61 @@ var forkOnlyFields = map[string]struct{}{
 }
 
 // TestForkCoversUpstreamFields is the guard that keeps the fork honest. JSONSchemaProps
-// is copied by hand, so a k8s bump that adds a schema field would otherwise make the
-// installer silently strip that field from every CRD it applies, with no warning
-// anywhere. If this fails after bumping k8s.io/apiextensions-apiserver, port the new
-// field into types.go rather than relaxing the test.
+// is copied by hand, so a k8s bump that adds a schema field — or retypes one — would
+// otherwise make the installer silently strip or mis-decode that field on every CRD it
+// applies, with no warning anywhere. If this fails after bumping
+// k8s.io/apiextensions-apiserver, port the change into types.go rather than relaxing
+// the test.
 func TestForkCoversUpstreamFields(t *testing.T) {
-	upstream := jsonTags(reflect.TypeOf(apiextensionsv1.JSONSchemaProps{}))
-	fork := jsonTags(reflect.TypeOf(JSONSchemaProps{}))
+	upstream := jsonFields(reflect.TypeOf(apiextensionsv1.JSONSchemaProps{}))
+	fork := jsonFields(reflect.TypeOf(JSONSchemaProps{}))
 
-	for tag, name := range upstream {
-		if _, ok := fork[tag]; !ok {
-			t.Errorf("apiextensionsv1.JSONSchemaProps.%s (%q) is missing from the fork: the installer would strip it from every CRD", name, tag)
+	for tag, up := range upstream {
+		f, ok := fork[tag]
+		if !ok {
+			t.Errorf("apiextensionsv1.JSONSchemaProps.%s (%q) is missing from the fork: the installer would strip it from every CRD", up.name, tag)
+
+			continue
+		}
+
+		if f.typ != up.typ {
+			t.Errorf("JSONSchemaProps.%s (%q) is %s upstream but %s in the fork: the installer would mis-decode it", up.name, tag, up.typ, f.typ)
 		}
 	}
 
-	for tag, name := range fork {
+	for tag, f := range fork {
 		if _, ok := upstream[tag]; ok {
 			continue
 		}
 
 		if _, ok := forkOnlyFields[tag]; !ok {
-			t.Errorf("JSONSchemaProps.%s (%q) exists in neither upstream nor forkOnlyFields: the apiserver will reject it as an unknown field", name, tag)
+			t.Errorf("JSONSchemaProps.%s (%q) exists in neither upstream nor forkOnlyFields: the apiserver will reject it as an unknown field", f.name, tag)
 		}
 	}
 }
 
-func jsonTags(t reflect.Type) map[string]string {
-	out := make(map[string]string, t.NumField())
+// TestForkCoversUpstreamUnions guards the three union types. Every one of their fields is
+// json:"-" and carried by the hand-ported marshallers in marshal.go, so the tag-based
+// guard above never sees them — they are the part of the fork most likely to drift
+// unnoticed.
+func TestForkCoversUpstreamUnions(t *testing.T) {
+	for _, tc := range []struct{ fork, upstream reflect.Type }{
+		{reflect.TypeOf(JSONSchemaPropsOrArray{}), reflect.TypeOf(apiextensionsv1.JSONSchemaPropsOrArray{})},
+		{reflect.TypeOf(JSONSchemaPropsOrBool{}), reflect.TypeOf(apiextensionsv1.JSONSchemaPropsOrBool{})},
+		{reflect.TypeOf(JSONSchemaPropsOrStringArray{}), reflect.TypeOf(apiextensionsv1.JSONSchemaPropsOrStringArray{})},
+	} {
+		t.Run(tc.fork.Name(), func(t *testing.T) {
+			assert.Equal(t, structFields(tc.upstream), structFields(tc.fork),
+				"port the upstream change into types.go and marshal.go")
+		})
+	}
+}
+
+type fieldInfo struct{ name, typ string }
+
+// jsonFields maps the json tag of every serialized field to its name and type.
+func jsonFields(t reflect.Type) map[string]fieldInfo {
+	out := make(map[string]fieldInfo, t.NumField())
 
 	for i := range t.NumField() {
 		field := t.Field(i)
@@ -54,20 +81,35 @@ func jsonTags(t reflect.Type) map[string]string {
 			continue
 		}
 
-		out[tag] = field.Name
+		out[tag] = fieldInfo{name: field.Name, typ: typeName(field.Type)}
 	}
 
 	return out
+}
+
+// structFields maps every field name to its type, json:"-" ones included.
+func structFields(t reflect.Type) map[string]string {
+	out := make(map[string]string, t.NumField())
+
+	for i := range t.NumField() {
+		out[t.Field(i).Name] = typeName(t.Field(i).Type)
+	}
+
+	return out
+}
+
+// typeName renders a type with this package's name replaced by the upstream one: every
+// nested schema position is retargeted here by hand, and that is the one difference the
+// guards must look through to see the ones that matter.
+func typeName(t reflect.Type) string {
+	return strings.ReplaceAll(t.String(), "openapi.", "v1.")
 }
 
 // roundTrip runs a schema through the fork the same way the installer does.
 func roundTrip(t *testing.T, in map[string]any) map[string]any {
 	t.Helper()
 
-	props := &JSONSchemaProps{}
-	require.NoError(t, runtime.DefaultUnstructuredConverter.FromUnstructured(in, props))
-
-	out, err := runtime.DefaultUnstructuredConverter.ToUnstructured(props)
+	out, err := Prune(in)
 	require.NoError(t, err)
 
 	return out
@@ -88,6 +130,16 @@ func TestRoundTripKeepsKnownFields(t *testing.T) {
 			"token": map[string]any{
 				"type":                        "string",
 				"x-kubernetes-sensitive-data": true,
+			},
+			"port": map[string]any{
+				"type":       "integer",
+				"minimum":    int64(1),
+				"maximum":    int64(65535),
+				"multipleOf": int64(2),
+			},
+			"ratio": map[string]any{
+				"type":    "number",
+				"maximum": 1.5,
 			},
 			// items in single-schema form
 			"tags": map[string]any{
@@ -145,6 +197,16 @@ func TestRoundTripKeepsKnownFields(t *testing.T) {
 	assert.Equal(t, "a", name["default"])
 
 	assert.Equal(t, true, props["token"].(map[string]any)["x-kubernetes-sensitive-data"])
+
+	// The bounds are *float64 in Go but whole numbers on the wire, and the apiserver
+	// returns them as int64. Encoding them as float64 would make the desired spec
+	// permanently differ from the stored one and update every such CRD on every run.
+	port := props["port"].(map[string]any)
+	assert.Equal(t, int64(1), port["minimum"])
+	assert.Equal(t, int64(65535), port["maximum"])
+	assert.Equal(t, int64(2), port["multipleOf"])
+
+	assert.Equal(t, 1.5, props["ratio"].(map[string]any)["maximum"], "a fractional bound stays a float")
 
 	tags := props["tags"].(map[string]any)
 	assert.Equal(t, "set", tags["x-kubernetes-list-type"])

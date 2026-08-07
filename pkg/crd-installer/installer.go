@@ -165,6 +165,8 @@ func (cp *CRDsInstaller) processCRD(ctx context.Context, crdFilePath string) err
 
 	crdReader := apimachineryYaml.NewDocumentDecoder(crdFileReader)
 
+	var errs error
+
 	for {
 		n, err := crdReader.Read(cp.buffer)
 		if err != nil {
@@ -183,13 +185,14 @@ func (cp *CRDsInstaller) processCRD(ctx context.Context, crdFilePath string) err
 
 		rd := bytes.NewReader(data)
 
-		err = cp.putCRDToCluster(ctx, rd, n)
-		if err != nil {
-			return err
+		// one bad document must not skip the rest of the file: the documents after it are
+		// unrelated CRDs, and skipping them silently leaves the module without them
+		if err := cp.putCRDToCluster(ctx, rd, n); err != nil {
+			errs = errors.Join(errs, err)
 		}
 	}
 
-	return nil
+	return errs
 }
 
 func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reader, bufferSize int) error {
@@ -214,8 +217,11 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 		return fmt.Errorf("invalid CRD document apiversion/kind: '%s/%s'", crd.APIVersion, crd.Kind)
 	}
 
-	desired, err = sanitize(crd, desired.Object)
-	if err != nil {
+	if err := applyServerDefaults(crd, desired); err != nil {
+		return fmt.Errorf("default %s: %w", crd.Name, err)
+	}
+
+	if err := sanitize(desired); err != nil {
 		return fmt.Errorf("sanitize %s: %w", crd.Name, err)
 	}
 
@@ -260,97 +266,89 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	return nil
 }
 
-// sanitize reduces the CRD document to the fields the apiserver actually knows.
+// sanitize drops the schema keys the apiserver does not know from the CRD document.
 //
-// Everything else — x-doc-examples and friends, plus keys that look official but are
-// not, like x-kubernetes-immutable — is dropped here instead of being sent. The
-// apiserver prunes them anyway, after logging one "unknown field" warning per
-// occurrence, and because it prunes them the stored spec could never equal the desired
-// one, so every run issued a pointless Update.
+// x-doc-examples and friends, plus keys that look official but are not, like
+// x-kubernetes-immutable, are removed here instead of being sent. The apiserver prunes
+// them anyway, after logging one "unknown field" warning per occurrence, and because it
+// prunes them the stored spec could never equal the desired one, so every run issued a
+// pointless Update.
 //
-// The typed CRD is that pruned document already, at every level. The single exception
-// is x-kubernetes-sensitive-data, which apiextensionsv1 does not model but the Deckhouse
-// apiserver does, so each version schema is re-decoded through the fork in
-// pkg/crd-installer/openapi that carries it.
-func sanitize(crd *apiextensionsv1.CustomResourceDefinition, raw map[string]any) (*unstructured.Unstructured, error) {
-	clean, err := utils.ToUnstructured(crd)
-	if err != nil {
-		return nil, fmt.Errorf("crd to unstructured: %w", err)
+// Only the version schemas are rewritten; the rest of the document is passed through
+// untouched. Rebuilding it from apiextensionsv1.CustomResourceDefinition instead would
+// pin the installer to the CRD fields of the apiextensions-apiserver it was compiled
+// against, and silently strip anything a newer or patched apiserver understands.
+func sanitize(desired *unstructured.Unstructured) error {
+	versions, ok := nestedValue(desired.Object, "spec", "versions").([]any)
+	if !ok {
+		// no versions, or not a list: let the apiserver reject the document
+		return nil
 	}
 
-	cleanVersions, found, err := unstructured.NestedSlice(clean.Object, "spec", "versions")
-	if err != nil {
-		return nil, fmt.Errorf("read versions: %w", err)
-	}
-
-	if !found {
-		return clean, nil
-	}
-
-	rawVersions, _, err := unstructured.NestedSlice(raw, "spec", "versions")
-	if err != nil {
-		return nil, fmt.Errorf("read desired versions: %w", err)
-	}
-
-	for i, version := range cleanVersions {
-		versionMap, ok := version.(map[string]any)
-		if !ok {
-			continue
-		}
-
-		name, _, _ := unstructured.NestedString(versionMap, "name")
-
-		rawSchema, ok := findVersionSchema(rawVersions, name)
-		if !ok {
-			continue
-		}
-
-		props := &openapi.JSONSchemaProps{}
-		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(rawSchema, props); err != nil {
-			return nil, fmt.Errorf("decode version %q schema: %w", name, err)
-		}
-
-		cleanSchema, err := runtime.DefaultUnstructuredConverter.ToUnstructured(props)
-		if err != nil {
-			return nil, fmt.Errorf("encode version %q schema: %w", name, err)
-		}
-
-		if err := unstructured.SetNestedMap(versionMap, cleanSchema, "schema", "openAPIV3Schema"); err != nil {
-			return nil, fmt.Errorf("set version %q schema: %w", name, err)
-		}
-
-		cleanVersions[i] = versionMap
-	}
-
-	if err := unstructured.SetNestedSlice(clean.Object, cleanVersions, "spec", "versions"); err != nil {
-		return nil, fmt.Errorf("set versions: %w", err)
-	}
-
-	return clean, nil
-}
-
-// findVersionSchema returns the openAPIV3Schema of the named version, matching by name
-// rather than by index so it does not depend on the two documents agreeing on order.
-func findVersionSchema(versions []any, name string) (map[string]any, bool) {
 	for _, version := range versions {
 		versionMap, ok := version.(map[string]any)
 		if !ok {
 			continue
 		}
 
-		if versionName, _, _ := unstructured.NestedString(versionMap, "name"); versionName != name {
+		schema, ok := versionMap["schema"].(map[string]any)
+		if !ok {
 			continue
 		}
 
-		schemaMap, found, err := unstructured.NestedMap(versionMap, "schema", "openAPIV3Schema")
-		if err != nil || !found {
-			return nil, false
+		rawSchema, ok := schema["openAPIV3Schema"].(map[string]any)
+		if !ok {
+			continue
 		}
 
-		return schemaMap, true
+		cleanSchema, err := openapi.Prune(rawSchema)
+		if err != nil {
+			name, _, _ := unstructured.NestedString(versionMap, "name")
+
+			return fmt.Errorf("version %q schema: %w", name, err)
+		}
+
+		schema["openAPIV3Schema"] = cleanSchema
 	}
 
-	return nil, false
+	return nil
+}
+
+// nestedValue returns the value at the given path without copying it, or nil if the path
+// does not lead to one. Errors are the same as absence for every caller here.
+func nestedValue(obj map[string]any, fields ...string) any {
+	value, found, err := unstructured.NestedFieldNoCopy(obj, fields...)
+	if err != nil || !found {
+		return nil
+	}
+
+	return value
+}
+
+// applyServerDefaults writes the .spec fields the apiserver fills in itself into the
+// document, so a manifest that omits them does not differ from the stored object on
+// every single reconcile.
+func applyServerDefaults(crd *apiextensionsv1.CustomResourceDefinition, desired *unstructured.Unstructured) error {
+	apiextensionsv1.SetDefaults_CustomResourceDefinitionSpec(&crd.Spec)
+
+	// spec.conversion is defaulted too, but updateOrInsertCRD always takes the in-cluster
+	// one, which the apiserver has already defaulted
+	names := map[string]string{
+		"singular": crd.Spec.Names.Singular,
+		"listKind": crd.Spec.Names.ListKind,
+	}
+
+	for field, value := range names {
+		if value == "" {
+			continue
+		}
+
+		if err := unstructured.SetNestedField(desired.Object, value, "spec", "names", field); err != nil {
+			return fmt.Errorf("set spec.names.%s: %w", field, err)
+		}
+	}
+
+	return nil
 }
 
 func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensionsv1.CustomResourceDefinition, desired *unstructured.Unstructured) error {
@@ -429,12 +427,14 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 		}
 
 		// both sides are pruned to the same field set now — the desired spec by sanitize,
-		// the existing one by the apiserver — so this can actually return early
-		// ponytail: apiserver-defaulted .spec fields may differ from the manifest and cause
-		// reconcile churn; the update stays idempotent, tighten the diff here if it ever churns.
+		// the existing one by the apiserver — so this can actually return early.
+		// Annotations are only checked for containment because they are merged, not replaced.
+		// ponytail: apiserver-defaulted .spec fields beyond spec.names may differ from the
+		// manifest and cause reconcile churn; the update stays idempotent, default them in
+		// applyServerDefaults if it ever churns.
 		if cmp.Equal(existingSpec, desiredSpec) &&
 			cmp.Equal(existing.GetLabels(), desired.GetLabels()) &&
-			cmp.Equal(existing.GetAnnotations(), desired.GetAnnotations()) {
+			containsAll(existing.GetAnnotations(), desired.GetAnnotations()) {
 			return nil
 		}
 
@@ -444,7 +444,10 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 			return fmt.Errorf("set spec: %w", err)
 		}
 		existing.SetLabels(desired.GetLabels())
-		existing.SetAnnotations(desired.GetAnnotations())
+		// annotations written by other actors — Helm ownership, kubectl last-applied — are
+		// merged with, not replaced by, the manifest's: dropping meta.helm.sh/release-name
+		// breaks the next helm upgrade of the chart that installed the CRD
+		existing.SetAnnotations(mergeAnnotations(existing.GetAnnotations(), desired.GetAnnotations()))
 		existing.SetResourceVersion(resourceVersion)
 
 		_, err = cp.k8sClient.Resource(crdGVR).Update(ctx, existing, apimachineryv1.UpdateOptions{})
@@ -457,6 +460,12 @@ func (cp *CRDsInstaller) updateOrInsertCRD(ctx context.Context, crd *apiextensio
 }
 
 func mergeLabels(u *unstructured.Unstructured, extra map[string]string) {
+	if len(extra) == 0 {
+		// nothing to add: writing an empty map here would set metadata.labels: {}, which
+		// never compares equal to the absent labels the apiserver returns
+		return
+	}
+
 	labels := u.GetLabels()
 	if labels == nil {
 		labels = make(map[string]string, len(extra))
@@ -467,6 +476,29 @@ func mergeLabels(u *unstructured.Unstructured, extra map[string]string) {
 	}
 
 	u.SetLabels(labels)
+}
+
+// containsAll reports whether super holds every key of sub with the same value.
+func containsAll(super, sub map[string]string) bool {
+	for k, v := range sub {
+		if super[k] != v {
+			return false
+		}
+	}
+
+	return true
+}
+
+func mergeAnnotations(existing, desired map[string]string) map[string]string {
+	if existing == nil {
+		return desired
+	}
+
+	for k, v := range desired {
+		existing[k] = v
+	}
+
+	return existing
 }
 
 func (cp *CRDsInstaller) GetCRDFromCluster(ctx context.Context, crdName string) (*apiextensionsv1.CustomResourceDefinition, error) {
