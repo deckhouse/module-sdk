@@ -6,7 +6,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/json"
 )
 
@@ -41,11 +40,15 @@ func TestForkMarshalsLikeUpstream(t *testing.T) {
 		},
 	}
 
+	// decoded the way Prune does it, so the marshallers are fed what they see in production
+	data, err := json.Marshal(raw)
+	require.NoError(t, err)
+
 	fork := &JSONSchemaProps{}
-	require.NoError(t, runtime.DefaultUnstructuredConverter.FromUnstructured(raw, fork))
+	require.NoError(t, json.Unmarshal(data, fork))
 
 	upstream := &apiextensionsv1.JSONSchemaProps{}
-	require.NoError(t, runtime.DefaultUnstructuredConverter.FromUnstructured(raw, upstream))
+	require.NoError(t, json.Unmarshal(data, upstream))
 
 	forkJSON, err := json.Marshal(fork)
 	require.NoError(t, err)

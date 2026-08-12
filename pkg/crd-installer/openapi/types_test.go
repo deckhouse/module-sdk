@@ -16,15 +16,16 @@ var forkOnlyFields = map[string]struct{}{
 	"x-kubernetes-sensitive-data": {},
 }
 
-// TestForkCoversUpstreamFields is the guard that keeps the fork honest. JSONSchemaProps
-// is copied by hand, so a k8s bump that adds a schema field — or retypes one — would
-// otherwise make the installer silently strip or mis-decode that field on every CRD it
-// applies, with no warning anywhere. If this fails after bumping
-// k8s.io/apiextensions-apiserver, port the change into types.go rather than relaxing
-// the test.
+// TestForkCoversUpstreamFields is the guard that keeps the fork honest. Embedding the
+// upstream type makes the plain schema fields impossible to get wrong, but the nested
+// schema positions are still declared by hand: a k8s bump that adds one — a new keyword
+// holding a JSONSchemaProps — would leave it inherited as the upstream type, and Prune
+// would then silently strip x-kubernetes-sensitive-data from every schema under it, with
+// no warning anywhere. If this fails after bumping k8s.io/apiextensions-apiserver, port
+// the change into types.go rather than relaxing the test.
 func TestForkCoversUpstreamFields(t *testing.T) {
-	upstream := jsonFields(reflect.TypeOf(apiextensionsv1.JSONSchemaProps{}))
-	fork := jsonFields(reflect.TypeOf(JSONSchemaProps{}))
+	upstream := jsonFields(t, reflect.TypeOf(apiextensionsv1.JSONSchemaProps{}))
+	fork := jsonFields(t, reflect.TypeOf(JSONSchemaProps{}))
 
 	for tag, up := range upstream {
 		f, ok := fork[tag]
@@ -76,15 +77,26 @@ type fieldInfo struct{ name, typ, opts string }
 // jsonFields maps the json tag name of every serialized field to its name, type and tag
 // options. The options are part of the contract: a field that lost omitempty is serialized
 // where the apiserver omits it, and the desired spec could never equal the stored one again.
-func jsonFields(t reflect.Type) map[string]fieldInfo {
-	out := make(map[string]fieldInfo, t.NumField())
+//
+// Fields promoted from an embedded struct are included, and a shadowed one is not:
+// reflect resolves those by depth exactly as json does, so this is the field set json
+// will actually serialize. The embedded field itself carries no json name and drops out.
+func jsonFields(t *testing.T, typ reflect.Type) map[string]fieldInfo {
+	t.Helper()
 
-	for i := range t.NumField() {
-		field := t.Field(i)
+	out := make(map[string]fieldInfo, typ.NumField())
 
+	for _, field := range reflect.VisibleFields(typ) {
 		tag, opts, _ := strings.Cut(field.Tag.Get("json"), ",")
 		if tag == "" || tag == "-" {
 			continue
+		}
+
+		// two visible fields with one json name are not a shadow, they are a collision:
+		// json drops both, and the key would vanish from every CRD this installs
+		if dup, ok := out[tag]; ok {
+			t.Fatalf("%s.%s and .%s both claim the json name %q: json serializes neither",
+				typ, dup.name, field.Name, tag)
 		}
 
 		out[tag] = fieldInfo{name: field.Name, typ: field.Type.String(), opts: opts}

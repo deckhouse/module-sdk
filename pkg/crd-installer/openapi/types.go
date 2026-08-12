@@ -1,13 +1,17 @@
 // Package openapi holds the CRD validation schema type that the installer applies
 // to the cluster.
 //
-// It is a fork of apiextensionsv1.JSONSchemaProps. The fork exists for exactly one
-// reason: the Deckhouse kube-apiserver carries 010-x-kubernetes-sensitive-data.patch
-// and runs with CRDSensitiveData=true, so it understands one schema field that the
-// stock apiextensions-apiserver Go types do not. Decoding a CRD through the upstream
-// type would drop that field before it ever reached the cluster.
+// JSONSchemaProps embeds apiextensionsv1.JSONSchemaProps and adds the one field the
+// stock type cannot hold: the Deckhouse kube-apiserver carries
+// 010-x-kubernetes-sensitive-data.patch and runs with CRDSensitiveData=true, so it
+// understands x-kubernetes-sensitive-data. Decoding a CRD through the upstream type
+// alone would drop that field before it ever reached the cluster.
 //
-// The fork is also the strict contract in the other direction: any key that is not a
+// Only the positions that carry a nested schema are redeclared here, so the extension
+// survives at any depth. Every other schema field — its type, its json tag, its
+// omitempty — is inherited from upstream and cannot drift.
+//
+// The type is also the strict contract in the other direction: any key that is not a
 // field here — x-doc-examples, x-examples, x-description, x-kubernetes-immutable and
 // friends — is dropped on decode instead of being sent to the apiserver, which would
 // prune it anyway and log an "unknown field" warning for every occurrence.
@@ -22,10 +26,10 @@
 // understands and this build does not is dropped silently, and TestForkCoversUpstreamFields
 // only fires when this module bumps k8s.io/apiextensions-apiserver — never when the cluster
 // moves ahead of it. Keep the dependency in step with the apiserver Deckhouse ships. A
-// schema this fork cannot decode at all is not dropped: the installer sends that document
-// as it came and reports the error (see sanitize).
+// schema this package cannot decode at all is not dropped: the installer sends that
+// document as it came and reports the error (see sanitize).
 //
-// TestForkCoversUpstreamFields and TestForkMarshalsLikeUpstream guard the copy against
+// TestForkCoversUpstreamFields and TestForkMarshalsLikeUpstream guard the type against
 // drift; read them before bumping k8s.io/apiextensions-apiserver.
 package openapi
 
@@ -35,65 +39,37 @@ import (
 
 // JSONSchemaProps is a JSON-Schema following Specification Draft 4 (http://json-schema.org/).
 //
-// Field-for-field mirror of apiextensionsv1.JSONSchemaProps, with the nested schema
-// positions retargeted at this package and XSensitiveData added.
+// It is apiextensionsv1.JSONSchemaProps with the nested schema positions retargeted at
+// this type and XSensitiveData added.
 type JSONSchemaProps struct {
-	ID          string                        `json:"id,omitempty"`
-	Schema      apiextensionsv1.JSONSchemaURL `json:"$schema,omitempty"`
-	Ref         *string                       `json:"$ref,omitempty"`
-	Description string                        `json:"description,omitempty"`
-	Type        string                        `json:"type,omitempty"`
-	Format      string                        `json:"format,omitempty"`
+	// every field that holds no nested schema, verbatim from upstream
+	apiextensionsv1.JSONSchemaProps `json:",inline"`
 
-	Title            string                `json:"title,omitempty"`
-	Default          *apiextensionsv1.JSON `json:"default,omitempty"`
-	Maximum          *float64              `json:"maximum,omitempty"`
-	ExclusiveMaximum bool                  `json:"exclusiveMaximum,omitempty"`
-	Minimum          *float64              `json:"minimum,omitempty"`
-	ExclusiveMinimum bool                  `json:"exclusiveMinimum,omitempty"`
-	MaxLength        *int64                `json:"maxLength,omitempty"`
-	MinLength        *int64                `json:"minLength,omitempty"`
-	Pattern          string                `json:"pattern,omitempty"`
-	MaxItems         *int64                `json:"maxItems,omitempty"`
-	MinItems         *int64                `json:"minItems,omitempty"`
-	UniqueItems      bool                  `json:"uniqueItems,omitempty"`
-	MultipleOf       *float64              `json:"multipleOf,omitempty"`
-
-	Enum          []apiextensionsv1.JSON `json:"enum,omitempty"`
-	MaxProperties *int64                 `json:"maxProperties,omitempty"`
-	MinProperties *int64                 `json:"minProperties,omitempty"`
-
-	Required []string                `json:"required,omitempty"`
-	Items    *JSONSchemaPropsOrArray `json:"items,omitempty"`
-
-	AllOf                []JSONSchemaProps                      `json:"allOf,omitempty"`
-	OneOf                []JSONSchemaProps                      `json:"oneOf,omitempty"`
-	AnyOf                []JSONSchemaProps                      `json:"anyOf,omitempty"`
-	Not                  *JSONSchemaProps                       `json:"not,omitempty"`
-	Properties           map[string]JSONSchemaProps             `json:"properties,omitempty"`
-	AdditionalProperties *JSONSchemaPropsOrBool                 `json:"additionalProperties,omitempty"`
-	PatternProperties    map[string]JSONSchemaProps             `json:"patternProperties,omitempty"`
-	Dependencies         JSONSchemaDependencies                 `json:"dependencies,omitempty"`
-	AdditionalItems      *JSONSchemaPropsOrBool                 `json:"additionalItems,omitempty"`
-	Definitions          JSONSchemaDefinitions                  `json:"definitions,omitempty"`
-	ExternalDocs         *apiextensionsv1.ExternalDocumentation `json:"externalDocs,omitempty"`
-	Example              *apiextensionsv1.JSON                  `json:"example,omitempty"`
-	Nullable             bool                                   `json:"nullable,omitempty"`
-
-	XPreserveUnknownFields *bool                           `json:"x-kubernetes-preserve-unknown-fields,omitempty"`
-	XEmbeddedResource      bool                            `json:"x-kubernetes-embedded-resource,omitempty"`
-	XIntOrString           bool                            `json:"x-kubernetes-int-or-string,omitempty"`
-	XListMapKeys           []string                        `json:"x-kubernetes-list-map-keys,omitempty"`
-	XListType              *string                         `json:"x-kubernetes-list-type,omitempty"`
-	XMapType               *string                         `json:"x-kubernetes-map-type,omitempty"`
-	XValidations           apiextensionsv1.ValidationRules `json:"x-kubernetes-validations,omitempty"`
+	// The positions that carry a nested schema, retargeted at this type: upstream
+	// declares them through its own JSONSchemaProps, which cannot hold XSensitiveData.
+	//
+	// Each one shadows the embedded field of the same json name, and json resolves that
+	// by depth: these are the ones serialized, the upstream ones are dropped from the
+	// field set entirely and stay nil. Never read a nested schema through the embedded
+	// struct. TestForkCoversUpstreamFields is what keeps the list complete.
+	Items                *JSONSchemaPropsOrArray    `json:"items,omitempty"`
+	AllOf                []JSONSchemaProps          `json:"allOf,omitempty"`
+	OneOf                []JSONSchemaProps          `json:"oneOf,omitempty"`
+	AnyOf                []JSONSchemaProps          `json:"anyOf,omitempty"`
+	Not                  *JSONSchemaProps           `json:"not,omitempty"`
+	Properties           map[string]JSONSchemaProps `json:"properties,omitempty"`
+	AdditionalProperties *JSONSchemaPropsOrBool     `json:"additionalProperties,omitempty"`
+	PatternProperties    map[string]JSONSchemaProps `json:"patternProperties,omitempty"`
+	Dependencies         JSONSchemaDependencies     `json:"dependencies,omitempty"`
+	AdditionalItems      *JSONSchemaPropsOrBool     `json:"additionalItems,omitempty"`
+	Definitions          JSONSchemaDefinitions      `json:"definitions,omitempty"`
 
 	// XSensitiveData marks a field (or an object/array subtree) as sensitive: the
 	// apiserver encrypts it in etcd, filters it by RBAC through the <resource>/sensitive
 	// subresource, and masks it in audit logs.
 	//
 	// This is NOT an upstream Kubernetes field. It only exists on the Deckhouse
-	// kube-apiserver, and it is the sole reason this package forks JSONSchemaProps.
+	// kube-apiserver, and it is the sole reason this package declares its own type.
 	// Keep it listed in forkOnlyFields in the test when adding others.
 	XSensitiveData bool `json:"x-kubernetes-sensitive-data,omitempty"`
 }
