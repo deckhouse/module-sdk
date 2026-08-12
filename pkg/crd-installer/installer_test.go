@@ -12,8 +12,77 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/util/json"
 	"k8s.io/client-go/dynamic/fake"
+	k8stesting "k8s.io/client-go/testing"
 )
+
+func countUpdates(actions []k8stesting.Action, name string) int {
+	var n int
+
+	for _, action := range actions {
+		// k8stesting.CreateAction and UpdateAction are the same interface, so a create
+		// satisfies both: the verb is the only way to tell them apart. The subresource check
+		// keeps the storedVersions status write out of the count.
+		if action.GetVerb() != "update" || action.GetSubresource() != "" {
+			continue
+		}
+
+		obj, ok := action.(k8stesting.UpdateAction).GetObject().(*unstructured.Unstructured)
+		if ok && obj.GetName() == name {
+			n++
+		}
+	}
+
+	return n
+}
+
+// storeAsWire makes the fake client behave the way the wire does. The tracker keeps the
+// exact Go values it is handed, so without this an object built with float64 numbers
+// reads back as float64 and a test can pass on state a real apiserver would never
+// return.
+func storeAsWire(fc *fake.FakeDynamicClient) {
+	react := func(action k8stesting.Action) (bool, runtime.Object, error) {
+		withObject, ok := action.(interface{ GetObject() runtime.Object })
+		if !ok {
+			return false, nil, nil
+		}
+
+		obj, ok := withObject.GetObject().(*unstructured.Unstructured)
+		if !ok {
+			return false, nil, nil
+		}
+
+		// the reactor runs on the installer's worker goroutines, so an error is returned to
+		// the caller rather than asserted: require.NoError would call t.FailNow off the test
+		// goroutine, which unwinds that worker and reports nothing about the CRD it dropped
+		data, err := json.Marshal(obj.Object)
+		if err != nil {
+			return true, nil, err
+		}
+
+		wire := map[string]any{}
+		if err := json.Unmarshal(data, &wire); err != nil {
+			return true, nil, err
+		}
+
+		// ObjectMeta.Labels/Annotations are omitempty, so the apiserver never returns an
+		// empty map for them — it returns nothing
+		for _, field := range []string{"labels", "annotations"} {
+			if m, ok := nestedValue(wire, "metadata", field).(map[string]any); ok && len(m) == 0 {
+				unstructured.RemoveNestedField(wire, "metadata", field)
+			}
+		}
+
+		obj.Object = wire
+
+		// fall through to the object tracker, which stores a deep copy of what we just fixed
+		return false, nil, nil
+	}
+
+	fc.PrependReactor("create", "*", react)
+	fc.PrependReactor("update", "*", react)
+}
 
 func TestCRDInstaller(t *testing.T) {
 	crdScheme := runtime.NewScheme()
@@ -30,6 +99,7 @@ func TestCRDInstaller(t *testing.T) {
 	}
 
 	fc := fake.NewSimpleDynamicClient(crdScheme)
+	storeAsWire(fc)
 
 	t.Run("install CRD", func(t *testing.T) {
 		inst := NewCRDsInstaller(fc, []string{"testdata/1_example.yaml"}, WithExtraLabels(map[string]string{"heritage": "deckhouse"}))
@@ -58,7 +128,9 @@ func TestCRDInstaller(t *testing.T) {
 		un, err := fc.Resource(gvr).Get(context.Background(), "widgets.example.com", apimachineryv1.GetOptions{})
 		require.NoError(t, err)
 
-		assert.Equal(t, map[string]string{"foo": "bar", "one": "new", "another": "lab"}, un.GetLabels())
+		// heritage is from the previous run: labels are overlaid, so a key this run no longer
+		// declares is left in place rather than deleted
+		assert.Equal(t, map[string]string{"foo": "bar", "one": "new", "another": "lab", "heritage": "deckhouse"}, un.GetLabels())
 		assert.Equal(t, map[string]string{"bar": "baz", "two": "new"}, un.GetAnnotations())
 		var crd v1.CustomResourceDefinition
 		err = runtime.DefaultUnstructuredConverter.FromUnstructured(un.Object, &crd)
@@ -146,6 +218,166 @@ func TestCRDInstaller(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, found, "manifest schema must be applied")
 		assert.Equal(t, true, token["x-kubernetes-sensitive-data"])
+	})
+
+	// Regression: keys the apiserver does not know must never be sent. It prunes them
+	// anyway, one "unknown field" warning per occurrence, and the pruning is what made
+	// the desired spec permanently differ from the stored one.
+	//
+	// This only checks that sanitize is reached from Run and applies to the whole schema
+	// tree; which keys survive at which nesting position is openapi.Prune's own job and is
+	// covered by TestRoundTrip* in that package.
+	t.Run("strips unknown schema extensions", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/6_unknown_extensions.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "extensions.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		versions, _, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+
+		root, found, err := unstructured.NestedMap(versions[0].(map[string]any), "schema", "openAPIV3Schema")
+		require.NoError(t, err)
+		require.True(t, found)
+
+		assert.NotContains(t, root, "x-doc-examples")
+
+		token, found, err := unstructured.NestedMap(root, "properties", "spec", "properties", "token")
+		require.NoError(t, err)
+		require.True(t, found)
+
+		assert.Equal(t, true, token["x-kubernetes-sensitive-data"], "the one extension that must survive")
+		assert.NotContains(t, token, "x-doc-examples")
+	})
+
+	// Regression: a CRD field this build's apiextensions-apiserver does not model must
+	// still reach an apiserver that understands it — sanitize prunes schemas, not the
+	// document.
+	t.Run("keeps CRD fields outside the schema", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/9_unknown_crd_field.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "futures.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		versions, _, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+
+		assert.Equal(t, "a field from a newer apiserver", versions[0].(map[string]any)["fieldFromTheFuture"])
+		assert.NotContains(t, un.Object, "status", "the manifest declares no status, so none must be sent")
+
+		// the manifest has no labels and the installer adds none, so the second run must see
+		// the nil the cluster returns as equal to what it would write
+		before := countUpdates(fc.Actions(), "futures.example.com")
+
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/9_unknown_crd_field.yaml"}).Run(context.Background()))
+
+		assert.Equal(t, before, countUpdates(fc.Actions(), "futures.example.com"),
+			"a CRD without labels must not churn")
+	})
+
+	// Regression: applying a manifest over the state the apiserver derives from it must be
+	// a no-op. The apiserver prunes the x-doc-* keys, defaults spec.names and returns whole
+	// numbers as int64, so before the fix the desired spec could never equal the stored one
+	// and every single run issued a full Update of every CRD.
+	//
+	// The fake client prunes and defaults nothing, so the derived state has to be installed
+	// explicitly — reinstalling the same file twice would pass either way and prove nothing.
+	t.Run("applying a manifest over its stored form does not update", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/7_churn_stored.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		require.Zero(t, countUpdates(fc.Actions(), "churns.example.com"),
+			"a CRD that is not in the cluster is created, not updated")
+
+		inst = NewCRDsInstaller(fc, []string{"testdata/8_churn_manifest.yaml"})
+		require.NoError(t, inst.Run(context.Background()))
+
+		assert.Zero(t, countUpdates(fc.Actions(), "churns.example.com"),
+			"the doc keys, the defaulted names and the numeric bounds must not read as a diff")
+	})
+
+	// Regression: sanitize runs before the CRD is queued, so an error from it used to abort
+	// the whole file and silently skip every document after the bad one. It must not keep the
+	// CRD it failed on out of the cluster either: the apiserver prunes the key it cannot
+	// read, while a missing CRD takes every custom resource of that kind with it.
+	t.Run("a bad document does not skip the rest of the file", func(t *testing.T) {
+		inst := NewCRDsInstaller(fc, []string{"testdata/10_multi_document.yaml"})
+		require.Error(t, inst.Run(context.Background()), "the broken document must still be reported")
+
+		for _, name := range []string{"firsts.example.com", "broken.example.com", "lasts.example.com"} {
+			_, err := fc.Resource(gvr).Get(context.Background(), name, apimachineryv1.GetOptions{})
+			require.NoError(t, err, "%s is in the same file and must be installed", name)
+		}
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "broken.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		versions, _, err := unstructured.NestedSlice(un.Object, "spec", "versions")
+		require.NoError(t, err)
+
+		token, found, err := unstructured.NestedMap(versions[0].(map[string]any),
+			"schema", "openAPIV3Schema", "properties", "token")
+		require.NoError(t, err)
+		require.True(t, found)
+
+		assert.Equal(t, "yes", token["x-kubernetes-sensitive-data"],
+			"a schema the fork cannot decode is sent as it came, for the apiserver to prune")
+	})
+
+	// Regression: labels and annotations belong to whoever wrote them. Replacing either map
+	// wholesale dropped the Helm ownership keys — app.kubernetes.io/managed-by among the
+	// labels, meta.helm.sh/* among the annotations — and the next helm upgrade of that chart
+	// then failed on "invalid ownership metadata".
+	t.Run("keeps labels and annotations written by other actors", func(t *testing.T) {
+		// own client: the CRD must be reached by the update path with nothing but the seeded
+		// state, otherwise a leftover from another subtest can be what forces the update
+		fc := fake.NewSimpleDynamicClient(crdScheme)
+		storeAsWire(fc)
+
+		// widgets.example.com as a helm chart installed it
+		seed := &unstructured.Unstructured{Object: map[string]any{
+			"apiVersion": "apiextensions.k8s.io/v1",
+			"kind":       "CustomResourceDefinition",
+			"metadata": map[string]any{
+				"name":        "widgets.example.com",
+				"labels":      map[string]any{"app.kubernetes.io/managed-by": "Helm"},
+				"annotations": map[string]any{"meta.helm.sh/release-name": "some-chart"},
+			},
+			"spec": map[string]any{
+				"group": "example.com",
+				"names": map[string]any{
+					"kind": "Widget", "listKind": "WidgetList", "plural": "widgets", "singular": "widget",
+				},
+				"scope":    "Namespaced",
+				"versions": []any{map[string]any{"name": "v1", "served": true, "storage": true}},
+			},
+		}}
+		_, err := fc.Resource(gvr).Create(context.Background(), seed, apimachineryv1.CreateOptions{})
+		require.NoError(t, err)
+
+		extra := WithExtraLabels(map[string]string{"heritage": "deckhouse"})
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/2_example.yaml"}, extra).Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "widgets.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		assert.Equal(t, map[string]string{
+			"foo": "bar", "one": "new", "heritage": "deckhouse",
+			"app.kubernetes.io/managed-by": "Helm",
+		}, un.GetLabels(), "the helm ownership label must survive the update")
+		assert.Equal(t, map[string]string{
+			"bar": "baz", "two": "new",
+			"meta.helm.sh/release-name": "some-chart",
+		}, un.GetAnnotations(), "the helm ownership annotation must survive the update")
+
+		before := countUpdates(fc.Actions(), "widgets.example.com")
+
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/2_example.yaml"}, extra).Run(context.Background()))
+
+		assert.Equal(t, before, countUpdates(fc.Actions(), "widgets.example.com"),
+			"foreign labels and annotations must not read as a diff either")
 	})
 
 	// Regression: a comment-only yaml document decodes to a nil object and must be skipped,
