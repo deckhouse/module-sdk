@@ -48,7 +48,7 @@ func Test_ValidateOperations(t *testing.T) {
 				Action: "expired",
 				Group:  "someGroup",
 			},
-			errors.New("'name' is required when action is not 'expire': &{Name: Group:someGroup Action:expired Value:<nil> Buckets:[] Labels:map[]}"),
+			errors.New("'name' is required when action is not 'expire': {Name: Group:someGroup Action:expired Value:<nil> Buckets:[] Labels:map[]}"),
 		},
 	}
 
