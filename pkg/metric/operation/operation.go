@@ -36,11 +36,11 @@ type Operation struct {
 	Labels  map[string]string `json:"labels"`
 }
 
-func (op Operation) WithGroup(group string) {
-	op.Group = group //nolint: staticcheck
+func (op *Operation) WithGroup(group string) {
+	op.Group = group
 }
 
-func (op Operation) Validate() error {
+func (op *Operation) Validate() error {
 	var err error
 
 	if op.Action == "" {
@@ -80,13 +80,13 @@ func (op Operation) Validate() error {
 	return err
 }
 
-func MetricOperationsFromReader(r io.Reader) ([]Operation, error) {
-	operations := make([]Operation, 0)
+func MetricOperationsFromReader(r io.Reader) ([]*Operation, error) {
+	operations := make([]*Operation, 0)
 
 	dec := json.NewDecoder(r)
 	for {
-		var metricOperation Operation
-		if err := dec.Decode(&metricOperation); err == io.EOF {
+		var metricOperation *Operation
+		if err := dec.Decode(metricOperation); err == io.EOF {
 			break
 		} else if err != nil {
 			return nil, err
@@ -98,11 +98,11 @@ func MetricOperationsFromReader(r io.Reader) ([]Operation, error) {
 	return operations, nil
 }
 
-func MetricOperationsFromBytes(data []byte) ([]Operation, error) {
+func MetricOperationsFromBytes(data []byte) ([]*Operation, error) {
 	return MetricOperationsFromReader(bytes.NewReader(data))
 }
 
-func MetricOperationsFromFile(filePath string) ([]Operation, error) {
+func MetricOperationsFromFile(filePath string) ([]*Operation, error) {
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("cannot read %s: %s", filePath, err)
@@ -113,8 +113,7 @@ func MetricOperationsFromFile(filePath string) ([]Operation, error) {
 	}
 	return MetricOperationsFromBytes(data)
 }
-
-func ValidateOperations(ops []Operation) error {
+func ValidateOperations(ops []*Operation) error {
 	var opsErrs error
 
 	for _, op := range ops {
