@@ -85,7 +85,7 @@ func MetricOperationsFromReader(r io.Reader) ([]*Operation, error) {
 
 	dec := json.NewDecoder(r)
 	for {
-		var metricOperation *Operation
+		metricOperation := new(Operation)
 		if err := dec.Decode(metricOperation); err == io.EOF {
 			break
 		} else if err != nil {
@@ -113,6 +113,7 @@ func MetricOperationsFromFile(filePath string) ([]*Operation, error) {
 	}
 	return MetricOperationsFromBytes(data)
 }
+
 func ValidateOperations(ops []*Operation) error {
 	var opsErrs error
 
