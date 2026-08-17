@@ -50,8 +50,14 @@ Which objects get deleted depends on `args.ObjectName`:
 | set | Only that object is deleted. The label selector is **ignored** and the hook logs a warning. |
 | empty | **Every** object of `args.ObjectKind` in `args.Namespace` carrying `args.LabelSelectorKey=args.LabelSelectorValue` is deleted. Use this when the workload is split into several objects (e.g. multiple StatefulSets) sharing one label. |
 
-If neither `args.ObjectName` nor `args.LabelSelectorKey` is set, the hook fails early with
-`objectName or label selector must be set …` instead of matching everything in the namespace.
+The names of the objects deleted by the label selector are logged. If the selector matches
+nothing — a likely sign that the workload objects carry different labels than their PVCs — the
+hook logs a `no objects matched the label selector` warning: the PVCs have already been deleted
+at that point, so the mismatch must not pass silently.
+
+Misconfigured `args` fail the hook **before** any PVC is deleted: an unknown `args.ObjectKind`,
+or neither `args.ObjectName` nor `args.LabelSelectorKey` set (which would otherwise match every
+object of that kind in the namespace).
 
 When a PVC has a `deletionTimestamp` but a Pod still references it, the hook issues a `policy/v1 Eviction` against the Pod.
 

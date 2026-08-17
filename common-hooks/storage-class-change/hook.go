@@ -18,7 +18,7 @@ package storageclasschange
 
 import (
 	"context"
-	stderrors "errors"
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -26,7 +26,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -156,10 +156,17 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 		return nil
 	}
 
-	// Bail out before deleting anything: without a name and without a selector the
-	// lookup below would match every object of that kind in the namespace.
+	// Bail out before deleting anything: a broken config must not leave the module
+	// with its PVCs deleted. Without a name and without a selector the lookup would
+	// match every object of that kind in the namespace.
 	if args.ObjectName == "" && args.LabelSelectorKey == "" {
 		return fmt.Errorf("objectName or label selector must be set to find %s objects to delete", args.ObjectKind)
+	}
+
+	switch args.ObjectKind {
+	case "Prometheus", "StatefulSet", "Deployment":
+	default:
+		return fmt.Errorf("unknown object kind %s", args.ObjectKind)
 	}
 
 	kubeClient, err := input.DC.GetK8sClient()
@@ -246,13 +253,8 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 			}
 		}
 
-		input.Logger.Info("storageClass changed. Deleting objects",
-			slog.String("namespace", args.Namespace),
-			slog.String("object_kind", args.ObjectKind),
-			slog.String("target", deleteTarget(args)))
-
-		if err = deleteWorkloads(ctx, kubeClient, input.Logger, args); err != nil && !errors.IsNotFound(err) {
-			input.Logger.Error(err.Error())
+		if err = deleteWorkloads(ctx, kubeClient, input.Logger, args); err != nil {
+			input.Logger.Error("failed to delete objects", log.Err(err))
 		}
 	}
 
@@ -263,12 +265,21 @@ var prometheusGVR = schema.GroupVersionResource{
 	Group: "monitoring.coreos.com", Version: "v1", Resource: "prometheuses",
 }
 
-// deleteWorkloads deletes the workload the hook is bound to: by args.ObjectName
-// when it is set, otherwise every object of args.ObjectKind in args.Namespace
-// carrying the args.LabelSelectorKey label.
+// deleteWorkloads deletes the workload the hook is bound to: args.ObjectName when
+// it is set, otherwise every object of args.ObjectKind in args.Namespace carrying
+// the args.LabelSelectorKey label. Objects that are already gone are not an error.
 func deleteWorkloads(ctx context.Context, kubeClient pkg.KubernetesClient, logger pkg.Logger, args Args) error {
 	selector := labels.Set{args.LabelSelectorKey: args.LabelSelectorValue}
 	byName := args.ObjectName != ""
+
+	if !byName && args.LabelSelectorKey == "" {
+		return fmt.Errorf("objectName or label selector must be set to find %s objects to delete", args.ObjectKind)
+	}
+
+	target := slog.String("name", args.ObjectName)
+	if !byName {
+		target = slog.String("label_selector", selector.String())
+	}
 
 	if byName && args.LabelSelectorKey != "" {
 		logger.Warn("both objectName and label selector are set, deleting by objectName only",
@@ -277,53 +288,107 @@ func deleteWorkloads(ctx context.Context, kubeClient pkg.KubernetesClient, logge
 			slog.String("ignored_label_selector", selector.String()))
 	}
 
+	logger.Info("storageClass changed. Deleting objects",
+		slog.String("namespace", args.Namespace),
+		slog.String("object_kind", args.ObjectKind),
+		target)
+
+	names := []string{args.ObjectName}
+	if !byName {
+		var err error
+		if names, err = workloadNames(ctx, kubeClient, args, selector); err != nil {
+			return err
+		}
+
+		if len(names) == 0 {
+			// The PVCs are already deleted at this point, so a selector that matches
+			// no workload leaves the module broken - make it visible.
+			logger.Warn("no objects matched the label selector, nothing deleted",
+				slog.String("namespace", args.Namespace),
+				slog.String("object_kind", args.ObjectKind),
+				slog.String("label_selector", selector.String()))
+
+			return nil
+		}
+
+		logger.Info("objects matched the label selector",
+			slog.String("object_kind", args.ObjectKind),
+			slog.Any("names", names))
+	}
+
+	var errs []error
+	for _, name := range names {
+		if err := client.IgnoreNotFound(deleteWorkload(ctx, kubeClient, args, name)); err != nil {
+			errs = append(errs, fmt.Errorf("delete %s %s/%s: %w", args.ObjectKind, args.Namespace, name, err))
+		}
+	}
+
+	return errors.Join(errs...)
+}
+
+// workloadNames lists the names of args.ObjectKind objects carrying the selector.
+func workloadNames(ctx context.Context, kubeClient pkg.KubernetesClient, args Args, selector labels.Set) ([]string, error) {
 	switch args.ObjectKind {
 	case "Prometheus":
-		resource := kubeClient.Dynamic().Resource(prometheusGVR).Namespace(args.Namespace)
-		if byName {
-			return resource.Delete(ctx, args.ObjectName, metav1.DeleteOptions{})
-		}
-
-		list, err := resource.List(ctx, metav1.ListOptions{LabelSelector: selector.String()})
+		list, err := kubeClient.Dynamic().Resource(prometheusGVR).Namespace(args.Namespace).
+			List(ctx, metav1.ListOptions{LabelSelector: selector.String()})
 		if err != nil {
-			return fmt.Errorf("list prometheuses: %w", err)
+			return nil, fmt.Errorf("list prometheuses: %w", err)
 		}
 
-		var errs []error
+		names := make([]string, 0, len(list.Items))
 		for _, item := range list.Items {
-			logger.Info("deleting prometheus", slog.String("namespace", args.Namespace), slog.String("name", item.GetName()))
-			if err := resource.Delete(ctx, item.GetName(), metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
-				errs = append(errs, err)
-			}
+			names = append(names, item.GetName())
 		}
 
-		return stderrors.Join(errs...)
+		return names, nil
 	case "StatefulSet", "Deployment":
-		var obj client.Object = &appsv1.StatefulSet{}
+		var list client.ObjectList = &appsv1.StatefulSetList{}
 		if args.ObjectKind == "Deployment" {
-			obj = &appsv1.Deployment{}
+			list = &appsv1.DeploymentList{}
 		}
 
-		if byName {
-			obj.SetName(args.ObjectName)
-			obj.SetNamespace(args.Namespace)
-
-			return kubeClient.Delete(ctx, obj)
+		if err := kubeClient.List(ctx, list, client.InNamespace(args.Namespace), client.MatchingLabels(selector)); err != nil {
+			return nil, fmt.Errorf("list %ss: %w", args.ObjectKind, err)
 		}
 
-		return kubeClient.DeleteAllOf(ctx, obj, client.InNamespace(args.Namespace), client.MatchingLabels(selector))
+		items, err := meta.ExtractList(list)
+		if err != nil {
+			return nil, fmt.Errorf("extract %s list: %w", args.ObjectKind, err)
+		}
+
+		names := make([]string, 0, len(items))
+		for _, item := range items {
+			accessor, err := meta.Accessor(item)
+			if err != nil {
+				return nil, fmt.Errorf("accessor for %s: %w", args.ObjectKind, err)
+			}
+
+			names = append(names, accessor.GetName())
+		}
+
+		return names, nil
 	default:
-		return fmt.Errorf("unknown object kind %s", args.ObjectKind)
+		return nil, fmt.Errorf("unknown object kind %s", args.ObjectKind)
 	}
 }
 
-// deleteTarget describes what the hook is about to delete, for logging.
-func deleteTarget(args Args) string {
-	if args.ObjectName != "" {
-		return args.ObjectName
+func deleteWorkload(ctx context.Context, kubeClient pkg.KubernetesClient, args Args, name string) error {
+	switch args.ObjectKind {
+	case "Prometheus":
+		return kubeClient.Dynamic().Resource(prometheusGVR).Namespace(args.Namespace).
+			Delete(ctx, name, metav1.DeleteOptions{})
+	case "StatefulSet":
+		return kubeClient.Delete(ctx, &appsv1.StatefulSet{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: args.Namespace},
+		})
+	case "Deployment":
+		return kubeClient.Delete(ctx, &appsv1.Deployment{
+			ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: args.Namespace},
+		})
+	default:
+		return fmt.Errorf("unknown object kind %s", args.ObjectKind)
 	}
-
-	return labels.Set{args.LabelSelectorKey: args.LabelSelectorValue}.String()
 }
 
 // effective storage class is the target storage class. If it changes, the PVC will be recreated.
