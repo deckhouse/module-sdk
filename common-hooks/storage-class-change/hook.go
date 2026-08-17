@@ -22,11 +22,11 @@ import (
 	"log/slog"
 
 	"github.com/iancoleman/strcase"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	policyv1 "k8s.io/api/policy/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/deckhouse/deckhouse/pkg/log"
@@ -37,11 +37,13 @@ import (
 )
 
 type Args struct {
-	ModuleName                    string `json:"moduleName"`
-	Namespace                     string `json:"namespace"`
-	LabelSelectorKey              string `json:"labelSelectorKey"`
-	LabelSelectorValue            string `json:"labelSelectorValue"`
-	ObjectKind                    string `json:"objectKind"`
+	ModuleName         string `json:"moduleName"`
+	Namespace          string `json:"namespace"`
+	LabelSelectorKey   string `json:"labelSelectorKey"`
+	LabelSelectorValue string `json:"labelSelectorValue"`
+	ObjectKind         string `json:"objectKind"`
+	// ObjectName is optional: when empty, every object of ObjectKind matching
+	// LabelSelectorKey=LabelSelectorValue is deleted instead of a single named one.
 	ObjectName                    string `json:"objectName"`
 	InternalValuesSubPath         string `json:"internalValuesSubPath,omitempty"`
 	D8ConfigStorageClassParamName string `json:"d8ConfigStorageClassParamName,omitempty"`
@@ -137,8 +139,8 @@ var podFilter = `{
 	"name": .metadata.name,
 	"namespace": .metadata.namespace,
 	"pvc": (
-    	.spec.volumes[]? 
-    	| select(.persistentVolumeClaim != null) 
+    	.spec.volumes[]?
+    	| select(.persistentVolumeClaim != null)
     	| .persistentVolumeClaim.claimName
 	),
 	"phase": .status.phase,
@@ -233,38 +235,77 @@ func storageClassChange(ctx context.Context, input *pkg.HookInput, args Args) er
 			}
 		}
 
+		if err := deleteObjects(ctx, input, kubeClient, args); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// deleteObjects removes the workloads so that the controller recreates them with the new storage
+// class.
+//
+// ObjectName wins over the label selector: every existing module sets both, and deleting the single
+// named object is the long-standing behaviour. When ObjectName is empty, every object of ObjectKind
+// carrying the configured label is deleted — modules that manage several workloads in one namespace
+// need all of them gone, otherwise Helm fails updating volumeClaimTemplates of the survivors.
+func deleteObjects(ctx context.Context, input *pkg.HookInput, kubeClient pkg.KubernetesClient, args Args) error {
+	var objectGVRs = map[string]schema.GroupVersionResource{
+		"Prometheus":  {Group: "monitoring.coreos.com", Version: "v1", Resource: "prometheuses.monitoring.coreos.com"},
+		"StatefulSet": {Group: "apps", Version: "v1", Resource: "statefulsets"},
+		"Deployment":  {Group: "apps", Version: "v1", Resource: "deployments"},
+	}
+
+	gvr, ok := objectGVRs[args.ObjectKind]
+	if !ok {
+		return fmt.Errorf("unknown object kind %s", args.ObjectKind)
+	}
+
+	ri := kubeClient.Dynamic().Resource(gvr).Namespace(args.Namespace)
+
+	if args.ObjectName != "" {
 		input.Logger.Info("storageClass changed. Deleting objects",
 			slog.String("namespace", args.Namespace),
 			slog.String("object_kind", args.ObjectKind),
 			slog.String("name", args.ObjectName))
 
-		switch args.ObjectKind {
-		case "Prometheus":
-			err = kubeClient.Dynamic().Resource(schema.GroupVersionResource{
-				Group: "monitoring.coreos.com", Version: "v1", Resource: "prometheuses.monitoring.coreos.com",
-			}).Namespace(args.Namespace).Delete(ctx, args.ObjectName, metav1.DeleteOptions{})
-		case "StatefulSet":
-			obj := &appsv1.StatefulSet{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      args.ObjectName,
-					Namespace: args.Namespace,
-				},
-			}
-			err = kubeClient.Delete(ctx, obj)
-		case "Deployment":
-			obj := &appsv1.Deployment{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      args.ObjectName,
-					Namespace: args.Namespace,
-				},
-			}
-			err = kubeClient.Delete(ctx, obj)
-		default:
-			return fmt.Errorf("unknown object kind %s", args.ObjectKind)
+		// legacy path: a failed delete has never failed the hook
+		if err := ri.Delete(ctx, args.ObjectName, metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+			input.Logger.Error(err.Error())
 		}
 
-		if err != nil && !errors.IsNotFound(err) {
-			input.Logger.Error(err.Error())
+		return nil
+	}
+
+	if args.LabelSelectorKey == "" {
+		return fmt.Errorf("neither objectName nor labelSelector is set")
+	}
+
+	selector := labels.Set{args.LabelSelectorKey: args.LabelSelectorValue}.String()
+
+	list, err := ri.List(ctx, metav1.ListOptions{LabelSelector: selector})
+	if err != nil {
+		return fmt.Errorf("list %s by %s: %w", args.ObjectKind, selector, err)
+	}
+
+	if len(list.Items) == 0 {
+		input.Logger.Warn("no objects matched the label selector",
+			slog.String("namespace", args.Namespace),
+			slog.String("object_kind", args.ObjectKind),
+			slog.String("selector", selector))
+
+		return nil
+	}
+
+	for _, obj := range list.Items {
+		input.Logger.Info("storageClass changed. Deleting objects",
+			slog.String("namespace", args.Namespace),
+			slog.String("object_kind", args.ObjectKind),
+			slog.String("name", obj.GetName()))
+
+		if err := ri.Delete(ctx, obj.GetName(), metav1.DeleteOptions{}); err != nil && !errors.IsNotFound(err) {
+			return fmt.Errorf("delete %s %s: %w", args.ObjectKind, obj.GetName(), err)
 		}
 	}
 

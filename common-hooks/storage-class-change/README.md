@@ -34,13 +34,24 @@ The result is written to `<lowerCamel(args.ModuleName)>.internal.<args.InternalV
 When the effective class differs from the currently-bound one:
 
 - For each existing PVC the hook **deletes** the PVC (so the controller recreates it).
-- The hook **deletes** the workload itself, dispatched on `args.ObjectKind`:
+- The hook **deletes** the workload itself. Which objects are deleted depends on `args.ObjectName`:
 
-| `args.ObjectKind` | Effect |
+| `args.ObjectName` | Effect |
 | --- | --- |
-| `StatefulSet` | `appsv1.StatefulSet` deleted via the K8s client. |
-| `Deployment` | `appsv1.Deployment` deleted via the K8s client. |
-| `Prometheus` | `monitoring.coreos.com/v1/prometheuses` deleted via the dynamic client. |
+| set | Exactly that object is deleted. A delete error other than `NotFound` is logged, the hook still succeeds. |
+| empty | Every object of `args.ObjectKind` in `args.Namespace` labelled `args.LabelSelectorKey=args.LabelSelectorValue` is deleted. A delete error other than `NotFound` **fails** the hook; an empty match is only warned about. |
+
+Use the second form for modules that manage several workloads in one namespace
+(e.g. dynamically named StatefulSets) — deleting only one of them makes Helm fail
+later when it tries to update `volumeClaimTemplates` of the survivors.
+
+Objects are deleted through the dynamic client, resolved from `args.ObjectKind`:
+
+| `args.ObjectKind` | Resource |
+| --- | --- |
+| `StatefulSet` | `apps/v1 statefulsets` |
+| `Deployment` | `apps/v1 deployments` |
+| `Prometheus` | `monitoring.coreos.com/v1 prometheuses`[^1] |
 | anything else | The hook returns `unknown object kind <Kind>`. |
 
 When a PVC has a `deletionTimestamp` but a Pod still references it, the hook issues a `policy/v1 Eviction` against the Pod.
@@ -60,6 +71,8 @@ var _ = sccc.RegisterHook(sccc.Args{
     LabelSelectorKey:   "app",
     LabelSelectorValue: "data",
     ObjectKind:         "StatefulSet",
+    // Optional: when omitted, every StatefulSet labelled app=data in the
+    // namespace is deleted instead of a single named one.
     ObjectName:         "data-set",
 
     // Optional knobs
@@ -86,4 +99,5 @@ This hook has both unit and functional coverage:
   - default StorageClass writes the right effective value;
   - explicit `global.modules.storageClass` overrides the default;
   - label selector scopes which PVCs participate;
-  - `BeforeHookCheck` short-circuits the hook.
+  - `BeforeHookCheck` short-circuits the hook;
+  - deletion by name and by label selector, an empty match, and a failing delete.
