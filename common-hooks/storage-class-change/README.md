@@ -43,6 +43,16 @@ When the effective class differs from the currently-bound one:
 | `Prometheus` | `monitoring.coreos.com/v1/prometheuses` deleted via the dynamic client. |
 | anything else | The hook returns `unknown object kind <Kind>`. |
 
+Which objects get deleted depends on `args.ObjectName`:
+
+| `args.ObjectName` | Behaviour |
+| --- | --- |
+| set | Only that object is deleted. The label selector is **ignored** and the hook logs a warning. |
+| empty | **Every** object of `args.ObjectKind` in `args.Namespace` carrying `args.LabelSelectorKey=args.LabelSelectorValue` is deleted. Use this when the workload is split into several objects (e.g. multiple StatefulSets) sharing one label. |
+
+If neither `args.ObjectName` nor `args.LabelSelectorKey` is set, the hook fails early with
+`objectName or label selector must be set …` instead of matching everything in the namespace.
+
 When a PVC has a `deletionTimestamp` but a Pod still references it, the hook issues a `policy/v1 Eviction` against the Pod.
 
 ## Usage
@@ -60,7 +70,7 @@ var _ = sccc.RegisterHook(sccc.Args{
     LabelSelectorKey:   "app",
     LabelSelectorValue: "data",
     ObjectKind:         "StatefulSet",
-    ObjectName:         "data-set",
+    ObjectName:         "data-set", // optional: drop it to delete every StatefulSet labelled app=data
 
     // Optional knobs
     InternalValuesSubPath:         "data",            // → myModule.internal.data.effectiveStorageClass
@@ -82,6 +92,9 @@ var _ = sccc.RegisterHook(sccc.Args{
 This hook has both unit and functional coverage:
 
 - [`hook_test.go`](./hook_test.go) — table-driven JQ-filter tests using [`testing/helpers`](../../testing/helpers).
+- [`delete_test.go`](./delete_test.go) — deletion targeting (by name, by label selector, Prometheus via the
+  dynamic client) against controller-runtime / dynamic fake clients. The framework's fake cluster only holds
+  state in its dynamic client, so typed deletes are covered here rather than in the functional tests.
 - [`hook_framework_test.go`](./hook_framework_test.go) — end-to-end scenarios driven through [`testing/framework`](../../testing/framework):
   - default StorageClass writes the right effective value;
   - explicit `global.modules.storageClass` overrides the default;
