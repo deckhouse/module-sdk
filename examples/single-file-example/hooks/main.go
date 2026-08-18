@@ -53,6 +53,7 @@ func Handle(_ context.Context, input *pkg.HookInput) error {
 	return nil
 }
 
+// func ReadinessFunc(ctx context.Context, input *pkg.ReadinessInput) error {
 func ReadinessFunc(ctx context.Context, input *pkg.HookInput) error {
 	input.Logger.Info("start user logic for readiness probe")
 
