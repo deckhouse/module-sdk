@@ -36,8 +36,8 @@ type Operation struct {
 	Labels  map[string]string `json:"labels"`
 }
 
-func (op Operation) WithGroup(group string) {
-	op.Group = group //nolint: staticcheck
+func (op *Operation) WithGroup(group string) {
+	op.Group = group
 }
 
 func (op Operation) Validate() error {
