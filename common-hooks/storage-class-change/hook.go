@@ -344,7 +344,10 @@ func calculateEffectiveStorageClass(input *pkg.HookInput, args Args, currentStor
 	var configValuesPath = fmt.Sprintf("%s.storageClass", args.ModuleName)
 
 	if args.D8ConfigStorageClassParamName != "" {
-		configValuesPath = fmt.Sprintf("%s.%s", args.ModuleName, args.D8ConfigStorageClassParamName)
+		path := fmt.Sprintf("%s.%s", args.ModuleName, args.D8ConfigStorageClassParamName)
+		if input.ConfigValues.Exists(path) {
+			configValuesPath = path
+		}
 	}
 
 	if input.ConfigValues.Exists(configValuesPath) {
