@@ -38,6 +38,7 @@ type readinessConfig struct {
 	IntervalInSeconds uint8 `env:"INTERVAL_IN_SECONDS"`
 	// TODO: not implemented
 	Threshold int
+	// ProbeFunc func(ctx context.Context, input *pkg.ReadinessInput) error
 	ProbeFunc func(ctx context.Context, input *pkg.HookInput) error
 }
 
