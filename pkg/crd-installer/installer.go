@@ -231,6 +231,13 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	sanitizeErr := sanitize(desired)
 	if sanitizeErr != nil {
 		sanitizeErr = fmt.Errorf("sanitize %s: %w", crd.Name, sanitizeErr)
+
+	// change the served version of modules.deckhouse.io to v2
+	if os.Getenv("DECKHOUSE_ENABLE_MODULE_V2") == "true" {
+		if crd.Name == "modules.deckhouse.io" {
+			crd.Spec.Versions[0].Served = false
+			crd.Spec.Versions[1].Served = true
+		}
 	}
 
 	cp.k8sTasks.Go(func() error {
