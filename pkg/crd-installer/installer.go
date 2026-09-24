@@ -31,15 +31,6 @@ const (
 	LabelHeritage string = "heritage"
 )
 
-const (
-	// moduleCRDName is the CRD whose storage version the module v2 flag switches.
-	moduleCRDName = "modules.deckhouse.io"
-	// moduleV2Version is the Module version that becomes storage when the flag is on.
-	moduleV2Version = "v1beta1"
-	// moduleV2EnvVar turns the module v2 storage version on when set to "true".
-	moduleV2EnvVar = "DECKHOUSE_ENABLE_MODULE_V2"
-)
-
 // 1Mb - maximum size of kubernetes object
 // if we take less, we have to handle io.ErrShortBuffer error and increase the buffer
 // take more does not make any sense due to kubernetes limitations
@@ -65,6 +56,17 @@ func WithFileFilter(fn func(path string) bool) InstallerOption {
 	}
 }
 
+// MutateFunc changes a CRD document before it is applied. It is called for every
+// non-empty document, so it must check the name itself; an error skips that document.
+type MutateFunc func(crd *unstructured.Unstructured) error
+
+// WithMutateFunc sets a function that is applied to every CRD document before it goes to the cluster.
+func WithMutateFunc(fn MutateFunc) InstallerOption {
+	return func(installer *CRDsInstaller) {
+		installer.mutateFunc = fn
+	}
+}
+
 // CRDsInstaller simultaneously installs CRDs from specified directory
 type CRDsInstaller struct {
 	k8sClient     dynamic.Interface
@@ -76,6 +78,7 @@ type CRDsInstaller struct {
 
 	crdExtraLabels map[string]string
 	fileFilter     func(path string) bool
+	mutateFunc     MutateFunc
 
 	appliedGVKsLock sync.Mutex
 
@@ -221,6 +224,14 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 		return nil
 	}
 
+	// mutate before the typed view is taken: crd must see the mutated versions, group and
+	// kind, and defaulting and sanitizing below then normalize whatever the mutation wrote
+	if cp.mutateFunc != nil {
+		if err := cp.mutateFunc(desired); err != nil {
+			return fmt.Errorf("mutate %s: %w", desired.GetName(), err)
+		}
+	}
+
 	crd := &apiextensionsv1.CustomResourceDefinition{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(desired.Object, crd); err != nil {
 		return err
@@ -240,12 +251,6 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	sanitizeErr := sanitize(desired)
 	if sanitizeErr != nil {
 		sanitizeErr = fmt.Errorf("sanitize %s: %w", crd.Name, sanitizeErr)
-	}
-
-	// change the storage version of modules.deckhouse.io to v2. The change goes into
-	// desired, the document that is sent: crd is a copy that is only read.
-	if crd.Name == moduleCRDName && os.Getenv(moduleV2EnvVar) == "true" {
-		setStorageVersion(desired)
 	}
 
 	cp.k8sTasks.Go(func() error {
@@ -335,28 +340,6 @@ func sanitize(desired *unstructured.Unstructured) error {
 	}
 
 	return nil
-}
-
-// setStorageVersion makes moduleV2Version the only storage version of the CRD document.
-// A document without that version is left as it is: flipping the rest would leave it with
-// no storage version, which the apiserver rejects.
-func setStorageVersion(desired *unstructured.Unstructured) {
-	versions, _ := nestedValue(desired.Object, "spec", "versions").([]any)
-
-	found := slices.ContainsFunc(versions, func(version any) bool {
-		versionMap, ok := version.(map[string]any)
-
-		return ok && versionMap["name"] == moduleV2Version
-	})
-	if !found {
-		return
-	}
-
-	for _, version := range versions {
-		if versionMap, ok := version.(map[string]any); ok {
-			versionMap["storage"] = versionMap["name"] == moduleV2Version
-		}
-	}
 }
 
 // nestedValue returns the value at the given path without copying it, or nil if the path
