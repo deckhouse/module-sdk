@@ -31,6 +31,15 @@ const (
 	LabelHeritage string = "heritage"
 )
 
+const (
+	// moduleCRDName is the CRD whose storage version the module v2 flag switches.
+	moduleCRDName = "modules.deckhouse.io"
+	// moduleV2Version is the Module version that becomes storage when the flag is on.
+	moduleV2Version = "v1beta1"
+	// moduleV2EnvVar turns the module v2 storage version on when set to "true".
+	moduleV2EnvVar = "DECKHOUSE_ENABLE_MODULE_V2"
+)
+
 // 1Mb - maximum size of kubernetes object
 // if we take less, we have to handle io.ErrShortBuffer error and increase the buffer
 // take more does not make any sense due to kubernetes limitations
@@ -233,12 +242,10 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 		sanitizeErr = fmt.Errorf("sanitize %s: %w", crd.Name, sanitizeErr)
 	}
 
-	// change the served version of modules.deckhouse.io to v2
-	if os.Getenv("DECKHOUSE_ENABLE_MODULE_V2") == "true" {
-		if crd.Name == "modules.deckhouse.io" {
-			crd.Spec.Versions[0].Served = false
-			crd.Spec.Versions[1].Served = true
-		}
+	// change the storage version of modules.deckhouse.io to v2. The change goes into
+	// desired, the document that is sent: crd is a copy that is only read.
+	if crd.Name == moduleCRDName && os.Getenv(moduleV2EnvVar) == "true" {
+		setStorageVersion(desired)
 	}
 
 	cp.k8sTasks.Go(func() error {
@@ -328,6 +335,28 @@ func sanitize(desired *unstructured.Unstructured) error {
 	}
 
 	return nil
+}
+
+// setStorageVersion makes moduleV2Version the only storage version of the CRD document.
+// A document without that version is left as it is: flipping the rest would leave it with
+// no storage version, which the apiserver rejects.
+func setStorageVersion(desired *unstructured.Unstructured) {
+	versions, _ := nestedValue(desired.Object, "spec", "versions").([]any)
+
+	found := slices.ContainsFunc(versions, func(version any) bool {
+		versionMap, ok := version.(map[string]any)
+
+		return ok && versionMap["name"] == moduleV2Version
+	})
+	if !found {
+		return
+	}
+
+	for _, version := range versions {
+		if versionMap, ok := version.(map[string]any); ok {
+			versionMap["storage"] = versionMap["name"] == moduleV2Version
+		}
+	}
 }
 
 // nestedValue returns the value at the given path without copying it, or nil if the path
