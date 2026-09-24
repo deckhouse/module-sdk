@@ -56,6 +56,17 @@ func WithFileFilter(fn func(path string) bool) InstallerOption {
 	}
 }
 
+// MutateFunc changes a CRD document before it is applied. It is called for every
+// non-empty document, so it must check the name itself; an error skips that document.
+type MutateFunc func(crd *unstructured.Unstructured) error
+
+// WithMutateFunc sets a function that is applied to every CRD document before it goes to the cluster.
+func WithMutateFunc(fn MutateFunc) InstallerOption {
+	return func(installer *CRDsInstaller) {
+		installer.mutateFunc = fn
+	}
+}
+
 // CRDsInstaller simultaneously installs CRDs from specified directory
 type CRDsInstaller struct {
 	k8sClient     dynamic.Interface
@@ -67,6 +78,7 @@ type CRDsInstaller struct {
 
 	crdExtraLabels map[string]string
 	fileFilter     func(path string) bool
+	mutateFunc     MutateFunc
 
 	appliedGVKsLock sync.Mutex
 
@@ -210,6 +222,14 @@ func (cp *CRDsInstaller) putCRDToCluster(ctx context.Context, crdReader io.Reade
 	// a comment or other non-object yaml document decodes to a nil pointer / empty object, skip it
 	if desired == nil || len(desired.Object) == 0 {
 		return nil
+	}
+
+	// mutate before the typed view is taken: crd must see the mutated versions, group and
+	// kind, and defaulting and sanitizing below then normalize whatever the mutation wrote
+	if cp.mutateFunc != nil {
+		if err := cp.mutateFunc(desired); err != nil {
+			return fmt.Errorf("mutate %s: %w", desired.GetName(), err)
+		}
 	}
 
 	crd := &apiextensionsv1.CustomResourceDefinition{}

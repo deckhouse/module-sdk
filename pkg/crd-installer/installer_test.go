@@ -2,12 +2,14 @@ package crdinstaller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	apimachineryv1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -378,6 +380,57 @@ func TestCRDInstaller(t *testing.T) {
 
 		assert.Equal(t, before, countUpdates(fc.Actions(), "widgets.example.com"),
 			"foreign labels and annotations must not read as a diff either")
+	})
+
+	t.Run("applies the mutate func before sending the CRD", func(t *testing.T) {
+		fc := fake.NewSimpleDynamicClient(crdScheme)
+		storeAsWire(fc)
+
+		mutate := WithMutateFunc(func(crd *unstructured.Unstructured) error {
+			if crd.GetName() != "widgets.example.com" {
+				return nil
+			}
+
+			return unstructured.SetNestedField(crd.Object, "Cluster", "spec", "scope")
+		})
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/1_example.yaml"}, mutate).Run(context.Background()))
+
+		un, err := fc.Resource(gvr).Get(context.Background(), "widgets.example.com", apimachineryv1.GetOptions{})
+		require.NoError(t, err)
+
+		scope, _, err := unstructured.NestedString(un.Object, "spec", "scope")
+		require.NoError(t, err)
+		assert.Equal(t, "Cluster", scope, "the mutated document must be the one applied")
+
+		before := countUpdates(fc.Actions(), "widgets.example.com")
+
+		require.NoError(t, NewCRDsInstaller(fc, []string{"testdata/1_example.yaml"}, mutate).Run(context.Background()))
+
+		assert.Equal(t, before, countUpdates(fc.Actions(), "widgets.example.com"),
+			"the mutated document must compare equal to what it produced")
+	})
+
+	t.Run("a mutate error skips only that document", func(t *testing.T) {
+		fc := fake.NewSimpleDynamicClient(crdScheme)
+		storeAsWire(fc)
+
+		mutate := WithMutateFunc(func(crd *unstructured.Unstructured) error {
+			if crd.GetName() == "broken.example.com" {
+				return errors.New("boom")
+			}
+
+			return nil
+		})
+		err := NewCRDsInstaller(fc, []string{"testdata/10_multi_document.yaml"}, mutate).Run(context.Background())
+		require.ErrorContains(t, err, "mutate broken.example.com: boom")
+
+		_, err = fc.Resource(gvr).Get(context.Background(), "broken.example.com", apimachineryv1.GetOptions{})
+		require.True(t, apierrors.IsNotFound(err), "a document the mutate func rejected must not be applied")
+
+		for _, name := range []string{"firsts.example.com", "lasts.example.com"} {
+			_, err := fc.Resource(gvr).Get(context.Background(), name, apimachineryv1.GetOptions{})
+			require.NoError(t, err, "%s is in the same file and must be installed", name)
+		}
 	})
 
 	// Regression: a comment-only yaml document decodes to a nil object and must be skipped,
