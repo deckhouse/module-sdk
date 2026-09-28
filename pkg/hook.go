@@ -81,6 +81,16 @@ type ApplicationHookInput struct {
 	Logger Logger
 }
 
+type ReadinessInput struct {
+	Values           ReadableValuesCollector
+	ConfigValues     ReadableValuesCollector
+	MetricsCollector MetricsCollector
+
+	DC DependencyContainer
+
+	Logger Logger
+}
+
 // Instance provides access to application instance metadata.
 type Instance interface {
 	// Name returns application instance name
