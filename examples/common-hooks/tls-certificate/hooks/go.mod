@@ -1,6 +1,6 @@
 module tlscertificate
 
-go 1.25.8
+go 1.27.2
 
 require github.com/deckhouse/module-sdk v0.0.0
 
