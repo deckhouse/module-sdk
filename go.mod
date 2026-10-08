@@ -108,4 +108,4 @@ require (
 replace github.com/go-openapi/validate => github.com/flant/go-openapi-validate v0.19.12-flant.1
 
 // swag v0.22 breaks schemas_test.go:TestMapMergeAnchor, seems it doesn't support anchoring. Have to figure out that.
-replace github.com/go-openapi/swag => github.com/go-openapi/swag v0.21.1
+replace github.com/go-openapi/swag => github.com/go-openapi/swag v0.29.2
