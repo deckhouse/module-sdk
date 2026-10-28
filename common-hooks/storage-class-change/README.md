@@ -6,7 +6,7 @@ Module hook that watches PVCs, Pods, and StorageClasses for a single workload an
 2. Stores the result at a well-known internal values path so Helm templates can branch on it.
 3. **Evicts** pods whose PVCs have been deleted out of band.
 4. **Deletes** the workload's PVCs and the workload itself (StatefulSet / Deployment / Prometheus) when the storage class actually changed, so the controller recreates everything with the new class.
-5. Exports a `d8_emptydir_usage` Prometheus metric that is `1` when the module falls back to `emptyDir` (no storage class).
+5. Exports a `d8_emptydir_usage` Prometheus metric that is `1` when the module falls back to `emptyDir` (no storage class), unless `args.AllowEmptyDir` is set.
 
 ## What it watches
 
@@ -27,7 +27,7 @@ For a hook initialised with `args`, the effective storage class is computed in t
 3. The class **currently bound to the workload's PVCs** (if any).
 4. `<args.ModuleName>.<args.D8ConfigStorageClassParamName | "storageClass">` from **config values**, if set.
 
-The result is written to `<lowerCamel(args.ModuleName)>.internal.<args.InternalValuesSubPath?>.effectiveStorageClass`. If the effective class is empty or the literal string `"false"`, the hook stores the boolean `false` instead and bumps the `d8_emptydir_usage` metric.
+The result is written to `<lowerCamel(args.ModuleName)>.internal.<args.InternalValuesSubPath?>.effectiveStorageClass`. If the effective class is empty or the literal string `"false"`, the hook stores the boolean `false` instead and bumps the `d8_emptydir_usage` metric. Set `args.AllowEmptyDir` for modules where `emptyDir` is an expected setup: the boolean `false` is still stored, but the metric stays `0`.
 
 ## Side effects
 
@@ -78,6 +78,7 @@ var _ = sccc.RegisterHook(sccc.Args{
     // Optional knobs
     InternalValuesSubPath:         "data",            // → myModule.internal.data.effectiveStorageClass
     D8ConfigStorageClassParamName: "dataStorageClass", // → myModule.dataStorageClass instead of .storageClass
+    AllowEmptyDir:                 true,               // keep d8_emptydir_usage at 0 when falling back to emptyDir
     BeforeHookCheck: func(input *pkg.HookInput) bool {
         // Skip the hook entirely when, e.g., the module is disabled.
         return input.Values.Get("myModule.enabled").Bool()
@@ -100,4 +101,5 @@ This hook has both unit and functional coverage:
   - explicit `global.modules.storageClass` overrides the default;
   - label selector scopes which PVCs participate;
   - `BeforeHookCheck` short-circuits the hook;
+  - `d8_emptydir_usage` is `1` on an `emptyDir` fallback and `0` with `AllowEmptyDir` or a storage class;
   - deletion by name and by label selector, an empty match, and a failing delete.

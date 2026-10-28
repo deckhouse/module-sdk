@@ -331,3 +331,112 @@ metadata:
 	require.NoError(t, f.HookError())
 	assert.False(t, f.ValuesGet("myModule.internal.effectiveStorageClass").Exists())
 }
+
+// emptyDirUsage returns the d8_emptydir_usage value the hook set during the last run.
+func emptyDirUsage(t *testing.T, f *framework.HookExecutionConfig) float64 {
+	t.Helper()
+
+	for _, m := range f.CollectedMetrics() {
+		if m.Name != "d8_emptydir_usage" {
+			continue
+		}
+
+		require.Equal(t, "set", m.Action)
+		require.NotNil(t, m.Value)
+		assert.Equal(t, map[string]string{"namespace": "test-ns", "module_name": "myModule"}, m.Labels)
+
+		return *m.Value
+	}
+
+	require.Fail(t, "d8_emptydir_usage metric was not set")
+
+	return 0
+}
+
+// TestStorageClassChange_EmptyDirUsageMetric pins when d8_emptydir_usage fires:
+// only when the module falls back to emptyDir and AllowEmptyDir is not set. The
+// effective storage class is written the same way regardless of AllowEmptyDir.
+func TestStorageClassChange_EmptyDirUsageMetric(t *testing.T) {
+	const defaultStorageClass = `
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+`
+
+	const storageClassDisabled = `{"myModule":{"storageClass":"false"}}`
+
+	cases := []struct {
+		name          string
+		allowEmptyDir bool
+		state         string
+		config        string
+		// raw JSON of the effective storage class: boolean false for emptyDir
+		wantEffective string
+		wantMetric    float64
+	}{
+		{
+			name:          "no storage class in cluster",
+			config:        `{}`,
+			wantEffective: `false`,
+			wantMetric:    1,
+		},
+		{
+			name:          "no storage class in cluster, emptyDir allowed",
+			allowEmptyDir: true,
+			config:        `{}`,
+			wantEffective: `false`,
+			wantMetric:    0,
+		},
+		{
+			name:          "storage class disabled in config",
+			state:         defaultStorageClass,
+			config:        storageClassDisabled,
+			wantEffective: `false`,
+			wantMetric:    1,
+		},
+		{
+			name:          "storage class disabled in config, emptyDir allowed",
+			allowEmptyDir: true,
+			state:         defaultStorageClass,
+			config:        storageClassDisabled,
+			wantEffective: `false`,
+			wantMetric:    0,
+		},
+		{
+			name:          "default storage class",
+			state:         defaultStorageClass,
+			config:        `{}`,
+			wantEffective: `"standard"`,
+			wantMetric:    0,
+		},
+		{
+			name:          "default storage class, emptyDir allowed",
+			allowEmptyDir: true,
+			state:         defaultStorageClass,
+			config:        `{}`,
+			wantEffective: `"standard"`,
+			wantMetric:    0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			args := newArgs()
+			args.AllowEmptyDir = tc.allowEmptyDir
+
+			f := framework.HookExecutionConfigInit(t, hookConfigFor(args), func(ctx context.Context, in *pkg.HookInput) error {
+				return storageClassChange(ctx, in, args)
+			}, `{}`, tc.config)
+			f.KubeStateSet(tc.state)
+			f.RunHook()
+
+			require.NoError(t, f.HookError())
+			assert.Equal(t, tc.wantEffective, f.ValuesGet("myModule.internal.effectiveStorageClass").Raw)
+			assert.Equal(t, tc.wantMetric, emptyDirUsage(t, f))
+		})
+	}
+}

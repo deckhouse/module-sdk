@@ -41,6 +41,7 @@ type Args struct {
 	Namespace          string `json:"namespace"`
 	LabelSelectorKey   string `json:"labelSelectorKey"`
 	LabelSelectorValue string `json:"labelSelectorValue"`
+	AllowEmptyDir      bool   `json:"allowEmptyDir"`
 	ObjectKind         string `json:"objectKind"`
 	// ObjectName is optional: when empty, every object of ObjectKind matching
 	// LabelSelectorKey=LabelSelectorValue is deleted instead of a single named one.
@@ -360,7 +361,9 @@ func calculateEffectiveStorageClass(input *pkg.HookInput, args Args, currentStor
 	emptydirUsageMetricValue := 0.0
 	if len(effectiveStorageClass) == 0 || effectiveStorageClass == "false" {
 		input.Values.Set(internalValuesPath, false)
-		emptydirUsageMetricValue = 1.0
+		if !args.AllowEmptyDir {
+			emptydirUsageMetricValue = 1.0
+		}
 	} else {
 		input.Values.Set(internalValuesPath, effectiveStorageClass)
 	}
