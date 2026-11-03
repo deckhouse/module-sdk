@@ -132,6 +132,30 @@ func Test_CheckModuleReadiness(t *testing.T) {
 		assert.NoError(t, err)
 	})
 
+	t.Run("module v2: the probe's error is the outcome, the Module is not touched", func(t *testing.T) {
+		t.Setenv("DECKHOUSE_ENABLE_MODULE_V2", "true")
+
+		mc := minimock.NewController(t)
+		defer mc.Cleanup(func() {})
+
+		// No expectations: reading or patching the Module would fail the test.
+		input := &pkg.HookInput{
+			DC:             mock.NewDependencyContainerMock(mc),
+			PatchCollector: mock.NewPatchCollectorMock(t),
+			Logger:         log.NewNop(),
+		}
+
+		config := &readiness.ReadinessHookConfig{
+			ModuleName: "stub",
+			ProbeFunc: func(_ context.Context, _ *pkg.HookInput) error {
+				return errors.New("database is down")
+			},
+		}
+
+		err := readiness.CheckModuleReadiness(config)(context.Background(), input)
+		assert.EqualError(t, err, "database is down")
+	})
+
 	t.Run("k8s client error", func(t *testing.T) {
 		mc := minimock.NewController(t)
 		defer mc.Cleanup(func() {})
