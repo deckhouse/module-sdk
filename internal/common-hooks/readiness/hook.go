@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,6 +70,11 @@ func NewReadinessConfig(cfg *ReadinessHookConfig) *pkg.HookConfig {
 	}
 }
 
+// envModuleV2 is set to "true" in deckhouse when its Module v2 engine runs the hooks; a hook process
+// inherits it. That engine owns the status of the Module and takes the probe's verdict from the
+// outcome of the hook's run, so the hook only runs the probe.
+const envModuleV2 = "DECKHOUSE_ENABLE_MODULE_V2"
+
 const (
 	conditionStatusIsReady = "IsReady"
 	modulePhaseReconciling = "Reconciling"
@@ -90,6 +96,10 @@ func CheckModuleReadiness(cfg *ReadinessHookConfig) func(ctx context.Context, in
 	}
 
 	return func(ctx context.Context, input *pkg.HookInput) error {
+		if os.Getenv(envModuleV2) == "true" {
+			return cfg.ProbeFunc(ctx, input)
+		}
+
 		logger := input.Logger.With(slog.String("module", cfg.ModuleName))
 		logger.Info("check readiness")
 
