@@ -275,15 +275,18 @@ func remapHookConfigToGohook(cfg pkg.HookConfigInterface) *gohook.HookConfig {
 func remapModuleHookConfig(cfg *pkg.HookConfig, out *gohook.HookConfig) {
 	for _, scfg := range cfg.Schedule {
 		out.Schedule = append(out.Schedule, gohook.ScheduleConfig{
-			Name:    scfg.Name,
-			Crontab: scfg.Crontab,
-			Queue:   cfg.Queue,
+			Name:         scfg.Name,
+			Crontab:      scfg.Crontab,
+			Queue:        cfg.Queue,
+			AllowFailure: bindingAllowFailure(nil, cfg.AllowFailure),
 		})
 	}
 
 	for i := range cfg.Kubernetes {
 		k := &cfg.Kubernetes[i]
-		out.Kubernetes = append(out.Kubernetes, convertKubernetesConfig(k, cfg.Queue))
+		kcfg := convertKubernetesConfig(k, cfg.Queue)
+		kcfg.AllowFailure = bindingAllowFailure(kcfg.AllowFailure, cfg.AllowFailure)
+		out.Kubernetes = append(out.Kubernetes, kcfg)
 	}
 
 	if cfg.OnStartup != nil {
@@ -306,15 +309,18 @@ func remapModuleHookConfig(cfg *pkg.HookConfig, out *gohook.HookConfig) {
 func remapApplicationHookConfig(cfg *pkg.ApplicationHookConfig, out *gohook.HookConfig) {
 	for _, scfg := range cfg.Schedule {
 		out.Schedule = append(out.Schedule, gohook.ScheduleConfig{
-			Name:    scfg.Name,
-			Crontab: scfg.Crontab,
-			Queue:   cfg.Queue,
+			Name:         scfg.Name,
+			Crontab:      scfg.Crontab,
+			Queue:        cfg.Queue,
+			AllowFailure: bindingAllowFailure(nil, cfg.AllowFailure),
 		})
 	}
 
 	for i := range cfg.Kubernetes {
 		k := &cfg.Kubernetes[i]
-		out.Kubernetes = append(out.Kubernetes, convertAppKubernetesConfig(k, cfg.Queue))
+		kcfg := convertAppKubernetesConfig(k, cfg.Queue)
+		kcfg.AllowFailure = bindingAllowFailure(kcfg.AllowFailure, cfg.AllowFailure)
+		out.Kubernetes = append(out.Kubernetes, kcfg)
 	}
 
 	if cfg.OnStartup != nil {
@@ -332,6 +338,17 @@ func remapApplicationHookConfig(cfg *pkg.ApplicationHookConfig, out *gohook.Hook
 	if cfg.OnAfterDeleteHelm != nil {
 		out.OnAfterDeleteHelm = ptr.To(cfg.OnAfterDeleteHelm.Order)
 	}
+}
+
+// bindingAllowFailure fans the hook-level AllowFailure out to a binding,
+// the same way addon-operator does for embedded Go hooks: shell-operator only
+// reads allowFailure per binding. An explicitly set binding value wins.
+func bindingAllowFailure(binding *bool, hook bool) *bool {
+	if binding == nil && hook {
+		return ptr.To(true)
+	}
+
+	return binding
 }
 
 func convertKubernetesConfig(k *pkg.KubernetesConfig, queue string) gohook.KubernetesConfig {

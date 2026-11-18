@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/ptr"
 
 	"github.com/deckhouse/module-sdk/pkg"
 )
@@ -155,5 +156,40 @@ func TestConvertAppKubernetesConfig(t *testing.T) {
 		require.NotNil(t, cfg.NameSelector)
 		require.NotNil(t, cfg.FieldSelector)
 		assert.Nil(t, cfg.NamespaceSelector, "application hook config must never set NamespaceSelector")
+	})
+}
+
+func TestRemapHookConfigAllowFailure(t *testing.T) {
+	t.Run("hook-level AllowFailure is fanned out, explicit binding value wins", func(t *testing.T) {
+		out := remapHookConfigToGohook(&pkg.HookConfig{
+			AllowFailure: true,
+			Schedule:     []pkg.ScheduleConfig{{Name: "cron", Crontab: "* * * * *"}},
+			Kubernetes: []pkg.KubernetesConfig{
+				{Name: "inherits", Kind: "Pod"},
+				{Name: "explicit-false", Kind: "Pod", AllowFailure: ptr.To(false)},
+			},
+		})
+		assert.Equal(t, ptr.To(true), out.Schedule[0].AllowFailure)
+		assert.Equal(t, ptr.To(true), out.Kubernetes[0].AllowFailure)
+		assert.Equal(t, ptr.To(false), out.Kubernetes[1].AllowFailure)
+	})
+
+	t.Run("without hook-level AllowFailure bindings are untouched", func(t *testing.T) {
+		out := remapHookConfigToGohook(&pkg.HookConfig{
+			Schedule:   []pkg.ScheduleConfig{{Name: "cron", Crontab: "* * * * *"}},
+			Kubernetes: []pkg.KubernetesConfig{{Name: "pods", Kind: "Pod"}},
+		})
+		assert.Nil(t, out.Schedule[0].AllowFailure)
+		assert.Nil(t, out.Kubernetes[0].AllowFailure)
+	})
+
+	t.Run("application hook-level AllowFailure is fanned out", func(t *testing.T) {
+		out := remapHookConfigToGohook(&pkg.ApplicationHookConfig{
+			AllowFailure: true,
+			Schedule:     []pkg.ScheduleConfig{{Name: "cron", Crontab: "* * * * *"}},
+			Kubernetes:   []pkg.ApplicationKubernetesConfig{{Name: "pods", Kind: "Pod"}},
+		})
+		assert.Equal(t, ptr.To(true), out.Schedule[0].AllowFailure)
+		assert.Equal(t, ptr.To(true), out.Kubernetes[0].AllowFailure)
 	})
 }
