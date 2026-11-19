@@ -65,6 +65,8 @@ type ScheduleConfig struct {
 	// Crontab is a schedule config in crontab format. (5 or 6 fields)
 	Crontab string `yaml:"crontab" json:"crontab"`
 
+	AllowFailure *bool `yaml:"allowFailure,omitempty" json:"allowFailure,omitempty"`
+
 	Queue string `yaml:"queue" json:"queue,omitempty"`
 }
 

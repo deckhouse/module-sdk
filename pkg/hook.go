@@ -144,6 +144,8 @@ type HookConfig struct {
 	OnBeforeDeleteHelm *OrderedConfig
 	OnAfterDeleteHelm  *OrderedConfig
 
+	// AllowFailure applies to every Kubernetes and Schedule binding that does not set
+	// its own AllowFailure. OnStartup and Before/After Helm bindings cannot be allowed to fail.
 	AllowFailure bool
 	Queue        string
 
@@ -202,6 +204,8 @@ type ApplicationHookConfig struct {
 	OnBeforeDeleteHelm *OrderedConfig
 	OnAfterDeleteHelm  *OrderedConfig
 
+	// AllowFailure applies to every Kubernetes and Schedule binding that does not set
+	// its own AllowFailure. OnStartup and Before/After Helm bindings cannot be allowed to fail.
 	AllowFailure bool
 	Queue        string
 
