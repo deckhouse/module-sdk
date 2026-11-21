@@ -12,8 +12,8 @@ jobs:
   go-mod:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Check go mod
@@ -25,8 +25,8 @@ jobs:
     needs: go-mod
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
       - run: go test ./... -race
@@ -34,11 +34,11 @@ jobs:
     needs: go-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
-      - uses: golangci/golangci-lint-action@v8
+      - uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
   detect-modules: # ref: https://github.com/golangci/golangci-lint-action/tree/main
@@ -47,14 +47,14 @@ jobs:
     outputs:
       modules: ${{ steps.set-modules.outputs.modules }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Create go.work # Required for Go workspace mode to enable submodule checks and linting support (ref: https://go.dev/doc/tutorial/workspaces)
         run: go work init && find . -mindepth 2 -name go.mod|sed -r 's/(.*)(go.mod)/use \1/g' >> go.work
       - name: Upload go.work
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: go_work
           path: go.work
@@ -68,8 +68,8 @@ jobs:
         modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Check go mod
@@ -87,12 +87,12 @@ jobs:
         modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Download go.work from detect-modules
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: go_work
       - run: go test ./...
@@ -105,16 +105,16 @@ jobs:
         modules: ${{ fromJSON(needs.detect-modules.outputs.modules) }}
       fail-fast: false
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Download go.work from detect-modules
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: go_work
       - name: golangci-lint ${{ matrix.modules }}
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           version: ${{ env.GOLANGCI_LINT_VERSION }}
           working-directory: ${{ matrix.modules }}
